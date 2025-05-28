@@ -11,7 +11,7 @@ import type { Metadata } from 'next'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Reu Uzziel - Portfolio',
+  title: 'Reu',
   description: 'UI/UX Designer & Developer with a Computer Science Degree',
   keywords: ['UI/UX Designer', 'Developer', 'Web Development', 'Portfolio', 'React', 'Next.js'],
   authors: [{ name: 'Reu Uzziel' }],
