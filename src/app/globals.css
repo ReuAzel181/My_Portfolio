@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  cursor: none !important;
+}
+
+/* Custom cursor styles */
+.custom-cursor-overlay {
+  pointer-events: none;
+  z-index: 9999;
+}
+
+:root {
+  /* Light Theme Colors - Neo-Futuristic */
+  --light-primary: #2D7FF9;      /* Main blue - vibrant */
+  --light-primary-50: #F8FAFC;   /* Warmer, softer light background */
+  --light-primary-100: #EAF1FB;  /* Slightly warmer card background */
+  --light-primary-200: #CFE0F5;  /* Warmer border/accent */
+  --light-primary-300: #A7C7E7;
+  --light-primary-400: #4D94FF;  /* Blue - hover states */
+  --light-primary-500: #2D7FF9;  /* Main blue - buttons/links */
+  --light-primary-600: #1A6BE8;  /* Darker blue - text */
+  --light-primary-700: #0D55D6;  /* Darkest blue - headings */
+  
+  /* Dark Theme Colors - Cyberpunk-inspired */
+  --dark-bg: #101624;           /* Softer, deep blue-black */
+  --dark-accent: #00D5FF;
+  --dark-text: #E6F0FF;
+  --dark-secondary: #18243A;    /* Softer dark secondary */
+  --dark-tertiary: #22304A;     /* Softer dark tertiary */
+  --mint-ripple: rgba(163, 230, 206, 0.2);
+}
+
+/* Light Theme (default) */
+:root {
+  --bg-primary: var(--light-primary-50);
+  --bg-secondary: var(--light-primary-100);
+  --bg-tertiary: var(--light-primary-200);
+  
+  --text-primary: var(--light-primary-700);
+  --text-secondary: var(--light-primary-600);
+  --text-tertiary: var(--light-primary-500);
+  
+  --border-color: rgba(184, 217, 255, 0.5);
+  --icon-color: var(--light-primary-300);
+  
+  --button-bg: var(--light-primary-500);
+  --button-hover: var(--light-primary-400);
+  --button-text: #FFFFFF;
+  
+  --nav-bg: rgba(240, 247, 255, 0.8);
+  --card-bg: rgba(230, 240, 255, 0.7);
+  --card-border: rgba(184, 217, 255, 0.2);
+  --card-shadow: rgba(45, 127, 249, 0.1);
+}
+
+/* Dark Theme */
+html.dark-theme {
+  --bg-primary: var(--dark-bg);
+  --bg-secondary: var(--dark-secondary);
+  --bg-tertiary: var(--dark-tertiary);
+  
+  --text-primary: var(--dark-text);
+  --text-secondary: rgba(230, 240, 255, 0.8);
+  --text-tertiary: var(--dark-accent);
+  
+  --border-color: rgba(0, 213, 255, 0.2);
+  --icon-color: var(--dark-accent);
+  
+  --button-bg: var(--dark-accent);
+  --button-hover: #33DDFF;
+  --button-text: var(--dark-bg);
+  
+  --nav-bg: rgba(10, 25, 41, 0.8);
+  --card-bg: rgba(19, 47, 76, 0.7);
+  --card-border: rgba(0, 213, 255, 0.1);
+  --card-shadow: rgba(0, 213, 255, 0.1);
+  --mint-ripple: rgba(163, 230, 206, 0.15);
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .heading-text {
+    @apply text-[var(--text-primary)] font-semibold;
+  }
+
+  .section-padding {
+    @apply px-4 py-20 md:px-6 lg:px-8;
+  }
+
+  .button-primary {
+    @apply px-6 py-3 rounded-lg font-medium
+    bg-[var(--button-bg)] text-[var(--button-text)]
+    hover:bg-[var(--button-hover)] transition-colors
+    shadow-lg hover:shadow-xl;
+  }
+
+  .button-outline {
+    @apply px-6 py-3 rounded-lg font-medium
+    border-2 border-[var(--button-bg)] text-[var(--button-bg)]
+    hover:bg-[var(--button-bg)] hover:text-[var(--button-text)]
+    transition-colors shadow-lg hover:shadow-xl;
+  }
+
+  .card {
+    @apply bg-[var(--card-bg)] p-6 rounded-xl
+    border border-[var(--card-border)]
+    backdrop-blur-md shadow-lg
+    hover:shadow-xl transition-all duration-300
+    hover:scale-[1.02];
+  }
+
+  .text-highlight {
+    @apply text-[var(--text-tertiary)] font-medium;
+  }
+
+  /* Skill card specific styles */
+  .skill-card {
+    @apply bg-[var(--bg-secondary)] p-4 rounded-xl
+    border border-[var(--card-border)]
+    backdrop-blur-md shadow-md
+    hover:shadow-lg transition-all duration-300;
+  }
+
+  .skill-progress {
+    @apply bg-[var(--bg-tertiary)] rounded-full h-2 mt-2;
+  }
+
+  .skill-progress-bar {
+    @apply bg-[var(--text-tertiary)] h-full rounded-full
+    transition-all duration-500
+    shadow-[0_0_10px_var(--text-tertiary)];
+  }
+}
+
+/* Fade-in animation for BuyMeACoffee QR card */
+.animate-fade-in { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Floating coffee bean animation for BuyMeACoffee button */
+.bean {
+  position: absolute;
+  bottom: 0;
+  opacity: 0.85;
+  animation: bean-float 2.2s infinite ease-in-out;
+}
+.bean-1 { left: 8px; animation-delay: 0s; }
+.bean-2 { left: 32px; animation-delay: 0.6s; }
+.bean-3 { left: 56px; animation-delay: 1.2s; }
+
+@keyframes bean-float {
+  0% { transform: translateY(18px) rotate(0deg) scale(1); opacity: 0.85; }
+  30% { opacity: 1; }
+  50% { transform: translateY(-8px) rotate(20deg) scale(1.1); opacity: 0.95; }
+  80% { opacity: 0.8; }
+  100% { transform: translateY(-40px) rotate(40deg) scale(0.95); opacity: 0; }
+}
+
+/* Remove previous steam styles */
+.steam, .steam-1, .steam-2, .steam-3, .steam-4, .steam-5 { display: none !important; }
+
+/* Remove wiggle animation */
+.coffee-wiggle, .coffee-wiggle:hover { animation: none !important; }
+
+/* Custom slider styles for volume controls */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-track {
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: var(--button-hover);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--button-hover);
+  transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: var(--button-bg);
+  transform: scale(1.2);
+}
+
+.slider::-moz-range-track {
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+}
+
+.slider::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: var(--button-hover);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px var(--button-hover);
+  transition: all 0.2s ease;
+}
+
+.slider::-moz-range-thumb:hover {
+  background: var(--button-bg);
+  transform: scale(1.2);
+} 

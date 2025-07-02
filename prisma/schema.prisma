@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  longDescription String?  @db.Text
+  image           String
+  tags            String[]
+  liveUrl         String?
+  githubUrl       String?
+  technologies    String[]
+  challenges      String[]
+  outcomes        String[]
+  carouselImages  String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  level       Int
+  category    String
+  icon        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DigitalPlaygroundTool {
+  id          String   @id @default(cuid())
+  name        String
+  image       String
+  description String
+  since       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MusicItem {
+  id          String   @id @default(cuid())
+  year        String
+  title       String
+  description String
+  genre       String[]
+  cover       String
+  audioFile   String?
+  youtubeLink String?
+  credits     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PersonalInfo {
+  id          String   @id @default(cuid())
+  name        String
+  title       String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
