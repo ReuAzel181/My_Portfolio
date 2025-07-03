@@ -1,12 +1,11 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface MusicItem {
   year: string;
   title: string;
   description: string;
   genre: string[];
-  // Placeholder for album art URL
   cover?: string;
   audioFile?: string;
   youtubeLink?: string;
@@ -38,7 +37,6 @@ const musicData: MusicItem[] = [
     genre: ['Chill', 'Lo-fi'],
     cover: '/projects/Project3.png',
   },
-  // Add more music items as needed
 ];
 
 const Music = () => {
@@ -47,12 +45,17 @@ const Music = () => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(0.7)
   const [isMuted, setIsMuted] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+
+  // Reset visibility on page refresh
+  useEffect(() => {
+    setIsVisible(false)
+  }, [])
 
   const handlePlay = (index: number) => {
     const item = musicData[index]
     
     if (!item.audioFile) {
-      // If no audio file, open YouTube link if available
       if (item.youtubeLink) {
         window.open(item.youtubeLink, '_blank')
       }
@@ -60,7 +63,6 @@ const Music = () => {
     }
 
     if (playingIndex === index && isPlaying) {
-      // Stop current audio
       if (audio) {
         audio.pause()
         audio.currentTime = 0
@@ -69,13 +71,11 @@ const Music = () => {
         setPlayingIndex(null)
       }
     } else {
-      // Stop any currently playing audio
       if (audio) {
         audio.pause()
         audio.currentTime = 0
       }
 
-      // Create new audio element
       const newAudio = new Audio(item.audioFile)
       newAudio.volume = isMuted ? 0 : volume
       newAudio.addEventListener('ended', () => {
@@ -105,9 +105,11 @@ const Music = () => {
     }
   }
 
+  if (!isVisible) return null;
+
   return (
     <section id="music" className="relative py-24 overflow-x-hidden bg-[var(--bg-primary)]">
-      {/* Edge-to-edge soundwave SVG background */}
+      {/* Rest of the component remains the same */}
       <div className="absolute left-0 right-0 top-0 w-screen opacity-50 pointer-events-none select-none z-0">
         <svg viewBox="0 0 1920 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-32">
           <motion.path
