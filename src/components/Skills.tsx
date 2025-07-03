@@ -78,17 +78,17 @@ const digitalPlaygroundTools: DigitalPlaygroundTool[] = [
 
 const Skills = () => {
   return (
-    <section id="digital-playground" className="section-padding py-20 relative min-h-screen" style={{ background: 'linear-gradient(135deg, var(--bg-primary) 60%, var(--bg-secondary) 100%)' }}>
+    <section id="digital-playground" className="section-padding py-16 relative min-h-screen" style={{ background: 'linear-gradient(135deg, var(--bg-primary) 60%, var(--bg-secondary) 100%)' }}>
       {/* Gradient overlay for extra depth */}
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true" style={{ background: 'radial-gradient(ellipse at top right, var(--card-bg) 0%, transparent 70%)' }} />
-      <div className="max-w-7xl mx-auto relative z-10">
-        <h2 className="text-4xl font-extrabold mb-4 text-center" style={{ color: 'var(--text-primary)' }}>
+      <div className="max-w-6xl mx-auto relative z-10">
+        <h2 className="text-3xl font-extrabold mb-3 text-center text-[#385780] dark:text-[#5A7A9D]">
           Digital Playground
         </h2>
-        <p className="text-lg text-center mb-12" style={{ color: 'var(--text-secondary)' }}>
+        <p className="text-base text-center mb-8 text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(90,122,157,0.3)]">
           A collection of my favorite creative and development tools I use to bring ideas to life.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {digitalPlaygroundTools.map((tool, idx) => (
             <div key={tool.name} className="flex flex-col items-center">
               <motion.div
@@ -101,44 +101,44 @@ const Skills = () => {
                   delay: idx * 0.03,
                   ease: 'easeOut'
                 }}
-                className="relative rounded-3xl shadow-xl overflow-visible group cursor-pointer min-h-[300px] w-full flex flex-col items-center justify-center px-6 py-10 hover:shadow-2xl bg-[var(--card-bg)] border border-[var(--card-border)]"
+                className="relative rounded-xl shadow-xl overflow-visible group cursor-pointer min-h-[240px] w-full flex flex-col items-center justify-center px-4 py-8 hover:shadow-2xl bg-[var(--card-bg)] border border-[var(--card-border)]"
                 style={{ transform: 'translateZ(0)' }}
               >
                 <img
                   src={tool.image}
                   alt={tool.name}
-                  className="w-24 h-24 object-contain mb-6 z-30 transition-transform duration-300 group-hover:-translate-y-3"
+                  className="w-16 h-16 object-contain mb-4 z-30 transition-transform duration-300 group-hover:-translate-y-2"
                 />
                 {/* Tool name inside card by default, moves just below card on hover, always visible */}
                 <span
-                  className="text-xl font-bold text-center absolute left-0 right-0 mx-auto transition-all duration-300 ease-in-out"
+                  className="text-lg font-bold text-center absolute left-0 right-0 mx-auto transition-all duration-300 ease-in-out"
                   style={{
                     color: 'var(--text-primary)',
-                    bottom: '2.5rem',
+                    bottom: '2rem',
                     zIndex: 15,
                     transform: 'translateY(0)',
                   }}
                 >
-                  <span className="block group-hover:translate-y-[90px] group-hover:opacity-100 opacity-100 transition-all duration-300 ease-in-out">
+                  <span className="block group-hover:translate-y-[70px] group-hover:opacity-100 opacity-100 transition-all duration-300 ease-in-out">
                     {tool.name}
                   </span>
                 </span>
                 {/* Description overlay on hover, semi-transparent gradient, no drop-shadow */}
                 <div
-                  className="absolute left-0 right-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 px-4 pb-8 pt-8 flex items-end justify-center h-full rounded-3xl"
+                  className="absolute left-0 right-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 px-3 pb-6 pt-6 flex items-end justify-center h-full rounded-xl"
                   style={{
                     background: 'linear-gradient(0deg, rgba(96,165,250,0.60) 0%, rgba(191,219,254,0.40) 80%, transparent 100%)',
                     color: 'var(--text-primary)',
                   }}
                 >
-                  <p className="text-base text-center leading-relaxed font-medium" style={{color: 'var(--text-primary)'}}>
+                  <p className="text-sm text-center leading-relaxed font-medium" style={{color: 'var(--text-primary)'}}>
                     {tool.description}
                   </p>
                 </div>
               </motion.div>
               {/* Tool name below the card only on hover, always visible, with more space */}
-              <div className="h-10 flex items-center justify-center">
-                <span className="text-xl font-bold text-center opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out" style={{ color: 'var(--text-primary)' }}>{tool.name}</span>
+              <div className="h-8 flex items-center justify-center">
+                <span className="text-lg font-bold text-center opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out" style={{ color: 'var(--text-primary)' }}>{tool.name}</span>
               </div>
             </div>
           ))}

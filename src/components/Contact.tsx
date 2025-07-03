@@ -92,9 +92,9 @@ const Contact = () => {
 
   return (
     <ErrorBoundary>
-      <section ref={ref} id="contact" className="section-padding bg-[var(--card-bg)]/80 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+      <section ref={ref} id="contact" className="section-padding bg-white dark:bg-gray-900 relative z-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             {/* Left: Contact Form */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -102,15 +102,15 @@ const Contact = () => {
               transition={{ duration: 0.4 }}
               className="flex flex-col justify-center bg-transparent z-10"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Let's Connect!</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-xl font-bold text-[#385780] dark:text-[#5A7A9D]">Let's Connect!</h2>
                 {/* Animated Waving Hand SVG */}
                 <span className="inline-block cursor-pointer group">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 72 72"
-                    width="40"
-                    height="40"
+                    width="28"
+                    height="28"
                     className="transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110"
                   >
                     <g>
@@ -126,11 +126,11 @@ const Contact = () => {
                   </svg>
                 </span>
               </div>
-              <p className="text-gray-500 dark:text-gray-400 text-lg max-w-md mb-8">
+              <p className="text-gray-500 dark:text-gray-400 text-base max-w-md mb-6">
                 I'd love to hear from you! Whether you have a question, want to collaborate, or just want to say hi, feel free to reach out through any of these channels.
               </p>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Name
@@ -139,13 +139,13 @@ const Contact = () => {
                     type="text"
                     id="name"
                     {...register('name')}
-                    className={`w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-gray-800/50 border ${
+                    className={`w-full px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border ${
                       errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                     } focus:outline-none focus:ring-2 focus:ring-purple-500`}
                     placeholder="Your name"
                   />
                   {errors.name && (
-                    <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>
+                    <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
                   )}
                 </div>
 
@@ -157,13 +157,13 @@ const Contact = () => {
                     type="email"
                     id="email"
                     {...register('email')}
-                    className={`w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-gray-800/50 border ${
+                    className={`w-full px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border ${
                       errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                     } focus:outline-none focus:ring-2 focus:ring-purple-500`}
                     placeholder="your.email@example.com"
                   />
                   {errors.email && (
-                    <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
+                    <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
                   )}
                 </div>
 
@@ -174,26 +174,26 @@ const Contact = () => {
                   <textarea
                     id="message"
                     {...register('message')}
-                    rows={4}
-                    className={`w-full px-4 py-2 rounded-xl bg-white/50 dark:bg-gray-800/50 border ${
+                    rows={3}
+                    className={`w-full px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border ${
                       errors.message ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                     } focus:outline-none focus:ring-2 focus:ring-purple-500`}
                     placeholder="Your message..."
                   />
                   {errors.message && (
-                    <p className="mt-1 text-sm text-red-500">{errors.message.message}</p>
+                    <p className="mt-1 text-xs text-red-500">{errors.message.message}</p>
                   )}
                 </div>
 
                 {submitError && (
-                  <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800">
-                    <p className="text-sm text-red-600 dark:text-red-200">{submitError}</p>
+                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800">
+                    <p className="text-xs text-red-600 dark:text-red-200">{submitError}</p>
                   </div>
                 )}
 
                 {submitSuccess && (
-                  <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/50 border border-green-200 dark:border-green-800">
-                    <p className="text-sm text-green-600 dark:text-green-200">
+                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/50 border border-green-200 dark:border-green-800">
+                    <p className="text-xs text-green-600 dark:text-green-200">
                       Message sent successfully! I'll get back to you soon.
                     </p>
                   </div>
@@ -202,7 +202,7 @@ const Contact = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full px-6 py-3 rounded-xl text-white font-medium ${
+                  className={`w-full px-4 py-2 rounded-lg text-white font-medium ${
                     isSubmitting
                       ? 'bg-purple-400 cursor-not-allowed'
                       : 'bg-purple-600 hover:bg-purple-700'
@@ -218,90 +218,90 @@ const Contact = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: inView ? 1 : 0, y: inView ? 0 : 20 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="relative z-20 space-y-8"
+              className="relative z-20 space-y-6"
             >
               {/* Contact Methods Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Email */}
                 <div className="group">
-                  <div className="flex items-center gap-4 p-6 rounded-2xl bg-gradient-to-br from-white/80 to-white/30 dark:from-gray-800/80 dark:to-gray-800/30 backdrop-blur-lg border border-gray-100/20 dark:border-gray-700/20 hover:border-purple-300/50 dark:hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 dark:from-purple-600 dark:to-purple-800 flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
-                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500 transition-all duration-300 hover:shadow-lg">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 dark:from-purple-600 dark:to-purple-800 flex items-center justify-center text-white shadow-lg shadow-purple-500/30">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-base font-semibold text-gray-900 dark:text-white mb-1">Email</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{contactEmail}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Email</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">{contactEmail}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Location */}
                 <div className="group">
-                  <div className="flex items-center gap-4 p-6 rounded-2xl bg-gradient-to-br from-white/80 to-white/30 dark:from-gray-800/80 dark:to-gray-800/30 backdrop-blur-lg border border-gray-100/20 dark:border-gray-700/20 hover:border-blue-300/50 dark:hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500 transition-all duration-300 hover:shadow-lg">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-base font-semibold text-gray-900 dark:text-white mb-1">Location</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{location}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Location</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">{location}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Phone */}
                 <div className="group">
-                  <div className="flex items-center gap-4 p-6 rounded-2xl bg-gradient-to-br from-white/80 to-white/30 dark:from-gray-800/80 dark:to-gray-800/30 backdrop-blur-lg border border-gray-100/20 dark:border-gray-700/20 hover:border-green-300/50 dark:hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 dark:from-green-600 dark:to-green-800 flex items-center justify-center text-white shadow-lg shadow-green-500/30">
-                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-500 transition-all duration-300 hover:shadow-lg">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-green-600 dark:from-green-600 dark:to-green-800 flex items-center justify-center text-white shadow-lg shadow-green-500/30">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-base font-semibold text-gray-900 dark:text-white mb-1">Phone</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">+63 910 665 9090</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Phone</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">+63 910 665 9090</p>
                     </div>
                   </div>
                 </div>
 
                 {/* WhatsApp */}
                 <div className="group">
-                  <div className="flex items-center gap-4 p-6 rounded-2xl bg-gradient-to-br from-white/80 to-white/30 dark:from-gray-800/80 dark:to-gray-800/30 backdrop-blur-lg border border-gray-100/20 dark:border-gray-700/20 hover:border-teal-300/50 dark:hover:border-teal-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-teal-500/10">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 dark:from-teal-600 dark:to-teal-800 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
-                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-500 transition-all duration-300 hover:shadow-lg">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 dark:from-teal-600 dark:to-teal-800 flex items-center justify-center text-white shadow-lg shadow-teal-500/30">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.72 11.06a8.94 8.94 0 01-4.72 4.72l-2.12-.71a1 1 0 00-1.11.27l-1.13 1.13a9 9 0 1112.73-12.73l-1.13 1.13a1 1 0 00-.27 1.11l.71 2.12z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-base font-semibold text-gray-900 dark:text-white mb-1">WhatsApp</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">+63 910 665 9090</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">WhatsApp</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">+63 910 665 9090</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Social Links */}
-              <div className="space-y-4">
-                <h4 className="text-base font-semibold text-gray-900 dark:text-white">Connect With Me</h4>
-                <div className="flex flex-wrap gap-3">
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Connect With Me</h4>
+                <div className="flex flex-wrap gap-2">
                   {socialLinks.map((social) => (
                     <a
                       key={social.name}
                       href={social.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`px-4 py-2.5 rounded-xl ${social.color} shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium flex items-center gap-2 hover:scale-105`}
+                      className={`px-3 py-2 rounded-lg ${social.color} shadow-lg hover:shadow-xl transition-all duration-300 text-xs font-medium flex items-center gap-2 hover:scale-105`}
                     >
                       {social.icon}
                       {social.name}
                     </a>
                   ))}
                   {/* Discord tag with custom styling */}
-                  <div className="px-4 py-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-600 dark:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm font-medium flex items-center gap-2 select-all hover:scale-105 cursor-pointer">
+                  <div className="px-3 py-2 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-600 dark:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 text-xs font-medium flex items-center gap-2 select-all hover:scale-105 cursor-pointer">
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20.317 4.369a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
                     </svg>

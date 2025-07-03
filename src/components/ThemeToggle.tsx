@@ -39,8 +39,8 @@ const ThemeToggle = () => {
           relative
           p-2 rounded-full transition-colors duration-200
           ${theme === 'light'
-            ? 'bg-primary text-base hover:opacity-90'
-            : 'bg-accent text-text hover:opacity-90'
+            ? 'bg-[#385780] text-white hover:bg-[#385780]/90'
+            : 'bg-[#5A7A9D] text-white hover:bg-[#5A7A9D]/90'
           }
           after:content-['']
           after:absolute after:inset-[-8px]

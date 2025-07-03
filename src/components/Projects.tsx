@@ -143,7 +143,7 @@ const Projects = () => {
     return (
       <section id="projects" className="section-padding bg-[var(--bg-primary)]">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold mb-8 text-center">Loading projects...</h2>
+          <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">Loading projects...</h2>
         </div>
       </section>
     )
@@ -153,7 +153,7 @@ const Projects = () => {
     return (
       <section id="projects" className="section-padding bg-[var(--bg-primary)]">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold mb-8 text-center">Error: {error}</h2>
+          <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">Error: {error}</h2>
         </div>
       </section>
     )
@@ -167,15 +167,15 @@ const Projects = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
-          <h2 className="text-4xl font-bold mb-4">Featured Projects</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold mb-3 text-[#385780] dark:text-[#5A7A9D]">Featured Projects</h2>
+          <p className="text-gray-600 max-w-xl mx-auto">
             Here are some of my recent projects that showcase my skills and experience.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project, index) => (
             <motion.div
               key={project.id}
@@ -186,7 +186,7 @@ const Projects = () => {
                 delay: index * 0.2,
                 ease: [0.25, 0.1, 0.25, 1]
               }}
-              className="w-full max-w-[380px] mx-auto"
+              className="w-full max-w-[320px] mx-auto"
             >
               <Tilt 
                 options={defaultTiltOptions} 

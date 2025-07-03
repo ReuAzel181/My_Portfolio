@@ -131,8 +131,8 @@ const Navigation = () => {
                     key={item.name}
                     className={`rounded-md ${
                       activeSection === item.href.substring(1)
-                        ? 'text-mint bg-mint/10'
-                        : 'hover:text-mint hover:bg-mint/5'
+                        ? 'text-[#385780] dark:text-[#5A7A9D] bg-[#385780]/10 dark:bg-[#5A7A9D]/20'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-[#385780] dark:hover:text-[#5A7A9D] hover:bg-[#385780]/5 dark:hover:bg-[#5A7A9D]/10'
                     }`}
                   >
                     <Link
@@ -190,8 +190,8 @@ const Navigation = () => {
                 key={item.name}
                 className={`w-full rounded-md ${
                   activeSection === item.href.substring(1)
-                    ? 'text-mint bg-mint/10'
-                    : 'hover:text-mint hover:bg-mint/5'
+                    ? 'text-[#385780] dark:text-[#5A7A9D] bg-[#385780]/10 dark:bg-[#5A7A9D]/20'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-[#385780] dark:hover:text-[#5A7A9D] hover:bg-[#385780]/5 dark:hover:bg-[#5A7A9D]/10'
                 }`}
               >
                 <Link
