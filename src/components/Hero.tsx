@@ -79,7 +79,7 @@ const Hero = () => {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
           >
             <motion.div 
-              className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4"
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-2xl flex flex-col items-center gap-3"
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 10, opacity: 0 }}
@@ -92,14 +92,14 @@ const Hero = () => {
               {downloadError ? (
                 <>
                   <motion.div 
-                    className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center"
+                    className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center"
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.3, delay: 0.2 }}
                   >
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
-                      className="w-8 h-8 text-blue-500" 
+                      className="w-6 h-6 text-blue-500" 
                       fill="none" 
                       viewBox="0 0 24 24" 
                       stroke="currentColor"
@@ -201,22 +201,22 @@ const Hero = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="max-w-7xl mx-auto w-full px-4 md:px-6 lg:px-8 flex flex-col lg:flex-row justify-between items-center gap-20"
+        className="max-w-6xl mx-auto w-full px-4 md:px-6 lg:px-8 flex flex-col lg:flex-row justify-between items-center gap-12"
       >
-        <div className="max-w-2xl lg:pl-0 pr-4 md:pr-8">
-          <h1 className="text-4xl md:text-7xl font-bold mb-6 whitespace-nowrap">
-            <span className="text-[#466D9D]/40">Hi, I'm</span>{" "}
-            <span className="text-[#466D9D] font-extrabold relative inline-block transform hover:scale-105 transition-transform duration-300 after:content-[''] after:absolute after:bottom-0 after:right-0 after:w-full after:h-[3px] after:bg-[#466D9D] after:transform after:origin-right after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
+        <div className="max-w-xl lg:pl-0 pr-4 md:pr-6">
+          <h1 className="text-3xl md:text-5xl font-bold mb-4 whitespace-nowrap">
+            <span className="text-[#385780]/40 dark:text-[#5A7A9D]/40">Hi, I'm</span>{" "}
+            <span className="text-[#385780] dark:text-[#5A7A9D] font-extrabold relative inline-block transform hover:scale-105 transition-transform duration-300 after:content-[''] after:absolute after:bottom-0 after:right-0 after:w-full after:h-[3px] after:bg-[#385780] dark:after:bg-[#5A7A9D] after:transform after:origin-right after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
               Reu Uzziel
             </span>
           </h1>
-          <h2 className="text-2xl md:text-3xl text-gray-600 mb-8 whitespace-nowrap">
+          <h2 className="text-xl md:text-2xl text-[#385780] dark:text-[#5A7A9D] mb-6 whitespace-nowrap">
             <span className="font-bold">UI/UX Designer</span> with a Computer Science Degree
           </h2>
-          <p className="text-gray-500 mb-8 text-lg max-w-xl">
+          <p className="text-gray-500 mb-6 text-base max-w-lg">
             I'm passionate about crafting intuitive digital experiences that blend form and function. Drawing from my computer science background and design expertise, I strive to create solutions that make a positive impact.
           </p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             <a 
               href="https://github.com/ReuAzel181" 
               target="_blank" 
@@ -239,7 +239,7 @@ const Hero = () => {
                 viewBox="0 0 24 24"
                 strokeWidth={2}
                 stroke="currentColor"
-                className="w-5 h-5"
+                className="w-4 h-4"
                 initial={false}
                 animate={isDownloading ? {
                   rotate: 360,
@@ -272,18 +272,18 @@ const Hero = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="relative w-full lg:w-[600px] h-[400px] lg:h-[600px] group"
+          className="relative w-full lg:w-[480px] h-[320px] lg:h-[480px] group"
         >
           {/* Box Frame */}
-          <div className="absolute inset-0 -m-6 border-2 border-[#8B5CF6]/30 rounded-3xl transform -rotate-6 transition-transform duration-300 group-hover:rotate-0" />
-          <div className="absolute inset-0 -m-3 border-2 border-[#8B5CF6]/50 rounded-2xl transform rotate-3 transition-transform duration-300 group-hover:rotate-0" />
+          <div className="absolute inset-0 -m-4 border-2 border-[#8B5CF6]/30 rounded-2xl transform -rotate-6 transition-transform duration-300 group-hover:rotate-0" />
+          <div className="absolute inset-0 -m-2 border-2 border-[#8B5CF6]/50 rounded-xl transform rotate-3 transition-transform duration-300 group-hover:rotate-0" />
           
           {/* Main Image Container */}
-          <div className="relative h-full rounded-xl">
+          <div className="relative h-full rounded-lg">
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#8B5CF6]/20 to-[#8B5CF6]/10 mix-blend-overlay rounded-xl" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#8B5CF6]/20 to-[#8B5CF6]/10 mix-blend-overlay rounded-lg" />
             {/* Image Wrapper for positioning */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[95%] h-[130%] cursor-pointer z-10">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[95%] h-[120%] cursor-pointer z-10">
               <Image
                 src={profileImage}
                 alt="Reu Uzziel"
@@ -293,7 +293,7 @@ const Hero = () => {
                 priority
                 onClick={handleProfileClick}
               />
-              {/* Fun Card Overlay - always rendered, only visible when showFunCard is true */}
+              {/* Fun Card Overlay */}
               <AnimatePresence>
                 {showFunCard && (
                   <motion.div
@@ -303,15 +303,15 @@ const Hero = () => {
                     transition={{ duration: 0.3 }}
                     className="absolute left-1/2 -translate-x-1/2 bottom-[15%] z-20"
                   >
-                    <div className="bg-white dark:bg-gray-900 border border-purple-400 px-4 py-2 rounded-xl shadow-lg text-purple-700 dark:text-purple-300 font-bold text-base flex items-center gap-2 animate-bounce">
-                      PURE BREED ANNUNNAKI! <span className="text-xl">😂</span>
+                    <div className="bg-white dark:bg-gray-900 border border-purple-400 px-3 py-1.5 rounded-lg shadow-lg text-purple-700 dark:text-purple-300 font-bold text-sm flex items-center gap-2 animate-bounce">
+                      PURE BREED ANNUNNAKI! <span className="text-lg">😂</span>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
             {/* Pass-through Effect */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#8B5CF6]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#8B5CF6]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
           </div>
         </motion.div>
       </motion.div>

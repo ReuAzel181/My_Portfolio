@@ -120,7 +120,9 @@ export default function HorizontalScroller() {
     >
       {/* Section Title */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg tracking-tight">UI Projects Showcase</h2>
+        <h2 className="text-3xl md:text-4xl font-extrabold text-[#385780] dark:text-[#5A7A9D] tracking-tight drop-shadow-[0_0_5px_rgba(255,255,255,0.1)] dark:drop-shadow-[0_0_5px_rgba(255,255,255,0.05)]">
+          Design & Graphics
+        </h2>
         <p className="text-base text-white/70 mt-2">A dynamic, immersive gallery</p>
       </div>
       {/* Single Row */}
