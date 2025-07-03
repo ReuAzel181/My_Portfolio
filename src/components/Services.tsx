@@ -13,25 +13,25 @@ const services = [
   {
     title: 'Brand Identity',
     description:
-      "I craft unique visual identities that capture the essence of your brand and make a lasting impression.",
+      "I help create visual identities that reflect your brand's values and connect with your audience.",
     icon: PaintBrushIcon,
   },
   {
     title: 'Website Design',
     description:
-      "I design and build responsive, user-friendly websites that blend aesthetics with seamless functionality.",
+      "I work on responsive websites that are both visually appealing and easy to use.",
     icon: CodeBracketIcon,
   },
   {
     title: 'Creative Direction',
     description:
-      "I provide creative guidance to ensure your message is clear, consistent, and visually compelling.",
+      "I offer guidance to help make your message clear and visually engaging.",
     icon: LightBulbIcon,
   },
   {
     title: 'UI/UX Consulting',
     description:
-      "I help you elevate your product's user experience through research-driven design and hands-on collaboration.",
+      "I assist in improving your product's user experience through thoughtful design and collaboration.",
     icon: UserGroupIcon,
   },
 ]
@@ -56,7 +56,7 @@ const Services = () => {
         >
           <h2 className="text-4xl font-bold mb-6 heading-gradient">What I Offer</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            I combine a passion for design with technical expertise to deliver solutions that are both beautiful and effective. Here's how I can help you bring your vision to life:
+            I enjoy combining design and technical skills to create solutions that work well and look good. Here's how I can help with your project:
           </p>
         </motion.div>
 
@@ -92,7 +92,7 @@ const Services = () => {
         >
           <h4 className="text-2xl font-bold mb-4 heading-gradient">Why work with me?</h4>
           <p className="text-gray-300 text-lg">
-            I'm not just a designer or developer—I'm your creative partner. I care deeply about every project, focusing on clear communication, attention to detail, and a collaborative process. Let's create something remarkable together!
+            I approach each project with care and attention to detail. I believe in clear communication and working together to achieve the best results. Let's work on something great together!
           </p>
         </motion.div>
       </div>

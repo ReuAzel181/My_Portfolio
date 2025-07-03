@@ -5,7 +5,6 @@ import Hero from '@/components/Hero'
 import Projects from '@/components/Projects'
 import Services from '@/components/Services'
 import Skills from '@/components/Skills'
-import Timeline from '@/components/Timeline'
 import Contact from '@/components/Contact'
 import BuyMeACoffee from '@/components/BuyMeACoffee'
 import HorizontalScroller from '@/components/HorizontalScroller'
@@ -26,9 +25,6 @@ export default function Home() {
       </SectionTransition>
       <SectionTransition delay={0.15}>
         <Projects />
-      </SectionTransition>
-      <SectionTransition delay={0.2}>
-        <Timeline />
       </SectionTransition>
       <SectionTransition delay={0.25}>
         <Services />
