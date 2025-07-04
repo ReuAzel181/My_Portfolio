@@ -269,37 +269,37 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
         }}
       >
         <motion.div
-          className="bg-white/95 dark:bg-[var(--card-bg)] border border-gray-200 dark:border-[var(--card-border)] rounded-2xl shadow-2xl backdrop-blur-xl max-w-[820px] w-[95%] mx-4 overflow-hidden transition-colors"
+          className="bg-white/95 dark:bg-slate-900/95 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-2xl backdrop-blur-xl max-w-[820px] w-[95%] mx-4 overflow-hidden transition-colors"
           initial={{ y: 20 }}
           animate={{ y: 0 }}
         >
           {/* Header */}
-          <div className="bg-white/90 dark:bg-[var(--bg-tertiary)]/80 p-6 border-b border-gray-200 dark:border-[var(--card-border)] transition-colors">
+          <div className="bg-white/90 dark:bg-slate-800/90 p-6 border-b border-gray-200 dark:border-slate-700 transition-colors">
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-2xl font-bold text-[var(--text-primary)] drop-shadow-sm">Memory Game</h2>
-                  <div className="bg-white/80 dark:bg-[var(--button-bg)]/10 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-                    <span className="text-yellow-400 text-lg">🪙</span>
-                    <span className="font-medium text-[var(--text-primary)]">{gameStats.points}</span>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white drop-shadow-sm">Memory Game</h2>
+                  <div className="bg-white/80 dark:bg-slate-700/80 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                    <span className="text-amber-500 dark:text-amber-400 text-lg">🪙</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{gameStats.points}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-[var(--text-secondary)]">
+                <div className="flex items-center gap-4 text-gray-600 dark:text-gray-300">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Moves:</span>
-                    <span className="font-bold text-lg text-[var(--text-primary)]">{gameStats.moves}</span>
+                    <span className="font-bold text-lg text-gray-900 dark:text-white">{gameStats.moves}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Time:</span>
-                    <div className={`font-mono font-bold text-lg ${timeLeft < 10 ? 'text-red-400 animate-pulse' : 'text-[var(--text-primary)]'} drop-shadow-sm`}>
+                    <div className={`font-mono font-bold text-lg ${timeLeft < 10 ? 'text-red-500 dark:text-red-400 animate-pulse' : 'text-gray-900 dark:text-white'} drop-shadow-sm`}>
                       {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Reward:</span>
-                    <div className="font-bold text-lg flex items-center gap-1">
+                    <div className="font-bold text-lg flex items-center gap-1 text-gray-900 dark:text-white">
                       <span>{DIFFICULTY_LEVELS[difficulty].reward}</span>
-                      <span className="text-yellow-400">🪙</span>
+                      <span className="text-amber-500 dark:text-amber-400">🪙</span>
                     </div>
                   </div>
                 </div>
@@ -310,7 +310,7 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                 <div className="relative" ref={dropdownRef}>
                   <button
                     type="button"
-                    className={`px-4 py-2 rounded-2xl bg-white/80 dark:bg-[var(--card-bg)]/80 text-base font-medium text-[var(--text-primary)] w-[120px] flex items-center justify-between gap-2 shadow border border-gray-200 dark:border-[var(--card-border)] hover:bg-[var(--button-bg)]/10 transition-all focus:outline-none ${dropdownOpen ? 'ring-2 ring-[var(--button-hover)]/60' : ''}`}
+                    className={`px-4 py-2 rounded-2xl bg-white/80 dark:bg-slate-700/80 text-base font-medium text-gray-900 dark:text-white w-[120px] flex items-center justify-between gap-2 shadow border border-gray-200 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600 transition-all focus:outline-none ${dropdownOpen ? 'ring-2 ring-blue-500/60 dark:ring-blue-400/60' : ''}`}
                     onClick={() => setDropdownOpen((open) => !open)}
                     aria-haspopup="listbox"
                     aria-expanded={dropdownOpen}
@@ -321,7 +321,7 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                   {dropdownOpen && (
                     <ul
                       tabIndex={-1}
-                      className="absolute left-0 mt-2 w-full rounded-xl bg-white/95 dark:bg-[var(--card-bg)]/95 border border-gray-200 dark:border-[var(--card-border)] shadow-lg ring-1 ring-black/10 z-50 py-1"
+                      className="absolute left-0 mt-2 w-full rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-lg ring-1 ring-black/10 z-50 py-1"
                       role="listbox"
                     >
                       {['easy', 'medium', 'hard'].map((level) => (
@@ -331,8 +331,8 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                           aria-selected={difficulty === level}
                           className={`px-4 py-2 cursor-pointer text-base rounded-xl transition-colors ${
                             difficulty === level
-                              ? 'bg-blue-100 text-blue-700 font-bold dark:bg-[var(--button-bg)]/20 dark:text-[var(--button-bg)]'
-                              : 'text-[var(--text-primary)] hover:bg-blue-50 dark:hover:bg-[var(--button-bg)]/10'
+                              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold'
+                              : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700'
                           }`}
                           onClick={() => {
                             setDifficulty(level as DifficultyLevel);
@@ -351,17 +351,16 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                     </ul>
                   )}
                 </div>
-                {/* End Custom Dropdown */}
                 <button
                   onClick={() => initializeGame(difficulty)}
-                  className="w-9 h-9 flex items-center justify-center text-2xl text-[var(--button-bg)] hover:text-[var(--button-hover)] bg-white/80 dark:bg-[var(--card-bg)]/80 border border-gray-200 dark:border-[var(--card-border)] rounded-full shadow transition-colors"
+                  className="w-9 h-9 flex items-center justify-center text-2xl bg-white/80 dark:bg-slate-700/80 hover:bg-gray-100 dark:hover:bg-slate-600 border border-gray-200 dark:border-slate-600 rounded-full shadow transition-colors"
                   title="Reset Game"
                 >
                   🔄
                 </button>
                 <button
                   onClick={onClose}
-                  className="w-9 h-9 rounded-full flex items-center justify-center bg-white/80 dark:bg-[var(--card-bg)]/80 border border-gray-200 dark:border-[var(--card-border)] hover:bg-[var(--button-bg)]/10 transition-colors text-lg text-[var(--button-bg)] shadow"
+                  className="w-9 h-9 rounded-full flex items-center justify-center bg-white/80 dark:bg-slate-700/80 border border-gray-200 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors text-lg text-gray-900 dark:text-white shadow"
                   title="Close"
                 >
                   ✕
@@ -381,7 +380,12 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     className={`absolute inset-x-0 text-center font-bold py-1.5 px-4 rounded-lg shadow-md mx-auto w-fit
-                      bg-white/90 dark:bg-[var(--button-bg)]/10 text-[var(--button-bg)] border border-gray-200 dark:border-[var(--button-bg)]/20 backdrop-blur-md transition-colors`}
+                      ${message.includes('won') 
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-700/30'
+                        : message.includes('error') || message.includes('up')
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-700/30'
+                        : 'bg-[var(--button-bg)]/10 dark:bg-[var(--button-bg)]/20 text-[var(--button-bg)] dark:text-[var(--button-text)] border-[var(--button-bg)]/20 dark:border-[var(--button-bg)]/30'
+                      } border backdrop-blur-md transition-colors`}
                   >
                     {message}
                   </motion.div>
@@ -390,7 +394,7 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
             </div>
 
             {/* Game Content */}
-            <div className="p-4">
+            <div className="p-4 bg-gray-50/50 dark:bg-slate-900/50">
               <div className="flex justify-center items-start gap-8">
                 {/* Game Grid */}
                 <div>
@@ -406,9 +410,9 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                         whileTap={{ scale: 0.95 }}
                         className={`aspect-square rounded-xl flex items-center justify-center text-lg font-bold
                           ${card.isFlipped || card.isMatched || flippedCards.includes(card.id)
-                            ? 'bg-blue-100 text-blue-700 shadow-lg border border-blue-200 dark:bg-[var(--button-bg)]/90 dark:text-white dark:border-[var(--button-hover)]'
-                            : 'bg-white/90 text-[var(--text-primary)] border border-gray-200 shadow dark:bg-[var(--card-bg)]/80 dark:text-[var(--text-primary)] dark:border-[var(--card-border)] dark:shadow'
-                          } hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 backdrop-blur`}
+                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 shadow-lg border border-blue-200 dark:border-blue-800'
+                            : 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 shadow'
+                          } hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5`}
                         onClick={() => handleCardClick(card.id)}
                       >
                         <motion.span
@@ -418,7 +422,7 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                             scale: (card.isFlipped || card.isMatched || flippedCards.includes(card.id)) ? 1 : 0.8
                           }}
                           transition={{ duration: 0.3 }}
-                          className="font-bold"
+                          className="font-bold text-2xl"
                         >
                           {(card.isFlipped || card.isMatched || flippedCards.includes(card.id)) ? card.emoji : '?'}
                         </motion.span>
@@ -429,14 +433,14 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
 
                 {/* Power-ups Sidebar */}
                 <div className="w-[290px] flex flex-col gap-3">
-                  <h3 className="font-bold text-[var(--text-primary)] sticky top-0 bg-white/90 dark:bg-[var(--card-bg)]/80 py-1 px-2 rounded-xl shadow-sm">Power-ups</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white sticky top-0 bg-white/90 dark:bg-slate-800/90 py-1 px-2 rounded-xl shadow-sm">Power-ups</h3>
                   <div className="space-y-3">
                     {Object.entries(SPECIAL_CARDS).map(([emoji, { description, cost }]) => (
                       <motion.div
                         key={emoji}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="bg-white/95 dark:bg-[var(--card-bg)]/90 border border-gray-200 dark:border-[var(--card-border)] rounded-xl p-4 shadow-lg relative overflow-hidden backdrop-blur-md transition-colors"
+                        className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 shadow-lg relative overflow-hidden"
                       >
                         {/* Alert Overlay */}
                         <AnimatePresence>
@@ -445,7 +449,7 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: 20 }}
-                              className="absolute inset-0 bg-blue-200/95 dark:bg-[var(--button-bg)]/95 flex flex-col items-center justify-center text-blue-900 dark:text-white p-2 text-center z-10 rounded-xl shadow-xl"
+                              className="absolute inset-0 bg-red-100 dark:bg-red-900/90 flex flex-col items-center justify-center text-red-700 dark:text-red-300 p-2 text-center z-10 rounded-xl shadow-xl"
                             >
                               <div className="text-lg font-bold mb-1">Not enough coins!</div>
                               <div className="text-sm">
@@ -459,18 +463,18 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                           <div className="relative">
                             <span className="text-2xl">{emoji}</span>
                             {powerUps[emoji] > 0 && (
-                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full text-white text-xs flex items-center justify-center font-bold shadow-lg">
+                              <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 dark:bg-blue-600 text-white rounded-full text-xs flex items-center justify-center font-bold shadow-lg">
                                 {powerUps[emoji]}
                               </div>
                             )}
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium text-[var(--text-primary)]">{
+                            <div className="font-medium text-gray-900 dark:text-white">{
                               emoji === '🌟' ? 'Reveal' :
                               emoji === '⏰' ? 'Time Boost' :
                               'Shuffle'
                             }</div>
-                            <div className="text-xs text-[var(--text-secondary)]">{description}</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-300">{description}</div>
                           </div>
                         </div>
 
@@ -481,8 +485,8 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                             className={`
                               relative overflow-hidden rounded-lg text-sm font-bold shadow-lg transition-all duration-200
                               ${gameStats.points >= cost
-                                ? 'bg-blue-500 text-white hover:bg-blue-600 hover:text-white hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 dark:bg-[var(--button-bg)] dark:text-[var(--button-text)] dark:hover:bg-[var(--button-hover)] dark:hover:text-[var(--button-text)]'
-                                : 'bg-blue-100 text-blue-400 cursor-not-allowed dark:bg-[var(--bg-tertiary)]/80 dark:text-[var(--text-secondary)]'
+                                ? 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
+                                : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                               }
                               before:absolute before:inset-0 before:bg-white/20 before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-300
                               px-3 py-1.5
@@ -496,8 +500,8 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
                             className={`
                               relative overflow-hidden rounded-lg text-sm font-bold shadow-lg transition-all duration-200
                               ${powerUps[emoji] > 0
-                                ? 'bg-yellow-400 text-white hover:bg-yellow-500 hover:text-white hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 dark:text-[var(--button-text)] dark:hover:text-[var(--button-text)]'
-                                : 'bg-blue-100 text-blue-400 cursor-not-allowed dark:bg-[var(--bg-tertiary)]/80 dark:text-[var(--text-secondary)]'
+                                ? 'bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
+                                : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                               }
                               before:absolute before:inset-0 before:bg-white/20 before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-300
                               px-3 py-1.5
@@ -520,11 +524,11 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
       <style jsx global>{`
         select option {
           padding: 8px 12px;
-          background-color: rgb(59 130 246);
-          color: white;
+          background-color: var(--button-bg);
+          color: var(--button-text);
         }
         select option:hover {
-          background-color: rgb(37 99 235);
+          background-color: var(--button-hover);
         }
       `}</style>
     </AnimatePresence>

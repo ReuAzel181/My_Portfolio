@@ -39,6 +39,18 @@
   --dark-secondary: #18243A;    /* Softer dark secondary */
   --dark-tertiary: #22304A;     /* Softer dark tertiary */
   --mint-ripple: rgba(163, 230, 206, 0.2);
+
+  /* Custom Fonts */
+  --font-playfair: var(--font-playfair);
+  --font-oswald: var(--font-oswald);
+  --font-space-grotesk: var(--font-space-grotesk);
+  --font-dm-serif: var(--font-dm-serif);
+  --font-abril: var(--font-abril);
+  --font-comfortaa: var(--font-comfortaa);
+  --font-quicksand: var(--font-quicksand);
+  --font-bebas: var(--font-bebas);
+  --font-marker: var(--font-marker);
+  --font-source-code: var(--font-source-code);
 }
 
 /* Light Theme (default) */
@@ -65,7 +77,7 @@
 }
 
 /* Dark Theme */
-html.dark-theme {
+:root[class~="dark"] {
   --bg-primary: var(--dark-bg);
   --bg-secondary: var(--dark-secondary);
   --bg-tertiary: var(--dark-tertiary);
@@ -232,4 +244,14 @@ html.dark-theme {
 .slider::-moz-range-thumb:hover {
   background: var(--button-bg);
   transform: scale(1.2);
+}
+
+/* UI Game Card Flip Animation */
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
 } 

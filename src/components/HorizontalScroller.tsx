@@ -109,7 +109,7 @@ export default function HorizontalScroller() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full min-h-[400px] py-16 flex flex-col items-center justify-center overflow-visible pb-24"
+      className="relative w-full min-h-[350px] py-8 flex flex-col items-center justify-center overflow-visible pb-12"
       style={{
         background: 'linear-gradient(120deg, #18181b 60%, #232946 100%)',
         boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
@@ -129,7 +129,7 @@ export default function HorizontalScroller() {
       <div
         ref={rowRef}
         className="flex gap-8 absolute left-0 top-1/2 -translate-y-1/2 z-20"
-        style={{ pointerEvents: 'auto', width: TOTAL_WIDTH, maxWidth: '100vw', top: '180px' }}
+        style={{ pointerEvents: 'auto', width: TOTAL_WIDTH, maxWidth: '100vw', top: '150px' }}
       >
         {[...(shuffledImages.length ? shuffledImages : images), ...(shuffledImages.length ? shuffledImages : images)].map((src, i) => {
           // Extract image name without extension and path
