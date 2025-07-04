@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -14,6 +14,9 @@ const Navigation = () => {
   const [clickCount, setClickCount] = useState(0)
   const [lastClickTime, setLastClickTime] = useState(0)
   const [showMusic, setShowMusic] = useState(false)
+  const [indicatorWidth, setIndicatorWidth] = useState(0)
+  const [indicatorOffset, setIndicatorOffset] = useState(0)
+  const navRef = useRef<HTMLDivElement>(null)
 
   const menuItems = [
     { name: 'Home', href: '#home' },
@@ -26,20 +29,69 @@ const Navigation = () => {
   useEffect(() => {
     const handleScroll = () => {
       const sections = menuItems.map(item => item.href.substring(1))
-      const currentSection = sections.find(section => {
+      
+      // Check if we're at the bottom of the page
+      const isAtBottom = Math.ceil(window.innerHeight + window.pageYOffset) >= document.documentElement.scrollHeight - 2
+
+      // If at bottom, always highlight Contact section
+      if (isAtBottom) {
+        setActiveSection('contact')
+        updateIndicator('contact')
+        return
+      }
+
+      // Find the current section in view
+      let currentSection = ''
+      for (const section of sections) {
         const element = document.getElementById(section)
         if (element) {
           const rect = element.getBoundingClientRect()
-          return rect.top <= 100 && rect.bottom >= 100
+          const isVisible = rect.top <= 100 && rect.bottom >= 0
+          if (isVisible) {
+            currentSection = section
+          }
         }
-        return false
-      })
-      setActiveSection(currentSection || '')
+      }
+
+      // If no section is found but we're close to bottom, default to contact
+      if (!currentSection && window.innerHeight + window.pageYOffset > document.documentElement.scrollHeight - window.innerHeight) {
+        currentSection = 'contact'
+      }
+
+      setActiveSection(currentSection)
+      updateIndicator(currentSection)
     }
 
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    // Add scroll event listener with throttling
+    let ticking = false
+    const scrollListener = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll()
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener('scroll', scrollListener)
+    // Initial check
+    handleScroll()
+    
+    return () => window.removeEventListener('scroll', scrollListener)
   }, [])
+
+  const updateIndicator = (currentSection: string) => {
+    if (!navRef.current) return
+
+    const activeLink = navRef.current.querySelector(`a[href="#${currentSection}"]`)
+    if (activeLink) {
+      const linkRect = activeLink.getBoundingClientRect()
+      const navRect = navRef.current.getBoundingClientRect()
+      setIndicatorWidth(linkRect.width)
+      setIndicatorOffset(linkRect.left - navRect.left)
+    }
+  }
 
   // Reset click counter when page refreshes
   useEffect(() => {
@@ -48,28 +100,21 @@ const Navigation = () => {
   }, [])
 
   const handleLogoClick = (e: React.MouseEvent) => {
-    e.preventDefault() // Prevent default scroll behavior
-    e.stopPropagation() // Stop event bubbling
+    e.preventDefault()
+    e.stopPropagation()
     
     const currentTime = Date.now()
     const timeDiff = currentTime - lastClickTime
     
-    console.log('Click detected:', { clickCount, timeDiff }) // Debug log
-    
-    // Only count clicks that happen within 500ms of each other
     if (timeDiff < 500) {
       const newCount = clickCount + 1
-      console.log('Valid rapid click:', newCount) // Debug log
       setClickCount(newCount)
       
-      // Show music section after 5 rapid clicks
       if (newCount >= 5) {
-        console.log('Showing music section!') // Debug log
         setShowMusic(true)
-        setClickCount(0) // Reset counter after revealing
+        setClickCount(0)
       }
     } else {
-      console.log('Click too slow, resetting counter') // Debug log
       setClickCount(1)
     }
     
@@ -79,26 +124,22 @@ const Navigation = () => {
   const handleClick = (href: string) => {
     const element = document.getElementById(href.substring(1))
     if (element) {
-      const offset = 80 // Height of the fixed navbar
+      const offset = 80
       const elementPosition = element.getBoundingClientRect().top
       const offsetPosition = elementPosition + window.pageYOffset - offset
 
-      // Using smooth scroll with easing
       window.scrollTo({
         top: offsetPosition,
         behavior: 'smooth'
       })
 
-      // Update active section after scrolling
       setTimeout(() => {
         setActiveSection(href.substring(1))
+        updateIndicator(href.substring(1))
       }, 100)
     }
     setIsOpen(false)
   }
-
-  // Debug log for render
-  console.log('Navigation render:', { showMusic, clickCount })
 
   return (
     <>
@@ -125,14 +166,26 @@ const Navigation = () => {
 
             {/* Desktop menu */}
             <div className="hidden md:flex md:items-center md:space-x-4">
-              <div className="flex items-baseline space-x-4">
+              <div ref={navRef} className="flex items-baseline space-x-4 relative">
+                <motion.div
+                  className="absolute bottom-0 h-0.5 bg-[#385780] dark:bg-[#5A7A9D] rounded-full"
+                  animate={{
+                    width: indicatorWidth,
+                    x: indicatorOffset,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 30
+                  }}
+                />
                 {menuItems.map((item) => (
                   <RippleButton
                     key={item.name}
                     className={`rounded-md ${
                       activeSection === item.href.substring(1)
-                        ? 'text-[#385780] dark:text-[#5A7A9D] bg-[#385780]/10 dark:bg-[#5A7A9D]/20'
-                        : 'text-gray-700 dark:text-gray-300 hover:text-[#385780] dark:hover:text-[#5A7A9D] hover:bg-[#385780]/5 dark:hover:bg-[#5A7A9D]/10'
+                        ? 'text-[#385780] dark:text-[#5A7A9D]'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-[#385780] dark:hover:text-[#5A7A9D]'
                     }`}
                   >
                     <Link

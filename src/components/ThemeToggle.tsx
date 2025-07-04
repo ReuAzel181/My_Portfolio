@@ -1,33 +1,24 @@
 'use client'
 
+import { useTheme } from 'next-themes'
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { getCookie, setCookie } from '@/utils/cookies'
 
 const ThemeToggle = () => {
-  const [theme, setTheme] = useState('light')
+  const [mounted, setMounted] = useState(false)
+  const { theme, setTheme } = useTheme()
 
+  // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
-    // Check for saved theme preference in cookie
-    const savedTheme = getCookie('theme')
-    if (savedTheme) {
-      setTheme(savedTheme)
-    } else {
-      // Check for system preference if no cookie exists
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setTheme(prefersDark ? 'dark' : 'light')
-    }
+    setMounted(true)
   }, [])
 
-  useEffect(() => {
-    // Only add theme class if it's not light theme (default)
-    document.documentElement.className = theme === 'light' ? '' : 'dark-theme'
-    // Save theme preference in cookie
-    setCookie('theme', theme)
-  }, [theme])
+  if (!mounted) {
+    return null
+  }
 
   const toggleTheme = () => {
-    setTheme(current => current === 'light' ? 'dark' : 'light')
+    setTheme(theme === 'light' ? 'dark' : 'light')
   }
 
   return (

@@ -4,6 +4,10 @@ const nextConfig = {
   images: {
     domains: ['localhost', 'placehold.co', 'via.placeholder.com'],
   },
+  compiler: {
+    styledComponents: true,
+  },
+  transpilePackages: ['framer-motion'],
 }
 
 module.exports = nextConfig 

@@ -5,12 +5,14 @@ import Image from 'next/image'
 // import AudioPlayer from './AudioPlayer'
 import AudioVisualizer from './AudioVisualizer'
 import { useState } from 'react'
+import UIGame from './UIGame'
 
 const Hero = () => {
   const profileImage = '/user-profile.png'
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [showFunCard, setShowFunCard] = useState(false)
+  const [showUIGame, setShowUIGame] = useState(false)
 
   // Direct download URL with export=download parameter
   const FILE_ID = '1yPI53anhVujRUf_mssiopLCOXrOyCX0-'
@@ -211,7 +213,15 @@ const Hero = () => {
             </span>
           </h1>
           <h2 className="text-xl md:text-2xl text-[#385780] dark:text-[#5A7A9D] mb-6 whitespace-nowrap">
-            <span className="font-bold">UI/UX Designer</span> with a Computer Science Degree
+            <span className="font-bold">
+              <span 
+                onClick={() => setShowUIGame(true)} 
+                className="cursor-pointer"
+              >
+                UI
+              </span>
+              /UX Designer
+            </span> with a Computer Science Degree
           </h2>
           <p className="text-gray-500 mb-6 text-base max-w-lg">
             I'm passionate about crafting intuitive digital experiences that blend form and function. Drawing from my computer science background and design expertise, I strive to create solutions that make a positive impact.
@@ -315,6 +325,9 @@ const Hero = () => {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* UI Game */}
+      <UIGame isVisible={showUIGame} onClose={() => setShowUIGame(false)} />
     </section>
   )
 }
