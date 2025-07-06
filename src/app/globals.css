@@ -11,13 +11,22 @@
 * {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
-  cursor: none !important;
 }
 
 /* Custom cursor styles */
+html, body {
+  cursor: none !important;
+}
+
+a, button, [role="button"], .cursor-pointer {
+  cursor: none !important;
+}
+
 .custom-cursor-overlay {
   pointer-events: none;
   z-index: 9999;
+  mix-blend-mode: normal;
+  will-change: transform;
 }
 
 :root {
