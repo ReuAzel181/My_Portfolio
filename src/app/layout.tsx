@@ -1,12 +1,11 @@
-import './globals.css'
-import Providers from '@/components/Providers'
-import CustomCursor from '@/components/CustomCursor'
-import AuthProvider from '@/components/AuthProvider'
-import PageTransition from '@/components/PageTransition'
-import CookieConsent from '@/components/CookieConsent'
-import type { Metadata } from 'next'
-import { useEffect } from 'react'
-import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+'use client';
+
+import './globals.css';
+import Providers from '@/components/Providers';
+import AuthProvider from '@/components/AuthProvider';
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
+import { useEffect, useState } from 'react';
+import OfflineGame from '@/components/OfflineGame';
 import {
   inter,
   playfair,
@@ -18,62 +17,69 @@ import {
   quicksand,
   bebasNeue,
   permanentMarker,
-  sourceCodePro
-} from '@/lib/fonts'
-
-export const metadata: Metadata = {
-  title: 'Reu Banta | Portfolio',
-  description: 'Portfolio Website',
-  keywords: ['UI/UX Designer', 'Developer', 'Web Development', 'Portfolio', 'React', 'Next.js'],
-  authors: [{ name: 'Reu Uzziel' }],
-  creator: 'Reu Uzziel',
-  manifest: '/manifest.json',
-  themeColor: '#000000',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Reu Banta | Portfolio',
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://your-domain.com',
-    title: 'Reu',
-    description: 'Portfolio of Reu Uzziel, a UI/UX Designer & Developer with a Computer Science degree.',
-    siteName: 'Reu Uzziel Portfolio',
-    images: [
-      {
-        url: 'https://your-domain.com/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Reu Uzziel Portfolio',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Reu',
-    description: 'Portfolio of Reu Uzziel, a UI/UX Designer & Developer with a Computer Science degree.',
-    creator: '@yourtwitterhandle',
-    images: ['https://your-domain.com/twitter-image.jpg'],
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
-  icons: {
-    icon: '/fav-hollow.png',
-    shortcut: '/fav-hollow.png',
-    apple: '/fav-hollow.png',
-  },
-}
+  sourceCodePro,
+} from '@/lib/fonts';
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    // Set initial online status
+    setIsOffline(!navigator.onLine);
+
+    // Add event listeners for online/offline events
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // If offline, show the offline game
+  if (isOffline) {
+    return (
+      <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta name="theme-color" content="#000000" />
+          <link rel="manifest" href="/manifest.json" />
+          <link rel="icon" href="/fav-solid.png" />
+        </head>
+        <body className={`${inter.className} 
+          ${playfair.variable} 
+          ${oswald.variable} 
+          ${spaceGrotesk.variable} 
+          ${dmSerifDisplay.variable} 
+          ${abrilFatface.variable}
+          ${comfortaa.variable}
+          ${quicksand.variable}
+          ${bebasNeue.variable}
+          ${permanentMarker.variable}
+          ${sourceCodePro.variable} antialiased`}>
+          <ServiceWorkerRegister />
+          <AuthProvider>
+            <Providers>
+              <div className="w-full h-screen min-h-screen bg-gray-100">
+                <OfflineGame />
+              </div>
+            </Providers>
+          </AuthProvider>
+        </body>
+      </html>
+    );
+  }
+
+  // Otherwise, show the normal content
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
@@ -97,14 +103,10 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <AuthProvider>
           <Providers>
-            <CustomCursor />
-            <PageTransition>
-              {children}
-              <CookieConsent />
-            </PageTransition>
+            {children}
           </Providers>
         </AuthProvider>
       </body>
     </html>
-  )
+  );
 } 

@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
 
 import { precacheAndRoute } from 'workbox-precaching';
-import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { StaleWhileRevalidate, CacheFirst, NetworkOnly } from 'workbox-strategies';
+import { registerRoute } from 'workbox-routing';
+import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 declare let self: ServiceWorkerGlobalScope & {
@@ -11,20 +11,6 @@ declare let self: ServiceWorkerGlobalScope & {
 
 // Precache and route all static assets
 precacheAndRoute(self.__WB_MANIFEST || []);
-
-// Cache page navigations (html) with a Network First strategy
-registerRoute(
-  ({ request }) => request.mode === 'navigate',
-  new NetworkOnly({
-    plugins: [
-      {
-        handlerDidError: async () => {
-          return caches.match('/offline') || new Response('Offline');
-        }
-      }
-    ]
-  })
-);
 
 // Cache CSS, JS, and Web Worker requests with a Stale While Revalidate strategy
 registerRoute(
@@ -55,15 +41,6 @@ registerRoute(
   })
 );
 
-// Handle offline fallback
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open('offline-cache')
-      .then((cache) => cache.add('/offline'))
-  );
-});
-
 // Skip waiting on install
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -75,7 +52,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== 'offline-cache') {
+          if (!['assets-cache', 'images-cache'].includes(cacheName)) {
             return caches.delete(cacheName);
           }
         })
