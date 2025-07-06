@@ -40,17 +40,17 @@
   --dark-tertiary: #22304A;     /* Softer dark tertiary */
   --mint-ripple: rgba(163, 230, 206, 0.2);
 
-  /* Custom Fonts */
-  --font-playfair: var(--font-playfair);
-  --font-oswald: var(--font-oswald);
-  --font-space-grotesk: var(--font-space-grotesk);
-  --font-dm-serif: var(--font-dm-serif);
-  --font-abril: var(--font-abril);
-  --font-comfortaa: var(--font-comfortaa);
-  --font-quicksand: var(--font-quicksand);
-  --font-bebas: var(--font-bebas);
-  --font-marker: var(--font-marker);
-  --font-source-code: var(--font-source-code);
+  /* Custom Fonts with fallbacks */
+  --font-playfair: var(--font-playfair), 'Times New Roman', serif;
+  --font-oswald: var(--font-oswald), 'Arial', sans-serif;
+  --font-space-grotesk: var(--font-space-grotesk), 'Arial', sans-serif;
+  --font-dm-serif: var(--font-dm-serif), 'Georgia', serif;
+  --font-abril: var(--font-abril), 'Georgia', serif;
+  --font-comfortaa: var(--font-comfortaa), 'Arial', sans-serif;
+  --font-quicksand: var(--font-quicksand), 'Arial', sans-serif;
+  --font-bebas: var(--font-bebas), 'Arial', sans-serif;
+  --font-marker: var(--font-marker), 'Brush Script MT', cursive;
+  --font-source-code: var(--font-source-code), 'Courier New', monospace;
 }
 
 /* Light Theme (default) */

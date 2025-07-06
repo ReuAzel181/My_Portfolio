@@ -41,7 +41,21 @@ const nextConfig = {
   transpilePackages: ['framer-motion'],
   experimental: {
     ppr: true,
-  }
+  },
+  // Add timeout for external requests
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Font-Loading-Strategy',
+            value: 'swap',
+          },
+        ],
+      },
+    ];
+  },
 }
 
 module.exports = withPWA(nextConfig); 
