@@ -3,17 +3,11 @@ import { NextResponse } from 'next/server'
 
 export default withAuth(
   function middleware(req) {
-    if (req.nextUrl.pathname.startsWith('/admin') && 
-        !req.nextUrl.pathname.startsWith('/admin/login')) {
-      if (!req.nextauth.token) {
-        return NextResponse.redirect(new URL('/admin/login', req.url))
-      }
-    }
     return NextResponse.next()
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token
+      authorized: ({ token }) => token?.role === "admin",
     },
   }
 )

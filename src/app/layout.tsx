@@ -2,7 +2,6 @@ import './globals.css'
 import { Inter } from 'next/font/google'
 import Providers from '@/components/Providers'
 import CustomCursor from '@/components/CustomCursor'
-import RootErrorBoundary from '@/components/RootErrorBoundary'
 import AuthProvider from '@/components/AuthProvider'
 import PageTransition from '@/components/PageTransition'
 import CookieConsent from '@/components/CookieConsent'
@@ -19,6 +18,8 @@ import {
   Permanent_Marker,
   Source_Code_Pro
 } from 'next/font/google'
+import { useEffect } from 'react'
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -82,6 +83,13 @@ export const metadata: Metadata = {
   keywords: ['UI/UX Designer', 'Developer', 'Web Development', 'Portfolio', 'React', 'Next.js'],
   authors: [{ name: 'Reu Uzziel' }],
   creator: 'Reu Uzziel',
+  manifest: '/manifest.json',
+  themeColor: '#000000',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Reu Banta | Portfolio',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -124,6 +132,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/fav-solid.png" />
+      </head>
       <body className={`${inter.className} 
         ${playfair.variable} 
         ${oswald.variable} 
@@ -135,15 +150,14 @@ export default function RootLayout({
         ${bebasNeue.variable}
         ${permanentMarker.variable}
         ${sourceCodePro.variable} antialiased`}>
+        <ServiceWorkerRegister />
         <AuthProvider>
           <Providers>
-            <RootErrorBoundary>
-              <CustomCursor />
-              <PageTransition>
-                {children}
-                <CookieConsent />
-              </PageTransition>
-            </RootErrorBoundary>
+            <CustomCursor />
+            <PageTransition>
+              {children}
+              <CookieConsent />
+            </PageTransition>
           </Providers>
         </AuthProvider>
       </body>

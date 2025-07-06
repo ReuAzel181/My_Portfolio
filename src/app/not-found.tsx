@@ -1,36 +1,45 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { RiArrowLeftLine } from 'react-icons/ri'
 
 export default function NotFound() {
+  const [isOffline, setIsOffline] = useState(false)
+
+  useEffect(() => {
+    // Check if we're offline
+    setIsOffline(!window.navigator.onLine)
+
+    // Add event listeners for online/offline status
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    // Force a check of the connection status
+    fetch('/api/health-check').catch(() => {
+      setIsOffline(true)
+    })
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Always show the game in not-found scenarios
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="text-9xl font-bold mb-4 heading-gradient">404</h1>
-          <h2 className="text-2xl md:text-4xl font-semibold mb-6 text-gray-300">
-            Page Not Found
-          </h2>
-          <p className="text-gray-400 mb-8 max-w-md mx-auto">
-            The page you're looking for doesn't exist or has been moved.
-          </p>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Link
-              href="/"
-              className="button-primary inline-block"
-            >
-              Return Home
-            </Link>
-          </motion.div>
-        </motion.div>
+    <div className="min-h-screen bg-gray-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col items-center justify-center min-h-screen text-center">
+          <h1 className="text-4xl font-bold mb-4">404 - Page Not Found</h1>
+          <p className="mb-8">The page you are looking for does not exist.</p>
+          <Link href="/" className="flex items-center gap-2 text-primary hover:underline">
+            <RiArrowLeftLine /> Go back home
+          </Link>
+        </div>
       </div>
     </div>
   )
