@@ -1,36 +1,28 @@
+/// <reference lib="webworker" />
+
 import { precacheAndRoute } from 'workbox-precaching';
-import { registerRoute } from 'workbox-routing';
-import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
+import { StaleWhileRevalidate, CacheFirst, NetworkOnly } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 declare let self: ServiceWorkerGlobalScope & {
-  addEventListener: (type: string, listener: EventListener) => void;
   __WB_MANIFEST: any[];
 };
 
-// Type declarations for Service Worker events
-interface ExtendableEvent extends Event {
-  waitUntil(fn: Promise<any>): void;
-}
-
-interface FetchEvent extends ExtendableEvent {
-  request: Request;
-  respondWith(response: Promise<Response> | Response): void;
-}
-
 // Precache and route all static assets
-precacheAndRoute(self.__WB_MANIFEST);
+precacheAndRoute(self.__WB_MANIFEST || []);
 
-// Cache page navigations (html) with a Stale While Revalidate strategy
+// Cache page navigations (html) with a Network First strategy
 registerRoute(
   ({ request }) => request.mode === 'navigate',
-  new StaleWhileRevalidate({
-    cacheName: 'pages-cache',
+  new NetworkOnly({
     plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200],
-      }),
-    ],
+      {
+        handlerDidError: async () => {
+          return caches.match('/offline') || new Response('Offline');
+        }
+      }
+    ]
   })
 );
 
@@ -65,24 +57,29 @@ registerRoute(
 
 // Handle offline fallback
 self.addEventListener('install', (event) => {
-  const extendableEvent = event as ExtendableEvent;
-  const offlineFallbackPage = '/offline';
-  extendableEvent.waitUntil(
+  event.waitUntil(
     caches
       .open('offline-cache')
-      .then((cache) => cache.add(offlineFallbackPage))
+      .then((cache) => cache.add('/offline'))
   );
 });
 
-self.addEventListener('fetch', (event) => {
-  const fetchEvent = event as FetchEvent;
-  if (fetchEvent.request.mode === 'navigate') {
-    fetchEvent.respondWith(
-      fetch(fetchEvent.request).catch(() => {
-        return caches.match('/offline').then(response => {
-          return response || new Response('Offline');
-        });
-      })
-    );
-  }
+// Skip waiting on install
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+// Clear old caches on activate
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== 'offline-cache') {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
 }); 
