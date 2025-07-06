@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -38,6 +40,17 @@ type DifficultyLevel = keyof typeof DIFFICULTY_LEVELS;
 const ALL_EMOJIS = ['🎮', '🎨', '🎵', '💻', '🎯', '🎪', '🎭', '🎪', '🎲', '🎳', '🎯', '🎨', 
                     '🎸', '🎺', '🎻', '🥁', '🎹', '🎷', '🎼', '🎧', '🎤', '🎬', '🎨', '🎭'];
 
+const getLocalStorageValue = (key: string, defaultValue: string): string => {
+  if (typeof window === 'undefined') return defaultValue;
+  return localStorage.getItem(key) || defaultValue;
+};
+
+const getPowerUpsFromStorage = (): PowerUpInventory => {
+  if (typeof window === 'undefined') return { '🌟': 0, '⏰': 0, '🔄': 0 };
+  const saved = localStorage.getItem('memoryGame_powerups');
+  return saved ? JSON.parse(saved) : { '🌟': 0, '⏰': 0, '🔄': 0 };
+};
+
 export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) {
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
@@ -45,21 +58,31 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
   const [gameStats, setGameStats] = useState<GameStats>({
     moves: 0,
     timeElapsed: 0,
-    bestTime: parseInt(localStorage.getItem('memoryGame_bestTime') || '999'),
-    bestMoves: parseInt(localStorage.getItem('memoryGame_bestMoves') || '999'),
-    points: parseInt(localStorage.getItem('memoryGame_points') || '0')
+    bestTime: 999,
+    bestMoves: 999,
+    points: 0
   });
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('easy');
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [message, setMessage] = useState<string>('');
-  const [powerUps, setPowerUps] = useState<PowerUpInventory>(() => {
-    const saved = localStorage.getItem('memoryGame_powerups');
-    return saved ? JSON.parse(saved) : { '🌟': 0, '⏰': 0, '🔄': 0 };
-  });
+  const [powerUps, setPowerUps] = useState<PowerUpInventory>({ '🌟': 0, '⏰': 0, '🔄': 0 });
   const [showAlert, setShowAlert] = useState<{ emoji: string; cost: number } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Initialize state from localStorage after mount
+  useEffect(() => {
+    setIsMounted(true);
+    setGameStats(prev => ({
+      ...prev,
+      bestTime: parseInt(getLocalStorageValue('memoryGame_bestTime', '999')),
+      bestMoves: parseInt(getLocalStorageValue('memoryGame_bestMoves', '999')),
+      points: parseInt(getLocalStorageValue('memoryGame_points', '0'))
+    }));
+    setPowerUps(getPowerUpsFromStorage());
+  }, []);
 
   const initializeGame = useCallback((level: DifficultyLevel) => {
     const { pairs } = DIFFICULTY_LEVELS[level];
@@ -121,6 +144,7 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
   }, [dropdownOpen]);
 
   const addPoints = (amount: number) => {
+    if (!isMounted) return;
     setGameStats(prev => {
       const newPoints = prev.points + amount;
       localStorage.setItem('memoryGame_points', newPoints.toString());
@@ -134,6 +158,7 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
   };
 
   const buyPowerUp = (emoji: string) => {
+    if (!isMounted) return;
     const specialCard = SPECIAL_CARDS[emoji as keyof typeof SPECIAL_CARDS];
     if (gameStats.points < specialCard.cost) {
       setShowAlert({ emoji, cost: specialCard.cost });
@@ -151,6 +176,7 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
   };
 
   const handleCardClick = (id: number) => {
+    if (!isMounted) return;
     if (!gameStarted) {
       setGameStarted(true);
     }
@@ -179,8 +205,10 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
             // Game won
             const newBestTime = Math.min(gameStats.timeElapsed, gameStats.bestTime);
             const newBestMoves = Math.min(gameStats.moves + 1, gameStats.bestMoves);
-            localStorage.setItem('memoryGame_bestTime', newBestTime.toString());
-            localStorage.setItem('memoryGame_bestMoves', newBestMoves.toString());
+            if (isMounted) {
+              localStorage.setItem('memoryGame_bestTime', newBestTime.toString());
+              localStorage.setItem('memoryGame_bestMoves', newBestMoves.toString());
+            }
             
             // Calculate bonus points based on time and moves
             const timeBonus = Math.floor((DIFFICULTY_LEVELS[difficulty].timeLimit - gameStats.timeElapsed) * 0.5);
