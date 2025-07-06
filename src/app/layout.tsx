@@ -25,11 +25,15 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
-    // Set initial online status
-    setIsOffline(!navigator.onLine);
+    setMounted(true);
+    // Set initial online status only after mounting
+    if (typeof window !== 'undefined') {
+      setIsOffline(!navigator.onLine);
+    }
 
     // Add event listeners for online/offline events
     const handleOnline = () => setIsOffline(false);
@@ -43,6 +47,11 @@ export default function RootLayout({
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Don't render anything until after mounting to avoid hydration mismatch
+  if (!mounted) {
+    return null;
+  }
 
   // If offline, show the offline game
   if (isOffline) {

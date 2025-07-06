@@ -45,21 +45,39 @@ export default function HiddenGame({ isVisible, onClose }: { isVisible: boolean;
   const [gameStats, setGameStats] = useState<GameStats>({
     moves: 0,
     timeElapsed: 0,
-    bestTime: parseInt(localStorage.getItem('memoryGame_bestTime') || '999'),
-    bestMoves: parseInt(localStorage.getItem('memoryGame_bestMoves') || '999'),
-    points: parseInt(localStorage.getItem('memoryGame_points') || '0')
+    bestTime: 999,
+    bestMoves: 999,
+    points: 0
   });
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('easy');
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [message, setMessage] = useState<string>('');
-  const [powerUps, setPowerUps] = useState<PowerUpInventory>(() => {
-    const saved = localStorage.getItem('memoryGame_powerups');
-    return saved ? JSON.parse(saved) : { '🌟': 0, '⏰': 0, '🔄': 0 };
+  const [powerUps, setPowerUps] = useState<PowerUpInventory>({
+    '🌟': 0,
+    '⏰': 0,
+    '🔄': 0
   });
   const [showAlert, setShowAlert] = useState<{ emoji: string; cost: number } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load saved data from localStorage on client-side only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setGameStats(prev => ({
+        ...prev,
+        bestTime: parseInt(localStorage.getItem('memoryGame_bestTime') || '999'),
+        bestMoves: parseInt(localStorage.getItem('memoryGame_bestMoves') || '999'),
+        points: parseInt(localStorage.getItem('memoryGame_points') || '0')
+      }));
+
+      const savedPowerUps = localStorage.getItem('memoryGame_powerups');
+      if (savedPowerUps) {
+        setPowerUps(JSON.parse(savedPowerUps));
+      }
+    }
+  }, []);
 
   const initializeGame = useCallback((level: DifficultyLevel) => {
     const { pairs } = DIFFICULTY_LEVELS[level];
