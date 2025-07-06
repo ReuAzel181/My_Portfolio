@@ -23,6 +23,7 @@ interface GameState {
 }
 
 export default function OfflineGame() {
+  const [isMounted, setIsMounted] = useState(false);
   const [gameState, setGameState] = useState<GameState>({
     score: 0,
     isJumping: false,
@@ -41,8 +42,15 @@ export default function OfflineGame() {
   const [bgOffset, setBgOffset] = useState(0);
   const [waitingForStart, setWaitingForStart] = useState(true);
 
+  // Ensure we're on the client side before doing any window/document operations
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Sound effects
   const playSound = useCallback((frequency: number, duration: number, type: 'sine' | 'square' | 'triangle' | 'sawtooth' = 'sine') => {
+    if (!isMounted) return;
+    
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -61,7 +69,7 @@ export default function OfflineGame() {
 
     oscillator.start(audioContextRef.current.currentTime);
     oscillator.stop(audioContextRef.current.currentTime + duration);
-  }, []);
+  }, [isMounted]);
 
   const handleJump = useCallback(() => {
     if (!gameState.gameOver && gameState.gameStarted && gameState.playerY === 0) {
