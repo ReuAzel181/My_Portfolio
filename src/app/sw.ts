@@ -3,7 +3,20 @@ import { registerRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
-declare let self: ServiceWorkerGlobalScope;
+declare let self: ServiceWorkerGlobalScope & {
+  addEventListener: (type: string, listener: EventListener) => void;
+  __WB_MANIFEST: any[];
+};
+
+// Type declarations for Service Worker events
+interface ExtendableEvent extends Event {
+  waitUntil(fn: Promise<any>): void;
+}
+
+interface FetchEvent extends ExtendableEvent {
+  request: Request;
+  respondWith(response: Promise<Response> | Response): void;
+}
 
 // Precache and route all static assets
 precacheAndRoute(self.__WB_MANIFEST);
@@ -51,20 +64,24 @@ registerRoute(
 );
 
 // Handle offline fallback
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener('install', (event) => {
+  const extendableEvent = event as ExtendableEvent;
   const offlineFallbackPage = '/offline';
-  event.waitUntil(
+  extendableEvent.waitUntil(
     caches
       .open('offline-cache')
       .then((cache) => cache.add(offlineFallbackPage))
   );
 });
 
-self.addEventListener('fetch', (event: FetchEvent) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/offline');
+self.addEventListener('fetch', (event) => {
+  const fetchEvent = event as FetchEvent;
+  if (fetchEvent.request.mode === 'navigate') {
+    fetchEvent.respondWith(
+      fetch(fetchEvent.request).catch(() => {
+        return caches.match('/offline').then(response => {
+          return response || new Response('Offline');
+        });
       })
     );
   }

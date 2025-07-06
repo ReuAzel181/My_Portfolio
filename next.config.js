@@ -41,7 +41,6 @@ const nextConfig = {
   transpilePackages: ['framer-motion'],
   experimental: {
     ppr: true,
-    missingSuspenseWithCSRError: false,
   }
 }
 
