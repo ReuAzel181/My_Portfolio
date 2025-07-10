@@ -24,12 +24,14 @@ import {
   permanentMarker,
   sourceCodePro,
 } from '@/lib/fonts';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  useAnalytics();
   const [isOffline, setIsOffline] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -113,12 +115,10 @@ export default function RootLayout({
 
   // Otherwise, show the normal content
   return baseLayout(
-    <>
+    <PageTransition>
       <CustomCursor />
-      <PageTransition>
-        {children}
-        <CookieConsent />
-      </PageTransition>
-    </>
+      {children}
+      <CookieConsent />
+    </PageTransition>
   );
 } 

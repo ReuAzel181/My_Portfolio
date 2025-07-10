@@ -8,7 +8,7 @@ import { useState } from 'react'
 import UIGame from './UIGame'
 
 const Hero = () => {
-  const profileImage = '/user-profile.png'
+  const profileImage = '/user-profile3.png'
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [showFunCard, setShowFunCard] = useState(false)
@@ -293,7 +293,7 @@ const Hero = () => {
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#8B5CF6]/20 to-[#8B5CF6]/10 mix-blend-overlay rounded-lg" />
             {/* Image Wrapper for positioning */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[95%] h-[120%] cursor-pointer z-10">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[85%] h-[110%] cursor-pointer z-10">
               <Image
                 src={profileImage}
                 alt="Reu Uzziel"

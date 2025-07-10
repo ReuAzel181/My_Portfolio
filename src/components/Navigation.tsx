@@ -16,6 +16,7 @@ const Navigation = () => {
   const [showMusic, setShowMusic] = useState(false)
   const [indicatorWidth, setIndicatorWidth] = useState(0)
   const [indicatorOffset, setIndicatorOffset] = useState(0)
+  const [scrollProgress, setScrollProgress] = useState(0)
   const navRef = useRef<HTMLDivElement>(null)
 
   const menuItems = [
@@ -29,6 +30,12 @@ const Navigation = () => {
   useEffect(() => {
     const handleScroll = () => {
       const sections = menuItems.map(item => item.href.substring(1))
+      
+      // Calculate scroll progress
+      const windowHeight = document.documentElement.scrollHeight - window.innerHeight
+      const scrolled = window.scrollY
+      const progress = (scrolled / windowHeight) * 100
+      setScrollProgress(progress)
       
       // Check if we're at the bottom of the page
       const isAtBottom = Math.ceil(window.innerHeight + window.pageYOffset) >= document.documentElement.scrollHeight - 2
@@ -144,6 +151,18 @@ const Navigation = () => {
   return (
     <>
       <nav className="fixed w-full z-50" style={{ backgroundColor: 'var(--nav-bg)', backdropFilter: 'blur(8px)' }}>
+        {/* Scroll Progress Bar - Moved to top */}
+        <motion.div
+          className="absolute top-0 left-0 h-1 bg-[#385780] dark:bg-[#5A7A9D]"
+          style={{
+            width: `${scrollProgress}%`,
+          }}
+          transition={{
+            duration: 0.1,
+            ease: "easeInOut"
+          }}
+        />
+        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <motion.div

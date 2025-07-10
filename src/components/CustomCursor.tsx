@@ -1,8 +1,22 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, createContext, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import { usePathname, useSearchParams } from 'next/navigation'
+
+// Create a context for loading state
+export const LoadingContext = createContext<{
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
+}>({
+  isLoading: true,
+  setIsLoading: () => {},
+})
+
+export function useLoading() {
+  return useContext(LoadingContext)
+}
 
 export default function CustomCursor() {
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -11,12 +25,26 @@ export default function CustomCursor() {
   const [isClicking, setIsClicking] = useState(false)
   const [isOverLink, setIsOverLink] = useState(false)
   const [isDarkTheme, setIsDarkTheme] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
+
+  const { isLoading } = useLoading()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   const positionRef = useRef({ x: 0, y: 0 })
   const scaleRef = useRef(1)
   const lastValidPosition = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (!isLoading) {
+      // Move cursor to current mouse position after loading
+      const event = new MouseEvent('mousemove', {
+        clientX: window.innerWidth / 2,
+        clientY: window.innerHeight / 2
+      })
+      window.dispatchEvent(event)
+    }
+  }, [isLoading])
 
   useEffect(() => {
     setIsMounted(true)
@@ -36,17 +64,6 @@ export default function CustomCursor() {
       attributes: true,
       attributeFilter: ['class']
     })
-
-    // Set loading state with a shorter delay
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-      // Move cursor to current mouse position after loading
-      const event = new MouseEvent('mousemove', {
-        clientX: window.innerWidth / 2,
-        clientY: window.innerHeight / 2
-      })
-      window.dispatchEvent(event)
-    }, 500)
 
     const calculateEdgeScale = (x: number, y: number) => {
       const edgeThreshold = 100;
@@ -75,7 +92,7 @@ export default function CustomCursor() {
     };
 
     const moveCursor = (e: MouseEvent) => {
-      if (!isMounted) return;
+      if (!isMounted || isLoading) return;
       const x = e.clientX;
       const y = e.clientY;
 
@@ -95,10 +112,11 @@ export default function CustomCursor() {
       }
     }
 
-    const handleMouseDown = () => setIsClicking(true)
-    const handleMouseUp = () => setIsClicking(false)
+    const handleMouseDown = () => !isLoading && setIsClicking(true)
+    const handleMouseUp = () => !isLoading && setIsClicking(false)
 
     const handleLinkHover = (e: MouseEvent) => {
+      if (isLoading) return;
       try {
         const target = e.target;
         
@@ -142,7 +160,6 @@ export default function CustomCursor() {
     document.addEventListener('mouseout', handleMouseOut)
 
     return () => {
-      clearTimeout(timer)
       observer.disconnect()
       window.removeEventListener('mousemove', moveCursor)
       window.removeEventListener('mousemove', handleLinkHover)
@@ -152,7 +169,7 @@ export default function CustomCursor() {
       document.removeEventListener('mouseout', handleMouseOut)
       setIsMounted(false)
     }
-  }, [isMounted])
+  }, [isMounted, isLoading])
 
   // Don't render anything during SSR
   if (typeof window === 'undefined') return null;

@@ -11,6 +11,7 @@
   "dependencies": {
     "@heroicons/react": "^2.0.18",
     "@hookform/resolvers": "^5.1.1",
+    "@sendgrid/mail": "^8.1.5",
     "@vercel/blob": "^1.1.1",
     "@vercel/postgres": "^0.10.0",
     "autoprefixer": "^10.0.1",
