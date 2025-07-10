@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Montserrat } from 'next/font/google'
+import { LoadingContext } from './CustomCursor'
 
 const montserrat = Montserrat({ 
   subsets: ['latin'],
@@ -23,7 +24,7 @@ export default function PageTransition({ children }: { children: React.ReactNode
   }, [])
 
   return (
-    <>
+    <LoadingContext.Provider value={{ isLoading, setIsLoading }}>
       <AnimatePresence mode="wait">
         {isLoading ? (
           <motion.div
@@ -104,6 +105,6 @@ export default function PageTransition({ children }: { children: React.ReactNode
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </LoadingContext.Provider>
   )
 } 
