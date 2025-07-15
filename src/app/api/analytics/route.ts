@@ -6,7 +6,7 @@ const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/139276185522681041
 
 // Enhanced device detection using UAParser
 function getDeviceInfo(userAgent: string) {
-  const parser = new UAParser(userAgent);
+  const parser = new (UAParser as any)(userAgent);
   const device = parser.getDevice();
   const os = parser.getOS();
   const browser = parser.getBrowser();
@@ -25,7 +25,8 @@ function getDeviceInfo(userAgent: string) {
 // Get location from IP
 async function getLocationInfo(ip: string) {
   try {
-    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,regionName,city,timezone,query`);
+    // Use HTTPS for the IP API
+    const response = await fetch(`https://ip-api.com/json/${ip}?fields=status,message,country,regionName,city,timezone,query`);
     const data = await response.json();
     
     if (data.status === 'success') {
@@ -37,6 +38,7 @@ async function getLocationInfo(ip: string) {
         ip: data.query
       };
     }
+    console.error('IP API Error:', data.message || 'Unknown error');
     return null;
   } catch (error) {
     console.error('Error fetching location:', error);
@@ -52,11 +54,15 @@ export async function POST(request: Request) {
     const forwardedFor = headersList.get('x-forwarded-for');
     const ip = forwardedFor ? forwardedFor.split(',')[0] : 'Unknown';
     
+    console.log('Processing analytics request:', { userAgent, referer, ip });
+    
     // Get detailed device info from user agent
     const deviceInfo = getDeviceInfo(userAgent);
+    console.log('Device info:', deviceInfo);
     
     // Get location info
     const locationInfo = await getLocationInfo(ip);
+    console.log('Location info:', locationInfo);
     
     const visitTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
 
@@ -79,6 +85,8 @@ export async function POST(request: Request) {
       performance,
       session
     } = body;
+
+    console.log('Request body:', { networkType, browserInfo, platform, session });
 
     // Format performance metrics if available
     const performanceText = performance ? [
@@ -171,6 +179,8 @@ export async function POST(request: Request) {
       }]
     };
 
+    console.log('Sending Discord message:', message);
+
     // Send to Discord webhook
     const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
       method: 'POST',
@@ -181,12 +191,22 @@ export async function POST(request: Request) {
     });
 
     if (!discordResponse.ok) {
-      throw new Error('Failed to send to Discord webhook');
+      const errorText = await discordResponse.text();
+      console.error('Discord API Error:', {
+        status: discordResponse.status,
+        statusText: discordResponse.statusText,
+        error: errorText
+      });
+      throw new Error(`Failed to send to Discord webhook: ${discordResponse.status} ${discordResponse.statusText}`);
     }
 
+    console.log('Successfully sent to Discord');
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Analytics Error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to track analytics' }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to track analytics'
+    }, { status: 500 });
   }
 } 
