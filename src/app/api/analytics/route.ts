@@ -30,7 +30,7 @@ async function testDiscordWebhook() {
 }
 
 // Enhanced device detection using UAParser and additional checks
-function getDeviceInfo(userAgent: string) {
+function getDeviceInfo(userAgent: string, systemInfo: any) {
   try {
     const parser = new UAParser(userAgent);
     const device = parser.getDevice();
@@ -43,26 +43,67 @@ function getDeviceInfo(userAgent: string) {
     let brand = device.vendor || 'Unknown';
     let model = device.model || 'Unknown';
 
-    // Detect PC manufacturers
+    // Get GPU info if available
+    const gpuInfo = systemInfo?.capabilities?.gpu;
+    const gpuVendor = gpuInfo?.vendor?.toLowerCase() || '';
+    const gpuRenderer = gpuInfo?.renderer?.toLowerCase() || '';
+
+    // Detect PC manufacturers from GPU and system info
     if (brand === 'Unknown' && !device.type) {
-      if (ua.includes('lenovo')) {
-        brand = 'Lenovo';
-      } else if (ua.includes('dell')) {
-        brand = 'Dell';
-      } else if (ua.includes('hp') || ua.includes('hewlett-packard')) {
-        brand = 'HP';
-      } else if (ua.includes('asus')) {
-        brand = 'ASUS';
-      } else if (ua.includes('acer')) {
-        brand = 'Acer';
-      } else if (ua.includes('msi')) {
-        brand = 'MSI';
-      } else if (os.name === 'Windows') {
-        brand = 'PC';
-        model = 'Windows PC';
-      } else if (os.name === 'Mac OS') {
-        brand = 'Apple';
-        model = 'Mac';
+      // Check GPU info for brand hints
+      if (gpuRenderer.includes('nvidia') && gpuRenderer.includes('laptop')) {
+        if (gpuRenderer.includes('machenike')) {
+          brand = 'Machenike';
+          model = 'Gaming Laptop';
+        }
+      }
+
+      // Check common PC manufacturers
+      const manufacturers = {
+        'machenike': 'Machenike',
+        'lenovo': 'Lenovo',
+        'dell': 'Dell',
+        'hp': 'HP',
+        'hewlett-packard': 'HP',
+        'asus': 'ASUS',
+        'acer': 'Acer',
+        'msi': 'MSI',
+        'razer': 'Razer',
+        'gigabyte': 'Gigabyte',
+        'samsung': 'Samsung',
+        'toshiba': 'Toshiba',
+        'fujitsu': 'Fujitsu',
+        'huawei': 'Huawei',
+        'microsoft': 'Microsoft'
+      };
+
+      // Check user agent and vendor info
+      for (const [keyword, brandName] of Object.entries(manufacturers)) {
+        if (ua.includes(keyword) || 
+            systemInfo?.capabilities?.vendor?.toLowerCase().includes(keyword) ||
+            gpuVendor.includes(keyword) || 
+            gpuRenderer.includes(keyword)) {
+          brand = brandName;
+          model = 'PC';
+          break;
+        }
+      }
+
+      // If still unknown, try to get more specific
+      if (brand === 'Unknown') {
+        if (os.name === 'Windows') {
+          // Check if gaming laptop based on GPU
+          if (gpuRenderer.includes('nvidia') && gpuRenderer.includes('laptop')) {
+            brand = 'Gaming Laptop';
+            model = `${gpuRenderer.split('nvidia')[1].split('laptop')[0].trim()} GPU`;
+          } else {
+            brand = 'PC';
+            model = 'Windows PC';
+          }
+        } else if (os.name === 'Mac OS') {
+          brand = 'Apple';
+          model = 'Mac';
+        }
       }
     }
 
@@ -95,23 +136,46 @@ function getDeviceInfo(userAgent: string) {
       }
     }
 
+    // Get additional hardware details
+    const hardwareInfo = {
+      gpu: gpuInfo ? `${gpuInfo.vendor} ${gpuInfo.renderer}` : 'Unknown',
+      cores: systemInfo?.capabilities?.hardwareConcurrency || 'Unknown',
+      memory: systemInfo?.capabilities?.deviceMemory ? `${systemInfo.capabilities.deviceMemory}GB` : 'Unknown',
+      battery: systemInfo?.capabilities?.battery ? 'Available' : 'N/A',
+      bluetooth: systemInfo?.capabilities?.bluetooth ? 'Available' : 'N/A',
+      touchscreen: systemInfo?.capabilities?.maxTouchPoints > 0 ? 'Yes' : 'No'
+    };
+
     return {
       type: device.type || 'Desktop',
       brand,
       model,
       os: `${os.name || 'Unknown'} ${os.version || ''}`.trim(),
       browser: `${browser.name || 'Unknown'} ${browser.version || ''}`.trim(),
-      cpu: cpu.architecture || 'Unknown'
+      cpu: cpu.architecture || 'Unknown',
+      hardware: hardwareInfo,
+      windowManager: systemInfo?.windowManager || 'Unknown',
+      theme: systemInfo?.systemTheme || 'Unknown'
     };
   } catch (error) {
-    console.error('Error parsing user agent:', error);
+    console.error('Error parsing device info:', error);
     return {
       type: 'Unknown',
       brand: 'Unknown',
       model: 'Unknown',
       os: 'Unknown',
       browser: 'Unknown',
-      cpu: 'Unknown'
+      cpu: 'Unknown',
+      hardware: {
+        gpu: 'Unknown',
+        cores: 'Unknown',
+        memory: 'Unknown',
+        battery: 'N/A',
+        bluetooth: 'N/A',
+        touchscreen: 'No'
+      },
+      windowManager: 'Unknown',
+      theme: 'Unknown'
     };
   }
 }
@@ -203,64 +267,166 @@ export async function POST(request: Request) {
     
     console.log('Processing analytics request:', { userAgent, referer, ip });
     
-    // Get detailed device info from user agent
-    const deviceInfo = getDeviceInfo(userAgent);
-    console.log('Device info:', deviceInfo);
+    // Get request body
+    const body = await request.json();
     
     // Get location info
     const locationInfo = await getLocationInfo(ip);
     console.log('Location info:', locationInfo);
 
-    // Get request body for network info
-    const body = await request.json();
-    
-    // Validate required fields
-    if (!body) {
-      throw new Error('No request body provided');
-    }
-
-    const { 
-      networkType = 'Unknown',
-      networkInfo = null,
-      screenInfo = {},
-      browserInfo = {},
-      language = 'Unknown',
-      languages = [],
-      platform = 'Unknown',
-      memory,
-      cores,
-      maxTouchPoints = 0,
-      timeZone = 'Unknown',
-      timeZoneOffset = 0,
-      features = {},
-      performance = null,
-      session = { newVisit: true, visitCount: 1, lastVisit: null }
-    } = body;
-
-    console.log('Request body:', { networkType, browserInfo, platform, session });
-
     const visitTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+
+    // Format system info for display
+    const formatSystemInfo = (info: any) => {
+      if (!info) return 'Not Available';
+
+      const sections = [];
+
+      // Hardware Info
+      if (info.hardware) {
+        const hw = info.hardware;
+        sections.push(
+          '💻 Hardware:',
+          `CPU: ${hw.cores} cores`,
+          `Memory: ${hw.memory}GB`,
+          `GPU: ${info.gpu?.renderer || 'Unknown'}`,
+          `Primary Input: ${hw.primaryInput}`,
+          `Audio Support: ${Object.entries(hw.audioCodecs)
+            .filter(([, supported]) => supported)
+            .map(([codec]) => codec.toUpperCase())
+            .join(', ')}`,
+          `Video Support: ${Object.entries(hw.videoCodecs)
+            .filter(([, supported]) => supported)
+            .map(([codec]) => codec.toUpperCase())
+            .join(', ')}`
+        );
+      }
+
+      // Screen Info
+      if (info.screen) {
+        const screen = info.screen;
+        sections.push(
+          '🖥️ Display:',
+          `Resolution: ${screen.resolution}`,
+          `Available: ${screen.availWidth}x${screen.availHeight}`,
+          `Color Depth: ${screen.colorDepth}`,
+          `Color Gamut: ${screen.colorGamut}`,
+          `Refresh Rate: ${screen.refreshRate}Hz`,
+          `HDR: ${screen.prefersDarkMode ? 'Yes' : 'No'}`,
+          `Reduced Motion: ${screen.prefersReducedMotion ? 'Yes' : 'No'}`,
+          `High Contrast: ${screen.prefersContrast ? 'Yes' : 'No'}`
+        );
+      }
+
+      // Browser Capabilities
+      if (info.browser) {
+        const browser = info.browser;
+        sections.push(
+          '🌐 Browser Capabilities:',
+          `Security Context: ${browser.hasSecureContext ? 'Secure' : 'Insecure'}`,
+          `Storage Quota: ${formatBytes(browser.storageQuota?.quota || 0)}`,
+          `Storage Used: ${formatBytes(browser.storageQuota?.usage || 0)}`,
+          `Media Devices: ${formatMediaDevices(browser.mediaDevices)}`,
+          `Permissions: ${formatPermissions(browser.permissions)}`
+        );
+      }
+
+      // System Environment
+      sections.push(
+        '🔧 System Environment:',
+        `Locale: ${info.locale}`,
+        `Time Zone: ${info.timeZone}`,
+        `Platform: ${info.platform}`,
+        `Window Manager: ${info.windowManager}`,
+        `Theme: ${info.systemTheme}`
+      );
+
+      // Battery Status
+      if (info.batteryInfo) {
+        const battery = info.batteryInfo;
+        sections.push(
+          '🔋 Battery:',
+          `Status: ${battery.charging ? 'Charging' : 'Discharging'}`,
+          `Level: ${Math.round(battery.level * 100)}%`,
+          battery.charging ? 
+            `Time until full: ${formatTime(battery.chargingTime)}` :
+            `Time remaining: ${formatTime(battery.dischargingTime)}`
+        );
+      }
+
+      // Performance Metrics
+      if (info.performance?.metrics) {
+        const perf = info.performance.metrics;
+        sections.push(
+          '⚡ Performance:',
+          `DNS Lookup: ${perf.dnsLookup}ms`,
+          `TCP Connection: ${perf.tcpConnection}ms`,
+          `TLS Setup: ${perf.tlsNegotiation}ms`,
+          `Server Response: ${perf.serverResponse}ms`,
+          `Content Download: ${perf.contentDownload}ms`,
+          `DOM Interactive: ${perf.domInteractive}ms`,
+          `Page Load: ${perf.totalPageLoad}ms`
+        );
+      }
+
+      // Installed Fonts (truncated)
+      if (info.fonts?.length) {
+        sections.push(
+          '🔤 Fonts:',
+          info.fonts.slice(0, 5).join(', ') + 
+          (info.fonts.length > 5 ? ` (and ${info.fonts.length - 5} more...)` : '')
+        );
+      }
+
+      return sections.join('\n');
+    };
+
+    // Helper function to format bytes
+    const formatBytes = (bytes: number) => {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    };
+
+    // Helper function to format time
+    const formatTime = (seconds: number) => {
+      if (seconds === Infinity) return 'Unknown';
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+    };
+
+    // Helper function to format media devices
+    const formatMediaDevices = (devices: any) => {
+      if (!devices) return 'None';
+      return [
+        devices.audioInputs && `${devices.audioInputs} mic(s)`,
+        devices.audioOutputs && `${devices.audioOutputs} speaker(s)`,
+        devices.videoInputs && `${devices.videoInputs} camera(s)`
+      ].filter(Boolean).join(', ');
+    };
+
+    // Helper function to format permissions
+    const formatPermissions = (permissions: any) => {
+      if (!permissions) return 'None';
+      return Object.entries(permissions)
+        .filter(([, state]) => state === 'granted')
+        .map(([name]) => name)
+        .join(', ');
+    };
 
     // Create Discord message with enhanced details
     const message = {
       content: 'New analytics event received!',
       embeds: [{
-        title: session.newVisit ? '🌟 New Portfolio Visitor!' : '👋 Returning Visitor!',
-        color: session.newVisit ? 0x00ff00 : 0x0099ff,
+        title: body.session.newVisit ? '🌟 New Portfolio Visitor!' : '👋 Returning Visitor!',
+        color: body.session.newVisit ? 0x00ff00 : 0x0099ff,
         fields: [
           {
-            name: '📱 Device Details',
-            value: [
-              `Type: ${deviceInfo.type}`,
-              `Brand: ${deviceInfo.brand}`,
-              `Model: ${deviceInfo.model}`,
-              `OS: ${deviceInfo.os}`,
-              `CPU: ${deviceInfo.cpu}`,
-              `Platform: ${platform}`,
-              `CPU Cores: ${cores || 'Unknown'}`,
-              `Memory: ${memory ? Math.round(memory) + 'GB' : 'Unknown'}`,
-              `Touch Points: ${maxTouchPoints}`
-            ].join('\n'),
+            name: '📱 System Information',
+            value: formatSystemInfo(body.systemInfo),
             inline: false
           },
           {
@@ -275,37 +441,34 @@ export async function POST(request: Request) {
             inline: false
           },
           {
-            name: '🌐 Network & Browser',
+            name: '👤 Visit Details',
             value: [
-              `Connection: ${networkType}`,
-              `Browser: ${deviceInfo.browser}`,
-              `Engine: ${browserInfo?.engine || 'Unknown'}`,
-              `Languages: ${languages?.join(', ') || language || 'Unknown'}`
+              `Time (PHT): ${visitTime}`,
+              `Visit Count: ${body.session.visitCount}`,
+              body.session.visitCount > 1 ? 
+                `Last Visit: ${new Date(body.session.lastVisit).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}` : 
+                'First Visit',
+              `Entry Page: ${body.session.entryPage}`,
+              `Referrer: ${body.session.referrer || referer}`,
+              '\nPrevious Visits:',
+              body.session.previousVisits
+                .slice(-3)
+                .map((visit: any) => 
+                  `• ${new Date(visit.timestamp).toLocaleString('en-US', { timeZone: 'Asia/Manila' })} - ${visit.page}`
+                )
+                .join('\n')
             ].join('\n'),
             inline: false
           },
           {
-            name: '🖥️ Display & Features',
+            name: '🔍 Session Activity',
             value: [
-              `Resolution: ${screenInfo.resolution || 'Unknown'}`,
-              `Color Depth: ${screenInfo.colorDepth || 'Unknown'}`,
-              `Orientation: ${screenInfo.orientation || 'Unknown'}`,
-              `Pixel Ratio: ${screenInfo.pixelRatio || 'Unknown'}x`,
-              '\nFeature Support:',
-              `WebGL: ${features.webGL ? '✅' : '❌'}`,
-              `WebP: ${features.webP ? '✅' : '❌'}`,
-              `Touch: ${features.touch ? '✅' : '❌'}`
-            ].join('\n'),
-            inline: true
-          },
-          {
-            name: '⏰ Visit Details',
-            value: [
-              `Time (PHT): ${visitTime}`,
-              `Time Zone: ${timeZone}`,
-              `Visit Count: ${session.visitCount}`,
-              session.visitCount > 1 ? `Last Visit: ${new Date(session.lastVisit).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}` : 'First Visit',
-              `Referrer: ${referer}`
+              `Duration: ${formatTime((Date.now() - body.session.startTime) / 1000)}`,
+              '\nInteractions:',
+              `Clicks: ${body.session.interactions.clicks || 0}`,
+              `Scrolls: ${body.session.interactions.scrolls || 0}`,
+              `Keystrokes: ${body.session.interactions.keystrokes || 0}`,
+              `Mouse Movements: ${body.session.interactions.mouseMovements || 0}`
             ].join('\n'),
             inline: true
           }

@@ -8,86 +8,433 @@ export const useAnalytics = () => {
         const hasTracked = sessionStorage.getItem('visit_tracked');
         if (hasTracked) return;
 
-        // Collect network information
-        const connection = (navigator as any).connection || 
-                         (navigator as any).mozConnection || 
-                         (navigator as any).webkitConnection;
-        
-        const networkType = connection ? 
-          (connection.type === 'cellular' ? 
-            `${connection.effectiveType} (${connection.type})` : 
-            connection.type) : 
-          'Unknown';
+        // Get detailed system information
+        const getSystemInfo = async () => {
+          try {
+            // Get GPU info
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
+            const gpuInfo = gl ? {
+              vendor: gl.getParameter(gl.VENDOR),
+              renderer: gl.getParameter(gl.RENDERER),
+              // Get more detailed WebGL capabilities
+              maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+              maxViewportDims: gl.getParameter(gl.MAX_VIEWPORT_DIMS),
+              maxRenderbufferSize: gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),
+              antialias: gl.getContextAttributes()?.antialias || false,
+              extensions: gl.getSupportedExtensions()
+            } : null;
 
-        // Enhanced network info
-        const networkInfo = connection ? {
-          downlink: `${connection.downlink} Mbps`,
-          rtt: `${connection.rtt} ms`,
-          saveData: connection.saveData ? 'On' : 'Off'
-        } : null;
+            // Get detailed hardware info
+            const hardwareInfo = {
+              // CPU & Memory
+              cores: navigator.hardwareConcurrency,
+              memory: (navigator as any).deviceMemory,
+              platform: navigator.platform,
+              // Detailed device capabilities
+              maxTouchPoints: navigator.maxTouchPoints,
+              hasMouse: matchMedia('(pointer:fine)').matches,
+              hasTouch: matchMedia('(pointer:coarse)').matches,
+              hasHover: matchMedia('(hover:hover)').matches,
+              primaryInput: matchMedia('(pointer:fine)').matches ? 'mouse' : 
+                          matchMedia('(pointer:coarse)').matches ? 'touch' : 'none',
+              // Audio capabilities
+              audioCodecs: {
+                mp3: testAudioFormat('audio/mpeg'),
+                ogg: testAudioFormat('audio/ogg'),
+                wav: testAudioFormat('audio/wav'),
+                aac: testAudioFormat('audio/aac')
+              },
+              // Video capabilities
+              videoCodecs: {
+                h264: testVideoFormat('video/mp4; codecs="avc1.42E01E"'),
+                hevc: testVideoFormat('video/mp4; codecs="hevc,mp4a.40.2"'),
+                vp8: testVideoFormat('video/webm; codecs="vp8,vorbis"'),
+                vp9: testVideoFormat('video/webm; codecs="vp9"')
+              }
+            };
 
-        // Collect browser information
-        const browserInfo = getBrowserInfo();
+            // Get installed fonts (using font fingerprinting technique)
+            const installedFonts = await detectInstalledFonts();
 
-        // Collect screen information
-        const screenInfo = {
-          resolution: `${window.screen.width}x${window.screen.height}`,
-          colorDepth: `${window.screen.colorDepth}-bit`,
-          orientation: window.screen.orientation.type,
-          pixelRatio: window.devicePixelRatio
+            // Get detailed screen information
+            const screenInfo = {
+              // Basic screen info
+              resolution: `${window.screen.width}x${window.screen.height}`,
+              colorDepth: `${window.screen.colorDepth}-bit`,
+              orientation: window.screen.orientation.type,
+              pixelRatio: window.devicePixelRatio,
+              // Additional screen details
+              availWidth: window.screen.availWidth,
+              availHeight: window.screen.availHeight,
+              // Color gamut support
+              colorGamut: window.matchMedia('(color-gamut: p3)').matches ? 'p3' : 
+                          window.matchMedia('(color-gamut: srgb)').matches ? 'srgb' : 'default',
+              // Display properties
+              refreshRate: 'requestVideoFrameCallback' in HTMLVideoElement.prototype ? 60 : undefined,
+              // System preferences
+              prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+              prefersDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+              prefersContrast: window.matchMedia('(prefers-contrast: more)').matches,
+            };
+
+            // Get detailed browser capabilities
+            const browserCapabilities = {
+              // Basic info
+              userAgent: navigator.userAgent,
+              appName: navigator.appName,
+              appCodeName: navigator.appCodeName,
+              appVersion: navigator.appVersion,
+              // Browser features
+              cookiesEnabled: navigator.cookieEnabled,
+              doNotTrack: navigator.doNotTrack,
+              languages: navigator.languages,
+              onLine: navigator.onLine,
+              pdfViewerEnabled: (navigator as any).pdfViewerEnabled,
+              // Storage quotas
+              storageQuota: await getStorageQuota(),
+              // Connection capabilities
+              connectionType: (navigator as any).connection?.type || 'unknown',
+              connectionSpeed: (navigator as any).connection?.downlink || 'unknown',
+              saveData: (navigator as any).connection?.saveData || false,
+              // Security
+              hasSecureContext: window.isSecureContext,
+              hasTrustTokens: 'trustTokens' in navigator,
+              // Advanced features
+              serviceWorker: 'serviceWorker' in navigator,
+              permissions: await getAvailablePermissions(),
+              // Installed browser plugins
+              plugins: Array.from(navigator.plugins).map(p => ({
+                name: p.name,
+                description: p.description,
+                filename: p.filename
+              })),
+              // Browser storage
+              localStorage: !!window.localStorage,
+              sessionStorage: !!window.sessionStorage,
+              indexedDB: !!window.indexedDB,
+              // Advanced APIs
+              bluetooth: 'bluetooth' in navigator,
+              usb: 'usb' in navigator,
+              serial: 'serial' in navigator,
+              nfc: 'nfc' in navigator,
+              // Media capabilities
+              mediaDevices: await getMediaDevices(),
+              // System badges
+              badges: 'badges' in navigator,
+              // Clipboard capabilities
+              clipboard: 'clipboard' in navigator,
+              // Payment capabilities
+              payment: 'payment' in navigator,
+              // VR/AR support
+              xr: 'xr' in navigator
+            };
+
+            // Get system performance metrics
+            const performance = {
+              memory: (window.performance as any).memory ? {
+                jsHeapSizeLimit: (window.performance as any).memory.jsHeapSizeLimit,
+                totalJSHeapSize: (window.performance as any).memory.totalJSHeapSize,
+                usedJSHeapSize: (window.performance as any).memory.usedJSHeapSize
+              } : null,
+              timing: window.performance.timing,
+              navigation: window.performance.navigation,
+              // Detailed metrics
+              metrics: getDetailedPerformanceMetrics()
+            };
+
+            return {
+              gpu: gpuInfo,
+              hardware: hardwareInfo,
+              screen: screenInfo,
+              browser: browserCapabilities,
+              fonts: installedFonts,
+              performance,
+              // System environment
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              locale: Intl.DateTimeFormat().resolvedOptions().locale,
+              dateTimeFormat: Intl.DateTimeFormat().resolvedOptions(),
+              numberFormat: Intl.NumberFormat().resolvedOptions(),
+              // OS-specific info
+              platform: navigator.platform,
+              oscpu: (navigator as any).oscpu,
+              // Hardware concurrency
+              logicalProcessors: navigator.hardwareConcurrency,
+              // Device memory
+              deviceMemory: (navigator as any).deviceMemory,
+              // Network characteristics
+              networkInfo: (navigator as any).connection,
+              // Battery status
+              batteryInfo: await getBatteryInfo(),
+              // System theme
+              systemTheme: detectSystemTheme()
+            };
+          } catch (error) {
+            console.error('Error getting system info:', error);
+            return null;
+          }
         };
 
-        // System information
-        const platform = navigator.platform;
-        const language = navigator.language;
-        const languages = navigator.languages;
-        const memory = (navigator as any).deviceMemory;
-        const cores = navigator.hardwareConcurrency;
-        const maxTouchPoints = navigator.maxTouchPoints;
-
-        // Time zone information
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const timeZoneOffset = new Date().getTimezoneOffset();
-
-        // Feature detection
-        const features = {
-          cookies: navigator.cookieEnabled,
-          localStorage: !!window.localStorage,
-          serviceWorker: 'serviceWorker' in navigator,
-          webGL: hasWebGL(),
-          webP: await supportsWebP(),
-          bluetooth: 'bluetooth' in navigator,
-          battery: 'getBattery' in navigator,
-          touch: 'ontouchstart' in window,
-          pdf: hasAcrobatReader()
+        // Helper function to test audio format support
+        const testAudioFormat = (format: string) => {
+          const audio = document.createElement('audio');
+          return audio.canPlayType(format) !== '';
         };
 
-        // Performance metrics
-        const performance = getPerformanceMetrics();
+        // Helper function to test video format support
+        const testVideoFormat = (format: string) => {
+          const video = document.createElement('video');
+          return video.canPlayType(format) !== '';
+        };
 
-        // Session information
+        // Helper function to detect installed fonts
+        const detectInstalledFonts = async () => {
+          const fontList = [
+            'Arial', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia',
+            'Helvetica', 'Comic Sans MS', 'Impact', 'Tahoma', 'Trebuchet MS',
+            'Webdings', 'Wingdings', 'MS Sans Serif', 'MS Serif', 'Palatino',
+            'Garamond', 'Bookman', 'Avant Garde', 'Century Gothic', 'Calibri',
+            'Cambria', 'Consolas', 'Corbel', 'Franklin Gothic', 'Segoe UI',
+            'Ubuntu', 'Roboto', 'Open Sans', 'Droid Sans', 'Lato', 'Montserrat'
+          ];
+
+          const installedFonts: string[] = [];
+          const testString = 'mmmmmmmmmmlli';
+          const testSize = '72px';
+          const baseFont = 'monospace';
+
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          if (!context) return [];
+
+          context.font = `${testSize} ${baseFont}`;
+          const baseWidth = context.measureText(testString).width;
+
+          for (const font of fontList) {
+            try {
+              context.font = `${testSize} ${font}, ${baseFont}`;
+              const width = context.measureText(testString).width;
+              if (width !== baseWidth) {
+                installedFonts.push(font);
+              }
+            } catch (e) {
+              console.error(`Error testing font ${font}:`, e);
+            }
+          }
+
+          return installedFonts;
+        };
+
+        // Helper function to detect color gamut support
+        const detectColorGamut = () => {
+          if (window.matchMedia('(color-gamut: rec2020)').matches) return 'rec2020';
+          if (window.matchMedia('(color-gamut: p3)').matches) return 'p3';
+          if (window.matchMedia('(color-gamut: srgb)').matches) return 'srgb';
+          return 'default';
+        };
+
+        // Helper function to get screen refresh rate
+        const getScreenRefreshRate = () => {
+          if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+            return 60; // Default to 60 as we can't reliably detect actual refresh rate
+          }
+          return undefined;
+        };
+
+        // Helper function to detect virtual display
+        const detectVirtualDisplay = () => {
+          // This is a best-effort detection, not 100% reliable
+          const { hardwareConcurrency, deviceMemory } = navigator as any;
+          const lowResources = hardwareConcurrency <= 2 || deviceMemory <= 2;
+          const hasTouch = 'ontouchstart' in window;
+          const isVirtualized = lowResources && !hasTouch;
+          return isVirtualized;
+        };
+
+        // Helper function to get storage quota
+        const getStorageQuota = async () => {
+          if ('storage' in navigator && 'estimate' in navigator.storage) {
+            try {
+              const storage = await navigator.storage.estimate();
+              return {
+                quota: storage.quota,
+                usage: storage.usage,
+                // Remove usageDetails as it's not a standard property
+              };
+            } catch (e) {
+              console.error('Error getting storage quota:', e);
+            }
+          }
+          return null;
+        };
+
+        // Helper function to get available permissions
+        const getAvailablePermissions = async () => {
+          if ('permissions' in navigator) {
+            const permissions = [
+              'geolocation',
+              'notifications',
+              'push',
+              'midi',
+              'camera',
+              'microphone',
+              'background-fetch',
+              'background-sync',
+              'clipboard-read',
+              'clipboard-write',
+              'payment-handler',
+              'persistent-storage',
+              'ambient-light-sensor',
+              'accelerometer',
+              'gyroscope',
+              'magnetometer',
+              'screen-wake-lock',
+              'nfc'
+            ];
+
+            const results: Record<string, string> = {};
+            for (const permission of permissions) {
+              try {
+                const status = await navigator.permissions.query({ name: permission as PermissionName });
+                results[permission] = status.state;
+              } catch (e) {
+                results[permission] = 'unsupported';
+              }
+            }
+            return results;
+          }
+          return null;
+        };
+
+        // Helper function to get media devices
+        const getMediaDevices = async () => {
+          if ('mediaDevices' in navigator) {
+            try {
+              const devices = await navigator.mediaDevices.enumerateDevices();
+              return {
+                audioInputs: devices.filter(d => d.kind === 'audioinput').length,
+                audioOutputs: devices.filter(d => d.kind === 'audiooutput').length,
+                videoInputs: devices.filter(d => d.kind === 'videoinput').length
+              };
+            } catch (e) {
+              console.error('Error getting media devices:', e);
+            }
+          }
+          return null;
+        };
+
+        // Helper function to get battery info
+        const getBatteryInfo = async () => {
+          if ('getBattery' in navigator) {
+            try {
+              const battery: any = await (navigator as any).getBattery();
+              return {
+                charging: battery.charging,
+                level: battery.level,
+                chargingTime: battery.chargingTime,
+                dischargingTime: battery.dischargingTime
+              };
+            } catch (e) {
+              console.error('Error getting battery info:', e);
+            }
+          }
+          return null;
+        };
+
+        // Helper function to get detailed performance metrics
+        const getDetailedPerformanceMetrics = () => {
+          const metrics: Record<string, number> = {};
+          if ('performance' in window) {
+            try {
+              const perfEntries = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+              if (perfEntries) {
+                metrics.dnsLookup = perfEntries.domainLookupEnd - perfEntries.domainLookupStart;
+                metrics.tcpConnection = perfEntries.connectEnd - perfEntries.connectStart;
+                metrics.tlsNegotiation = perfEntries.requestStart - perfEntries.secureConnectionStart;
+                metrics.serverResponse = perfEntries.responseStart - perfEntries.requestStart;
+                metrics.contentDownload = perfEntries.responseEnd - perfEntries.responseStart;
+                metrics.domInteractive = perfEntries.domInteractive - perfEntries.fetchStart;
+                metrics.domComplete = perfEntries.domComplete - perfEntries.fetchStart;
+                metrics.loadEvent = perfEntries.loadEventEnd - perfEntries.loadEventStart;
+                metrics.totalPageLoad = perfEntries.loadEventEnd - perfEntries.fetchStart;
+              }
+
+              // Get paint timing metrics
+              const paintMetrics = performance.getEntriesByType('paint');
+              paintMetrics.forEach(paint => {
+                metrics[paint.name] = paint.startTime;
+              });
+
+              // Get memory info if available
+              if ((performance as any).memory) {
+                metrics.jsHeapSizeLimit = (performance as any).memory.jsHeapSizeLimit;
+                metrics.totalJSHeapSize = (performance as any).memory.totalJSHeapSize;
+                metrics.usedJSHeapSize = (performance as any).memory.usedJSHeapSize;
+              }
+            } catch (e) {
+              console.error('Error getting performance metrics:', e);
+            }
+          }
+          return metrics;
+        };
+
+        // Function to detect system theme
+        const detectSystemTheme = () => {
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+          }
+          return 'light';
+        };
+
+        // Get system information
+        const systemInfo = await getSystemInfo();
+
+        // Session information with enhanced tracking
         const session = {
           newVisit: !localStorage.getItem('returning_visitor'),
           visitCount: Number(localStorage.getItem('visit_count') || 0) + 1,
-          lastVisit: localStorage.getItem('last_visit') || 'First Visit'
+          lastVisit: localStorage.getItem('last_visit') || 'First Visit',
+          // Enhanced session tracking
+          entryPage: window.location.pathname,
+          referrer: document.referrer,
+          landingTime: new Date().toISOString(),
+          screenSize: `${window.innerWidth}x${window.innerHeight}`,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          timeZoneOffset: new Date().getTimezoneOffset(),
+          // Previous visits data
+          previousVisits: JSON.parse(localStorage.getItem('visit_history') || '[]'),
+          // Session duration tracking
+          startTime: Date.now(),
+          // Page interaction tracking
+          interactions: {
+            clicks: 0,
+            scrolls: 0,
+            keystrokes: 0,
+            mouseMovements: 0
+          }
         };
 
+        // Prepare analytics data
         const analyticsData = {
-          networkType,
-          networkInfo,
-          screenInfo,
-          browserInfo,
-          language,
-          languages,
-          platform,
-          memory,
-          cores,
-          maxTouchPoints,
-          timeZone,
-          timeZoneOffset,
-          features,
-          performance,
-          session
+          systemInfo,
+          session,
+          // Raw navigator data
+          navigator: {
+            userAgent: navigator.userAgent,
+            appName: navigator.appName,
+            appCodeName: navigator.appCodeName,
+            appVersion: navigator.appVersion,
+            platform: navigator.platform,
+            product: navigator.product,
+            productSub: navigator.productSub,
+            vendor: navigator.vendor,
+            vendorSub: navigator.vendorSub,
+            language: navigator.language,
+            languages: navigator.languages,
+            onLine: navigator.onLine,
+            cookieEnabled: navigator.cookieEnabled,
+            doNotTrack: navigator.doNotTrack
+          }
         };
 
         console.log('Sending analytics data:', analyticsData);
@@ -115,6 +462,16 @@ export const useAnalytics = () => {
             localStorage.setItem('returning_visitor', 'true');
             localStorage.setItem('visit_count', session.visitCount.toString());
             localStorage.setItem('last_visit', new Date().toISOString());
+            
+            // Store visit history
+            const visitHistory = JSON.parse(localStorage.getItem('visit_history') || '[]');
+            visitHistory.push({
+              timestamp: new Date().toISOString(),
+              page: window.location.pathname,
+              referrer: document.referrer
+            });
+            localStorage.setItem('visit_history', JSON.stringify(visitHistory.slice(-10))); // Keep last 10 visits
+            
             sessionStorage.setItem('visit_tracked', 'true');
             
             console.log('Analytics sent successfully');
@@ -137,107 +494,26 @@ export const useAnalytics = () => {
     };
 
     trackPageView();
-  }, []);
-};
 
-function getBrowserInfo() {
-  const ua = navigator.userAgent;
-  let browserName = "Unknown";
-  let browserVersion = "";
-  let engine = "Unknown";
-
-  // Detect browser engine
-  if (ua.includes("Gecko/")) {
-    engine = "Gecko";
-  } else if (ua.includes("AppleWebKit/")) {
-    engine = "WebKit";
-  } else if (ua.includes("Trident/")) {
-    engine = "Trident";
-  }
-
-  // Detect Chrome
-  if (ua.includes("Chrome")) {
-    browserName = "Chrome";
-    browserVersion = ua.split("Chrome/")[1]?.split(" ")[0];
-  }
-  // Detect Firefox
-  else if (ua.includes("Firefox")) {
-    browserName = "Firefox";
-    browserVersion = ua.split("Firefox/")[1];
-  }
-  // Detect Safari
-  else if (ua.includes("Safari") && !ua.includes("Chrome")) {
-    browserName = "Safari";
-    browserVersion = ua.split("Version/")[1]?.split(" ")[0];
-  }
-  // Detect Edge
-  else if (ua.includes("Edg")) {
-    browserName = "Edge";
-    browserVersion = ua.split("Edg/")[1];
-  }
-  // Detect Opera
-  else if (ua.includes("OPR")) {
-    browserName = "Opera";
-    browserVersion = ua.split("OPR/")[1];
-  }
-
-  return {
-    name: browserName,
-    version: browserVersion,
-    engine,
-    userAgent: ua,
-    vendor: navigator.vendor,
-    appName: navigator.appName,
-    appVersion: navigator.appVersion,
-    platform: navigator.platform,
-    product: navigator.product
-  };
-}
-
-function hasWebGL() {
-  try {
-    const canvas = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && 
-      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-  } catch (e) {
-    return false;
-  }
-}
-
-async function supportsWebP() {
-  const webP = new Image();
-  return new Promise((resolve) => {
-    webP.onload = webP.onerror = () => {
-      resolve(webP.height === 2);
+    // Track user interactions
+    const trackInteraction = (type: string) => {
+      const interactions = JSON.parse(sessionStorage.getItem('interactions') || '{}');
+      interactions[type] = (interactions[type] || 0) + 1;
+      sessionStorage.setItem('interactions', JSON.stringify(interactions));
     };
-    webP.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
-  });
-}
 
-function hasAcrobatReader() {
-  try {
-    const acrobat = navigator.plugins.namedItem('Chrome PDF Viewer') || 
-                    navigator.plugins.namedItem('Adobe Acrobat');
-    return !!acrobat;
-  } catch {
-    return false;
-  }
-}
+    // Event listeners for interaction tracking
+    window.addEventListener('click', () => trackInteraction('clicks'));
+    window.addEventListener('scroll', () => trackInteraction('scrolls'));
+    window.addEventListener('keypress', () => trackInteraction('keystrokes'));
+    window.addEventListener('mousemove', () => trackInteraction('mouseMovements'));
 
-function getPerformanceMetrics() {
-  if (!window.performance) return null;
-
-  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-  if (!navigation) return null;
-
-  return {
-    dnsLookup: Math.round(navigation.domainLookupEnd - navigation.domainLookupStart),
-    tcpConnection: Math.round(navigation.connectEnd - navigation.connectStart),
-    serverResponse: Math.round(navigation.responseStart - navigation.requestStart),
-    pageLoad: Math.round(navigation.loadEventEnd - navigation.loadEventStart),
-    domInteractive: Math.round(navigation.domInteractive - navigation.fetchStart),
-    domComplete: Math.round(navigation.domComplete - navigation.fetchStart),
-    firstPaint: Math.round(performance.getEntriesByName('first-paint')[0]?.startTime || 0),
-    firstContentfulPaint: Math.round(performance.getEntriesByName('first-contentful-paint')[0]?.startTime || 0)
-  };
-} 
+    // Cleanup
+    return () => {
+      window.removeEventListener('click', () => trackInteraction('clicks'));
+      window.removeEventListener('scroll', () => trackInteraction('scrolls'));
+      window.removeEventListener('keypress', () => trackInteraction('keystrokes'));
+      window.removeEventListener('mousemove', () => trackInteraction('mouseMovements'));
+    };
+  }, []);
+}; 
