@@ -17,16 +17,18 @@ export async function POST(request: Request) {
     
     // Get Discord webhook URL from environment variable
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    console.log('Using webhook URL:', webhookUrl?.substring(0, 20) + '...');
+    console.log('Environment variables available:', Object.keys(process.env).filter(key => key.includes('DISCORD')));
+    console.log('Webhook URL found:', !!webhookUrl);
+    console.log('Webhook URL prefix:', webhookUrl?.substring(0, 30));
     
     if (!webhookUrl) {
       console.error('Discord webhook URL not found in environment variables');
       throw new Error('Discord webhook URL not configured');
     }
 
-    // First try a simple message to test the webhook
+    // Test message with clear formatting
     const testMessage = {
-      content: `New contact form submission from ${validatedData.name}`,
+      content: `🔔 New contact form submission from ${validatedData.name}`,
       embeds: [{
         title: '📬 New Contact Form Submission',
         color: 0x385780,
@@ -50,10 +52,11 @@ export async function POST(request: Request) {
       }]
     };
 
-    console.log('Sending Discord message:', JSON.stringify(testMessage, null, 2));
+    console.log('Preparing to send Discord message:', JSON.stringify(testMessage, null, 2));
 
     // Send to Discord webhook with better error handling
     try {
+      console.log('Sending request to Discord...');
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -62,9 +65,10 @@ export async function POST(request: Request) {
         body: JSON.stringify(testMessage),
       });
 
-      const responseText = await response.text();
       console.log('Discord API response status:', response.status);
       console.log('Discord API response headers:', Object.fromEntries(response.headers.entries()));
+      
+      const responseText = await response.text();
       console.log('Discord API response body:', responseText);
 
       if (!response.ok) {
@@ -73,7 +77,11 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: true });
     } catch (fetchError: any) {
-      console.error('Fetch error:', fetchError);
+      console.error('Fetch error details:', {
+        message: fetchError.message,
+        stack: fetchError.stack,
+        cause: fetchError.cause
+      });
       throw new Error(`Network error: ${fetchError.message}`);
     }
   } catch (error) {
