@@ -42,7 +42,8 @@ export const useAnalytics = () => {
           lastVisit: localStorage.getItem('last_visit'),
           visitCount: parseInt(localStorage.getItem('visit_count') || '0') + 1,
           entryPage: window.location.pathname,
-          referrer: document.referrer
+          referrer: document.referrer,
+          previousVisits: JSON.parse(localStorage.getItem('previous_visits') || '[]')
         };
 
         console.log('Session info prepared:', sessionInfo);
@@ -52,7 +53,7 @@ export const useAnalytics = () => {
         localStorage.setItem('visit_count', sessionInfo.visitCount.toString());
         
         // Add current visit to previous visits
-        const previousVisits = sessionInfo.previousVisits;
+        const previousVisits = JSON.parse(localStorage.getItem('previous_visits') || '[]');
         previousVisits.push({
           timestamp: Date.now(),
           page: window.location.pathname

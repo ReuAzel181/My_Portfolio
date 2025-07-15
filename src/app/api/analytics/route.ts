@@ -470,7 +470,10 @@ export async function POST(request: Request) {
             value: [
               `Time: ${visitTime}`,
               `Visit #: ${body.session?.visitCount || 1}`,
-              `Page: ${body.session?.entryPage || '/'}`
+              `Page: ${body.session?.entryPage || '/'}`,
+              body.session?.previousVisits?.length > 0 ? 
+                `\nPrevious visits: ${body.session.previousVisits.length}` : 
+                'First visit'
             ].join('\n').slice(0, 1024),
             inline: true
           }
