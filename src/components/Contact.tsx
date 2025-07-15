@@ -57,6 +57,8 @@ const Contact = () => {
       setIsSubmitting(true)
       setSubmitError(null)
       
+      console.log('Submitting form data:', data);
+      
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: {
@@ -66,16 +68,17 @@ const Contact = () => {
       })
 
       const result = await response.json()
+      console.log('API Response:', result);
 
       if (!response.ok) {
-        throw new Error(result.message || 'Failed to send message')
+        throw new Error(result.message || result.errors?.[0]?.message || 'Failed to send message')
       }
       
       setSubmitSuccess(true)
       reset()
     } catch (error) {
-      setSubmitError('Failed to send message. Please try again later.')
-      console.error('Contact form error:', error)
+      console.error('Contact form submission error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to send message. Please try again later.')
     } finally {
       setIsSubmitting(false)
     }

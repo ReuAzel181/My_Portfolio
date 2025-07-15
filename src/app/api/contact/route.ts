@@ -10,21 +10,26 @@ const contactFormSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log('Received form data:', body);
     
     // Validate the request body
     const validatedData = contactFormSchema.parse(body);
     
     // Get Discord webhook URL from environment variable
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    console.log('Using webhook URL:', webhookUrl?.substring(0, 20) + '...');
+    
     if (!webhookUrl) {
+      console.error('Discord webhook URL not found in environment variables');
       throw new Error('Discord webhook URL not configured');
     }
 
-    // Format message for Discord
-    const discordMessage = {
+    // First try a simple message to test the webhook
+    const testMessage = {
+      content: `New contact form submission from ${validatedData.name}`,
       embeds: [{
         title: '📬 New Contact Form Submission',
-        color: 0x385780, // Your theme color
+        color: 0x385780,
         fields: [
           {
             name: '👤 Name',
@@ -45,20 +50,32 @@ export async function POST(request: Request) {
       }]
     };
 
-    // Send to Discord webhook
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(discordMessage),
-    });
+    console.log('Sending Discord message:', JSON.stringify(testMessage, null, 2));
 
-    if (!response.ok) {
-      throw new Error('Failed to send message to Discord');
+    // Send to Discord webhook with better error handling
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testMessage),
+      });
+
+      const responseText = await response.text();
+      console.log('Discord API response status:', response.status);
+      console.log('Discord API response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('Discord API response body:', responseText);
+
+      if (!response.ok) {
+        throw new Error(`Discord API error: ${response.status} ${responseText}`);
+      }
+
+      return NextResponse.json({ success: true });
+    } catch (fetchError: any) {
+      console.error('Fetch error:', fetchError);
+      throw new Error(`Network error: ${fetchError.message}`);
     }
-
-    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Contact form error:', error);
     
@@ -70,7 +87,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { success: false, message: 'Failed to send message' },
+      { success: false, message: error instanceof Error ? error.message : 'Failed to send message' },
       { status: 500 }
     );
   }
