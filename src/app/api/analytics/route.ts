@@ -29,7 +29,7 @@ async function testDiscordWebhook() {
   }
 }
 
-// Enhanced device detection using UAParser
+// Enhanced device detection using UAParser and additional checks
 function getDeviceInfo(userAgent: string) {
   try {
     const parser = new UAParser(userAgent);
@@ -37,11 +37,68 @@ function getDeviceInfo(userAgent: string) {
     const os = parser.getOS();
     const browser = parser.getBrowser();
     const cpu = parser.getCPU();
+    const ua = userAgent.toLowerCase();
+
+    // Enhanced brand detection
+    let brand = device.vendor || 'Unknown';
+    let model = device.model || 'Unknown';
+
+    // Detect PC manufacturers
+    if (brand === 'Unknown' && !device.type) {
+      if (ua.includes('lenovo')) {
+        brand = 'Lenovo';
+      } else if (ua.includes('dell')) {
+        brand = 'Dell';
+      } else if (ua.includes('hp') || ua.includes('hewlett-packard')) {
+        brand = 'HP';
+      } else if (ua.includes('asus')) {
+        brand = 'ASUS';
+      } else if (ua.includes('acer')) {
+        brand = 'Acer';
+      } else if (ua.includes('msi')) {
+        brand = 'MSI';
+      } else if (os.name === 'Windows') {
+        brand = 'PC';
+        model = 'Windows PC';
+      } else if (os.name === 'Mac OS') {
+        brand = 'Apple';
+        model = 'Mac';
+      }
+    }
+
+    // Enhanced mobile detection
+    if (device.type === 'mobile' || device.type === 'tablet') {
+      if (ua.includes('iphone')) {
+        brand = 'Apple';
+        model = 'iPhone';
+      } else if (ua.includes('ipad')) {
+        brand = 'Apple';
+        model = 'iPad';
+      } else if (ua.includes('samsung')) {
+        brand = 'Samsung';
+        if (ua.includes('sm-')) {
+          model = ua.split('sm-')[1].split(' ')[0].toUpperCase();
+        }
+      } else if (ua.includes('huawei')) {
+        brand = 'Huawei';
+      } else if (ua.includes('xiaomi') || ua.includes('redmi')) {
+        brand = 'Xiaomi';
+      } else if (ua.includes('oppo')) {
+        brand = 'OPPO';
+      } else if (ua.includes('vivo')) {
+        brand = 'Vivo';
+      } else if (ua.includes('oneplus')) {
+        brand = 'OnePlus';
+      } else if (ua.includes('pixel')) {
+        brand = 'Google';
+        model = 'Pixel';
+      }
+    }
 
     return {
       type: device.type || 'Desktop',
-      brand: device.vendor || 'Unknown',
-      model: device.model || os.name || 'Unknown',
+      brand,
+      model,
       os: `${os.name || 'Unknown'} ${os.version || ''}`.trim(),
       browser: `${browser.name || 'Unknown'} ${browser.version || ''}`.trim(),
       cpu: cpu.architecture || 'Unknown'
@@ -59,37 +116,75 @@ function getDeviceInfo(userAgent: string) {
   }
 }
 
-// Get location from IP
+// Get location from IP using multiple fallback services
 async function getLocationInfo(ip: string) {
   if (!ip || ip === 'Unknown') {
     console.log('No IP address provided');
     return null;
   }
 
-  try {
-    // Use HTTPS for the IP API
-    const response = await fetch(`https://ip-api.com/json/${ip}?fields=status,message,country,regionName,city,timezone,query`);
-    if (!response.ok) {
-      throw new Error(`IP API responded with status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    if (data.status === 'success') {
-      return {
+  // Try multiple IP geolocation services
+  const services = [
+    {
+      url: `https://ipapi.co/${ip}/json/`,
+      transform: (data: any) => ({
         city: data.city,
-        region: data.regionName,
+        region: data.region,
+        country: data.country_name,
+        timezone: data.timezone,
+        ip: data.ip
+      })
+    },
+    {
+      url: `https://ipwho.is/${ip}`,
+      transform: (data: any) => ({
+        city: data.city,
+        region: data.region,
+        country: data.country,
+        timezone: data.timezone.id,
+        ip: data.ip
+      })
+    },
+    {
+      url: `https://ipinfo.io/${ip}/json`,
+      transform: (data: any) => ({
+        city: data.city,
+        region: data.region,
         country: data.country,
         timezone: data.timezone,
-        ip: data.query
-      };
+        ip: data.ip
+      })
     }
-    console.error('IP API Error:', data.message || 'Unknown error');
-    return null;
-  } catch (error) {
-    console.error('Error fetching location:', error);
-    return null;
+  ];
+
+  for (const service of services) {
+    try {
+      console.log(`Trying to get location from ${service.url}`);
+      const response = await fetch(service.url);
+      
+      if (!response.ok) {
+        console.log(`Service ${service.url} failed with status: ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      
+      if (data.error || data.status === 'fail') {
+        console.log(`Service ${service.url} returned error:`, data);
+        continue;
+      }
+
+      const locationData = service.transform(data);
+      console.log('Successfully got location data:', locationData);
+      return locationData;
+    } catch (error) {
+      console.error(`Error with service ${service.url}:`, error);
+      continue;
+    }
   }
+
+  console.error('All location services failed');
+  return null;
 }
 
 export async function POST(request: Request) {
