@@ -444,66 +444,42 @@ export async function POST(request: Request) {
     const message = {
       content: 'New analytics event received!',
       embeds: [{
-        title: body.session.newVisit ? '🌟 New Portfolio Visitor!' : '👋 Returning Visitor!',
-        color: body.session.newVisit ? 0x00ff00 : 0x0099ff,
+        title: '🌟 Portfolio Visitor',
+        color: 0x00ff00,
         fields: [
           {
-            name: '📱 System Information',
-            value: formatSystemInfo(body.systemInfo),
-            inline: false
+            name: '📱 Device Info',
+            value: [
+              `OS: ${body.systemInfo?.platform || 'Unknown'}`,
+              `Browser: ${body.systemInfo?.browser?.userAgent?.split(' ').pop() || 'Unknown'}`,
+              `Screen: ${body.systemInfo?.screen?.resolution || 'Unknown'}`
+            ].join('\n').slice(0, 1024),
+            inline: true
           },
           {
             name: '📍 Location',
             value: locationInfo ? [
-              `City: ${locationInfo.city}`,
-              `Region: ${locationInfo.region}`,
-              `Country: ${locationInfo.country}`,
-              `IP: ${locationInfo.ip}`,
-              `Timezone: ${locationInfo.timezone}`
-            ].join('\n') : 'Location Unknown',
-            inline: false
+              `${locationInfo.city}, ${locationInfo.region}`,
+              `${locationInfo.country}`,
+              `${locationInfo.timezone}`
+            ].join('\n').slice(0, 1024) : 'Location Unknown',
+            inline: true
           },
           {
             name: '👤 Visit Details',
             value: [
-              `Time (PHT): ${visitTime}`,
-              `Visit Count: ${body.session.visitCount}`,
-              body.session.visitCount > 1 ? 
-                `Last Visit: ${new Date(body.session.lastVisit).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}` : 
-                'First Visit',
-              `Entry Page: ${body.session.entryPage}`,
-              `Referrer: ${body.session.referrer || referer}`,
-              '\nPrevious Visits:',
-              body.session.previousVisits
-                .slice(-3)
-                .map((visit: any) => 
-                  `• ${new Date(visit.timestamp).toLocaleString('en-US', { timeZone: 'Asia/Manila' })} - ${visit.page}`
-                )
-                .join('\n')
-            ].join('\n'),
-            inline: false
-          },
-          {
-            name: '🔍 Session Activity',
-            value: [
-              `Duration: ${formatTime((Date.now() - body.session.startTime) / 1000)}`,
-              '\nInteractions:',
-              `Clicks: ${body.session.interactions.clicks || 0}`,
-              `Scrolls: ${body.session.interactions.scrolls || 0}`,
-              `Keystrokes: ${body.session.interactions.keystrokes || 0}`,
-              `Mouse Movements: ${body.session.interactions.mouseMovements || 0}`
-            ].join('\n'),
+              `Time: ${visitTime}`,
+              `Visit #: ${body.session?.visitCount || 1}`,
+              `Page: ${body.session?.entryPage || '/'}`
+            ].join('\n').slice(0, 1024),
             inline: true
           }
         ],
-        footer: {
-          text: 'Portfolio Analytics'
-        },
         timestamp: new Date().toISOString()
       }]
     };
 
-    console.log('Sending Discord message');
+    console.log('Preparing Discord message:', JSON.stringify(message).length, 'bytes');
 
     // Send to Discord webhook
     const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
@@ -519,7 +495,8 @@ export async function POST(request: Request) {
       console.error('Discord API Error:', {
         status: discordResponse.status,
         statusText: discordResponse.statusText,
-        error: errorText
+        error: errorText,
+        messageSize: JSON.stringify(message).length
       });
       throw new Error(`Failed to send to Discord webhook: ${discordResponse.status} ${discordResponse.statusText}`);
     }
