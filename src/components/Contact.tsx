@@ -57,14 +57,25 @@ const Contact = () => {
       setIsSubmitting(true)
       setSubmitError(null)
       
-      // Here you would typically send the data to your backend
-      // For now, we'll simulate an API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to send message')
+      }
       
       setSubmitSuccess(true)
       reset()
     } catch (error) {
       setSubmitError('Failed to send message. Please try again later.')
+      console.error('Contact form error:', error)
     } finally {
       setIsSubmitting(false)
     }
