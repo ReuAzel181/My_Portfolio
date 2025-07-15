@@ -40,7 +40,7 @@ export const useAnalytics = () => {
         // System information
         const platform = navigator.platform;
         const language = navigator.language;
-        const languages = navigator.languages?.join(', ');
+        const languages = navigator.languages;
         const memory = (navigator as any).deviceMemory;
         const cores = navigator.hardwareConcurrency;
         const maxTouchPoints = navigator.maxTouchPoints;
@@ -72,40 +72,67 @@ export const useAnalytics = () => {
           lastVisit: localStorage.getItem('last_visit') || 'First Visit'
         };
 
-        // Update session data
-        localStorage.setItem('returning_visitor', 'true');
-        localStorage.setItem('visit_count', session.visitCount.toString());
-        localStorage.setItem('last_visit', new Date().toISOString());
+        const analyticsData = {
+          networkType,
+          networkInfo,
+          screenInfo,
+          browserInfo,
+          language,
+          languages,
+          platform,
+          memory,
+          cores,
+          maxTouchPoints,
+          timeZone,
+          timeZoneOffset,
+          features,
+          performance,
+          session
+        };
 
-        // Track the visit with enhanced information
-        await fetch('/api/analytics', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            networkType,
-            networkInfo,
-            screenInfo,
-            browserInfo,
-            language,
-            languages,
-            platform,
-            memory,
-            cores,
-            maxTouchPoints,
-            timeZone,
-            timeZoneOffset,
-            features,
-            performance,
-            session
-          }),
-        });
+        console.log('Sending analytics data:', analyticsData);
 
-        // Mark this session as tracked
-        sessionStorage.setItem('visit_tracked', 'true');
+        // Try to send analytics with retries
+        let retries = 3;
+        let error;
+
+        while (retries > 0) {
+          try {
+            const response = await fetch('/api/analytics', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(analyticsData),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            // Success - update session data
+            localStorage.setItem('returning_visitor', 'true');
+            localStorage.setItem('visit_count', session.visitCount.toString());
+            localStorage.setItem('last_visit', new Date().toISOString());
+            sessionStorage.setItem('visit_tracked', 'true');
+            
+            console.log('Analytics sent successfully');
+            return;
+          } catch (e) {
+            error = e;
+            retries--;
+            if (retries > 0) {
+              console.log(`Analytics send failed, retrying... (${retries} attempts left)`);
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+            }
+          }
+        }
+
+        // If we get here, all retries failed
+        console.error('Failed to send analytics after all retries:', error);
       } catch (error) {
-        console.error('Failed to track visit:', error);
+        console.error('Failed to collect or send analytics:', error);
       }
     };
 
