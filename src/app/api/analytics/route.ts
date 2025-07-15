@@ -253,8 +253,12 @@ async function getLocationInfo(ip: string) {
 
 export async function POST(request: Request) {
   try {
+    console.log('Analytics request received');
+
     // Test Discord webhook first
     const webhookWorks = await testDiscordWebhook();
+    console.log('Webhook test result:', webhookWorks);
+    
     if (!webhookWorks) {
       throw new Error('Discord webhook is not working');
     }
@@ -265,15 +269,34 @@ export async function POST(request: Request) {
     const forwardedFor = headersList.get('x-forwarded-for');
     const ip = forwardedFor ? forwardedFor.split(',')[0] : 'Unknown';
     
-    console.log('Processing analytics request:', { userAgent, referer, ip });
+    console.log('Request headers:', { userAgent, referer, ip });
     
     // Get request body
     const body = await request.json();
+    console.log('Request body received:', {
+      hasSystemInfo: !!body.systemInfo,
+      hasSession: !!body.session,
+      sessionDetails: {
+        newVisit: body.session?.newVisit,
+        visitCount: body.session?.visitCount,
+        entryPage: body.session?.entryPage
+      }
+    });
     
-    // Get location info
-    const locationInfo = await getLocationInfo(ip);
-    console.log('Location info:', locationInfo);
+    // Validate required data
+    if (!body.systemInfo || !body.session) {
+      console.error('Missing required data in request body');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Missing required data' 
+      }, { status: 400 });
+    }
 
+    // Get location info
+    console.log('Fetching location info for IP:', ip);
+    const locationInfo = await getLocationInfo(ip);
+    console.log('Location info result:', locationInfo);
+    
     const visitTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
 
     // Format system info for display

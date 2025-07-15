@@ -6,7 +6,12 @@ export const useAnalytics = () => {
       try {
         // Check if we've already tracked this session
         const hasTracked = sessionStorage.getItem('visit_tracked');
-        if (hasTracked) return;
+        if (hasTracked) {
+          console.log('Session already tracked, skipping');
+          return;
+        }
+
+        console.log('Starting analytics collection...');
 
         // Get detailed system information
         const getSystemInfo = async () => {
@@ -388,111 +393,65 @@ export const useAnalytics = () => {
 
         // Get system information
         const systemInfo = await getSystemInfo();
+        console.log('System info collected:', systemInfo);
 
-        // Session information with enhanced tracking
-        const session = {
-          newVisit: !localStorage.getItem('returning_visitor'),
-          visitCount: Number(localStorage.getItem('visit_count') || 0) + 1,
-          lastVisit: localStorage.getItem('last_visit') || 'First Visit',
-          // Enhanced session tracking
+        // Get session information
+        const sessionInfo = {
+          startTime: Date.now(),
+          newVisit: !localStorage.getItem('last_visit'),
+          lastVisit: localStorage.getItem('last_visit'),
+          visitCount: parseInt(localStorage.getItem('visit_count') || '0') + 1,
           entryPage: window.location.pathname,
           referrer: document.referrer,
-          landingTime: new Date().toISOString(),
-          screenSize: `${window.innerWidth}x${window.innerHeight}`,
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          timeZoneOffset: new Date().getTimezoneOffset(),
-          // Previous visits data
-          previousVisits: JSON.parse(localStorage.getItem('visit_history') || '[]'),
-          // Session duration tracking
-          startTime: Date.now(),
-          // Page interaction tracking
-          interactions: {
-            clicks: 0,
-            scrolls: 0,
-            keystrokes: 0,
-            mouseMovements: 0
-          }
+          previousVisits: JSON.parse(localStorage.getItem('previous_visits') || '[]'),
+          interactions: {}
         };
 
-        // Prepare analytics data
+        console.log('Session info prepared:', sessionInfo);
+
+        // Update local storage
+        localStorage.setItem('last_visit', new Date().toISOString());
+        localStorage.setItem('visit_count', sessionInfo.visitCount.toString());
+        
+        // Add current visit to previous visits
+        const previousVisits = sessionInfo.previousVisits;
+        previousVisits.push({
+          timestamp: Date.now(),
+          page: window.location.pathname
+        });
+        localStorage.setItem('previous_visits', JSON.stringify(previousVisits.slice(-10)));
+
+        // Prepare the payload
         const analyticsData = {
           systemInfo,
-          session,
-          // Raw navigator data
-          navigator: {
-            userAgent: navigator.userAgent,
-            appName: navigator.appName,
-            appCodeName: navigator.appCodeName,
-            appVersion: navigator.appVersion,
-            platform: navigator.platform,
-            product: navigator.product,
-            productSub: navigator.productSub,
-            vendor: navigator.vendor,
-            vendorSub: navigator.vendorSub,
-            language: navigator.language,
-            languages: navigator.languages,
-            onLine: navigator.onLine,
-            cookieEnabled: navigator.cookieEnabled,
-            doNotTrack: navigator.doNotTrack
-          }
+          session: sessionInfo
         };
 
         console.log('Sending analytics data:', analyticsData);
 
-        // Try to send analytics with retries
-        let retries = 3;
-        let error;
+        // Send the data
+        const response = await fetch('/api/analytics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(analyticsData),
+        });
 
-        while (retries > 0) {
-          try {
-            const response = await fetch('/api/analytics', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(analyticsData),
-            });
-
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-            }
-
-            // Success - update session data
-            localStorage.setItem('returning_visitor', 'true');
-            localStorage.setItem('visit_count', session.visitCount.toString());
-            localStorage.setItem('last_visit', new Date().toISOString());
-            
-            // Store visit history
-            const visitHistory = JSON.parse(localStorage.getItem('visit_history') || '[]');
-            visitHistory.push({
-              timestamp: new Date().toISOString(),
-              page: window.location.pathname,
-              referrer: document.referrer
-            });
-            localStorage.setItem('visit_history', JSON.stringify(visitHistory.slice(-10))); // Keep last 10 visits
-            
-            sessionStorage.setItem('visit_tracked', 'true');
-            
-            console.log('Analytics sent successfully');
-            return;
-          } catch (e) {
-            error = e;
-            retries--;
-            if (retries > 0) {
-              console.log(`Analytics send failed, retrying... (${retries} attempts left)`);
-              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
-            }
-          }
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
 
-        // If we get here, all retries failed
-        console.error('Failed to send analytics after all retries:', error);
+        console.log('Analytics sent successfully');
+        sessionStorage.setItem('visit_tracked', 'true');
+
       } catch (error) {
         console.error('Failed to collect or send analytics:', error);
       }
     };
 
+    // Call trackPageView immediately
     trackPageView();
 
     // Track user interactions
