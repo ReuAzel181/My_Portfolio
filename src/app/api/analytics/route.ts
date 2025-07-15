@@ -444,40 +444,116 @@ export async function POST(request: Request) {
     const message = {
       content: 'New analytics event received!',
       embeds: [{
-        title: '🌟 Portfolio Visitor',
-        color: 0x00ff00,
+        title: body.session.newVisit ? '🌟 New Portfolio Visitor!' : '👋 Returning Visitor!',
+        color: body.session.newVisit ? 0x00ff00 : 0x0099ff,
         fields: [
           {
-            name: '📱 Device Info',
+            name: '📱 System Information',
             value: [
-              `OS: ${body.systemInfo?.platform || 'Unknown'}`,
-              `Browser: ${body.systemInfo?.browser?.userAgent?.split(' ').pop() || 'Unknown'}`,
-              `Screen: ${body.systemInfo?.screen?.resolution || 'Unknown'}`
-            ].join('\n').slice(0, 1024),
-            inline: true
+              '💻 Hardware:',
+              `CPU: ${body.systemInfo?.hardware?.cores || 'Unknown'} cores`,
+              `Memory: ${body.systemInfo?.hardware?.memory || 'Unknown'}GB`,
+              `GPU: ${body.systemInfo?.gpu?.renderer || 'Unknown'}`,
+              `Primary Input: ${body.systemInfo?.hardware?.primaryInput || 'Unknown'}`,
+              `Audio Support: ${Object.entries(body.systemInfo?.hardware?.audioCodecs || {})
+                .filter(([, supported]) => supported)
+                .map(([codec]) => codec.toUpperCase())
+                .join(', ')}`,
+              `Video Support: ${Object.entries(body.systemInfo?.hardware?.videoCodecs || {})
+                .filter(([, supported]) => supported)
+                .map(([codec]) => codec.toUpperCase())
+                .join(', ')}`,
+              '\n🖥️ Display:',
+              `Resolution: ${body.systemInfo?.screen?.resolution || 'Unknown'}`,
+              `Available: ${body.systemInfo?.screen?.availWidth || 0}x${body.systemInfo?.screen?.availHeight || 0}`,
+              `Color Depth: ${body.systemInfo?.screen?.colorDepth || 'Unknown'}`,
+              `Color Gamut: ${body.systemInfo?.screen?.colorGamut || 'Unknown'}`,
+              `Refresh Rate: ${body.systemInfo?.screen?.refreshRate || 'Unknown'}Hz`,
+              `HDR: ${body.systemInfo?.screen?.prefersDarkMode ? 'Yes' : 'No'}`,
+              `Reduced Motion: ${body.systemInfo?.screen?.prefersReducedMotion ? 'Yes' : 'No'}`,
+              `High Contrast: ${body.systemInfo?.screen?.prefersContrast ? 'Yes' : 'No'}`,
+              '\n🌐 Browser Capabilities:',
+              `Security Context: ${body.systemInfo?.browser?.hasSecureContext ? 'Secure' : 'Insecure'}`,
+              `Storage Quota: ${formatBytes(body.systemInfo?.browser?.storageQuota?.quota || 0)}`,
+              `Storage Used: ${formatBytes(body.systemInfo?.browser?.storageQuota?.usage || 0)}`,
+              `Media Devices: ${formatMediaDevices(body.systemInfo?.browser?.mediaDevices)}`,
+              `Permissions: ${Object.entries(body.systemInfo?.browser?.permissions || {})
+                .filter(([, state]) => state === 'granted')
+                .map(([name]) => name)
+                .join(', ')}`,
+              '\n🔧 System Environment:',
+              `Locale: ${body.systemInfo?.locale || 'Unknown'}`,
+              `Time Zone: ${body.systemInfo?.timeZone || 'Unknown'}`,
+              `Platform: ${body.systemInfo?.platform || 'Unknown'}`,
+              `Theme: ${body.systemInfo?.theme || 'Unknown'}`,
+              body.systemInfo?.battery ? [
+                '\n🔋 Battery:',
+                `Status: ${body.systemInfo.battery.charging ? 'Charging' : 'Discharging'}`,
+                `Level: ${Math.round((body.systemInfo.battery.level || 0) * 100)}%`,
+                body.systemInfo.battery.charging ? 
+                  `Time until full: ${formatTime(body.systemInfo.battery.chargingTime)}` :
+                  `Time remaining: ${formatTime(body.systemInfo.battery.dischargingTime)}`
+              ].join('\n') : '',
+              body.systemInfo?.performance ? [
+                '\n⚡ Performance:',
+                `DNS Lookup: ${body.systemInfo.performance.dnsLookup}ms`,
+                `TCP Connection: ${body.systemInfo.performance.tcpConnection}ms`,
+                `TLS Setup: ${body.systemInfo.performance.tlsNegotiation}ms`,
+                `Server Response: ${body.systemInfo.performance.serverResponse}ms`,
+                `Content Download: ${body.systemInfo.performance.contentDownload}ms`,
+                `DOM Interactive: ${body.systemInfo.performance.domInteractive}ms`,
+                `Page Load: ${body.systemInfo.performance.totalPageLoad}ms`
+              ].join('\n') : ''
+            ].filter(Boolean).join('\n').slice(0, 1024),
+            inline: false
           },
           {
             name: '📍 Location',
             value: locationInfo ? [
-              `${locationInfo.city}, ${locationInfo.region}`,
-              `${locationInfo.country}`,
-              `${locationInfo.timezone}`
-            ].join('\n').slice(0, 1024) : 'Location Unknown',
-            inline: true
+              `City: ${locationInfo.city}`,
+              `Region: ${locationInfo.region}`,
+              `Country: ${locationInfo.country}`,
+              `IP: ${locationInfo.ip}`,
+              `Timezone: ${locationInfo.timezone}`
+            ].join('\n') : 'Location Unknown',
+            inline: false
           },
           {
             name: '👤 Visit Details',
             value: [
-              `Time: ${visitTime}`,
-              `Visit #: ${body.session?.visitCount || 1}`,
-              `Page: ${body.session?.entryPage || '/'}`,
-              body.session?.previousVisits?.length > 0 ? 
-                `\nPrevious visits: ${body.session.previousVisits.length}` : 
-                'First visit'
-            ].join('\n').slice(0, 1024),
+              `Time (PHT): ${visitTime}`,
+              `Visit Count: ${body.session.visitCount}`,
+              body.session.visitCount > 1 ? 
+                `Last Visit: ${new Date(body.session.lastVisit).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}` : 
+                'First Visit',
+              `Entry Page: ${body.session.entryPage}`,
+              `Referrer: ${body.session.referrer || 'Direct'}`,
+              '\nPrevious Visits:',
+              body.session.previousVisits
+                .slice(-3)
+                .map((visit: any) => 
+                  `• ${new Date(visit.timestamp).toLocaleString('en-US', { timeZone: 'Asia/Manila' })} - ${visit.page}`
+                )
+                .join('\n')
+            ].join('\n'),
+            inline: false
+          },
+          {
+            name: '🔍 Session Activity',
+            value: [
+              `Duration: ${formatTime((Date.now() - body.session.startTime) / 1000)}`,
+              '\nInteractions:',
+              `Clicks: ${body.session.interactions.clicks || 0}`,
+              `Scrolls: ${body.session.interactions.scrolls || 0}`,
+              `Keystrokes: ${body.session.interactions.keystrokes || 0}`,
+              `Mouse Movements: ${body.session.interactions.mouseMovements || 0}`
+            ].join('\n'),
             inline: true
           }
         ],
+        footer: {
+          text: 'Portfolio Analytics'
+        },
         timestamp: new Date().toISOString()
       }]
     };
