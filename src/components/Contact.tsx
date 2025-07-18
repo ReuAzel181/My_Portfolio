@@ -48,14 +48,15 @@ const Contact = () => {
   const linkedinUrl = process.env.NEXT_PUBLIC_LINKEDIN_URL || '#'
   const githubUrl = process.env.NEXT_PUBLIC_GITHUB_URL || 'https://github.com/ReuAzel181'
   const dribbbleUrl = process.env.NEXT_PUBLIC_DRIBBBLE_URL || '#'
-  const phoneNumber = process.env.NEXT_PUBLIC_PHONE_NUMBER || '+63 912 345 6789'
-  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+63 912 345 6789'
+  const phoneNumber = process.env.NEXT_PUBLIC_PHONE_NUMBER || '+63 921 401 7503'
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+63 921 401 7593'
   const discordUsername = process.env.NEXT_PUBLIC_DISCORD_USERNAME || 'reuazel'
 
   const onSubmit = async (data: ContactFormData) => {
     try {
       setIsSubmitting(true)
       setSubmitError(null)
+      setSubmitSuccess(false) // Reset success state before new submission
       
       console.log('Submitting form data:', data);
       
@@ -75,10 +76,17 @@ const Contact = () => {
       }
       
       setSubmitSuccess(true)
-      reset()
+      reset() // This will reset the form data and validation states
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSubmitSuccess(false)
+      }, 5000)
+      
     } catch (error) {
       console.error('Contact form submission error:', error);
       setSubmitError(error instanceof Error ? error.message : 'Failed to send message. Please try again later.')
+      setSubmitSuccess(false)
     } finally {
       setIsSubmitting(false)
     }
