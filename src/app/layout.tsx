@@ -2,7 +2,6 @@
 
 import './globals.css';
 import Providers from '@/components/Providers';
-import AuthProvider from '@/components/AuthProvider';
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import CustomCursor from '@/components/CustomCursor';
 import PageTransition from '@/components/PageTransition';
@@ -72,6 +71,7 @@ export default function RootLayout({
         <link rel="icon" href="/fav-hollow.png" />
         <link rel="apple-touch-icon" href="/fav-hollow.png" />
         <link rel="shortcut icon" href="/fav-hollow.png" />
+        <meta name="web3" content="no" />
       </head>
       <body className={`${inter.className} 
         ${playfair.variable} 
@@ -85,11 +85,9 @@ export default function RootLayout({
         ${permanentMarker.variable}
         ${sourceCodePro.variable} antialiased`}>
         <ServiceWorkerRegister />
-        <AuthProvider>
-          <Providers>
-            {content}
-          </Providers>
-        </AuthProvider>
+        <Providers>
+          {content}
+        </Providers>
       </body>
     </html>
   );
