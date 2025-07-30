@@ -1,6 +1,6 @@
 import './globals.css';
 import { Metadata } from 'next';
-import { inter, playfair, oswald, spaceGrotesk, dmSerifDisplay, abrilFatface, comfortaa, quicksand, bebasNeue, permanentMarker, sourceCodePro } from '@/lib/fonts';
+import { inter, playfair, oswald, spaceGrotesk, dmSerifDisplay, abrilFatface, comfortaa, quicksand, bebasNeue, permanentMarker, sourceCodePro, roboto, montserrat, poppins, lato, openSans, nunito, sourceSans, raleway, ubuntu, merriweather } from '@/lib/fonts';
 import ClientLayout from '@/components/ClientLayout';
 
 export const metadata: Metadata = {
@@ -32,7 +32,17 @@ export default function RootLayout({
         ${quicksand.variable}
         ${bebasNeue.variable}
         ${permanentMarker.variable}
-        ${sourceCodePro.variable} antialiased`}>
+        ${sourceCodePro.variable}
+        ${roboto.variable}
+        ${montserrat.variable}
+        ${poppins.variable}
+        ${lato.variable}
+        ${openSans.variable}
+        ${nunito.variable}
+        ${sourceSans.variable}
+        ${raleway.variable}
+        ${ubuntu.variable}
+        ${merriweather.variable} antialiased`}>
         <ClientLayout>
           {children}
         </ClientLayout>

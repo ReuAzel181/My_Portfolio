@@ -8,6 +8,8 @@ const images = [
   '/ui-projects/Poster.png',
   '/ui-projects/SL.png',
   '/ui-projects/Youtube Thumbnail.png',
+  '/ui-projects/AI - Secretary.png',
+  '/ui-projects/QuizGame.png',
   '/ui-projects/Translator.png',
   '/ui-projects/Wine Recommender.png',
 ];

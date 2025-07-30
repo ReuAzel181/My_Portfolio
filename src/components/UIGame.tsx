@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface UIGameProps {
@@ -9,55 +9,152 @@ interface UIGameProps {
   onClose: () => void;
 }
 
+// Utility function to shuffle an array
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 const FONT_OPTIONS = [
   { 
     name: 'Bebas Neue',
     family: 'var(--font-bebas)',
     displayText: 'BOLD & CONDENSED',
     options: ['Bebas Neue', 'Oswald', 'Impact', 'Arial Black'],
-    category: 'Display Sans-serif'
+    category: 'Display Sans-serif',
+    info: 'Bebas Neue is a sans-serif display typeface known for its bold, condensed letterforms. Perfect for headlines and impactful text.'
   },
   { 
     name: 'DM Serif Display',
     family: 'var(--font-dm-serif)',
     displayText: 'Elegant & Refined',
     options: ['DM Serif Display', 'Playfair Display', 'Didot', 'Times New Roman'],
-    category: 'Modern Serif'
+    category: 'Modern Serif',
+    info: 'DM Serif Display is a high-contrast serif typeface designed for display sizes. It features elegant curves and sharp details.'
   },
   { 
     name: 'Space Grotesk',
     family: 'var(--font-space-grotesk)',
     displayText: 'Modern & Technical',
     options: ['Space Grotesk', 'Roboto', 'Inter', 'Arial'],
-    category: 'Modern Sans-serif'
+    category: 'Modern Sans-serif',
+    info: 'Space Grotesk is a proportional variant of the original Space Mono family. It maintains the monospace feel while being more readable.'
   },
   { 
     name: 'Playfair Display',
     family: 'var(--font-playfair)',
     displayText: 'Classic & Sophisticated',
     options: ['Playfair Display', 'DM Serif Display', 'Georgia', 'Times New Roman'],
-    category: 'Traditional Serif'
+    category: 'Traditional Serif',
+    info: 'Playfair Display is a transitional serif typeface with high contrast and distinctive details, inspired by 18th-century letterforms.'
   },
   { 
     name: 'Comfortaa',
     family: 'var(--font-comfortaa)',
     displayText: 'Friendly & Rounded',
     options: ['Comfortaa', 'Quicksand', 'Varela Round', 'Comic Sans'],
-    category: 'Rounded Sans-serif'
+    category: 'Rounded Sans-serif',
+    info: 'Comfortaa is a rounded geometric sans-serif that feels friendly and approachable. Great for modern, casual designs.'
   },
   { 
     name: 'Quicksand',
     family: 'var(--font-quicksand)',
     displayText: 'Smooth & Modern',
     options: ['Quicksand', 'Comfortaa', 'Varela Round', 'Nunito'],
-    category: 'Rounded Sans-serif'
+    category: 'Rounded Sans-serif',
+    info: 'Quicksand is a sans-serif with rounded corners that maintains good readability while feeling modern and friendly.'
   },
   { 
     name: 'Oswald',
     family: 'var(--font-oswald)',
     displayText: 'STRONG & NARROW',
     options: ['Oswald', 'Bebas Neue', 'Impact', 'Arial Narrow'],
-    category: 'Condensed Sans-serif'
+    category: 'Condensed Sans-serif',
+    info: 'Oswald is a reworking of the classic gothic typeface style. It has a very condensed letterform for strong, impactful headlines.'
+  },
+  { 
+    name: 'Roboto',
+    family: 'var(--font-roboto)',
+    displayText: 'Clean & Versatile',
+    options: ['Roboto', 'Open Sans', 'Lato', 'Arial'],
+    category: 'Neo-Grotesque',
+    info: 'Roboto is Google\'s signature typeface. It has a mechanical skeleton and forms are largely geometric with friendly and open curves.'
+  },
+  { 
+    name: 'Montserrat',
+    family: 'var(--font-montserrat)',
+    displayText: 'Urban & Contemporary',
+    options: ['Montserrat', 'Poppins', 'Raleway', 'Source Sans Pro'],
+    category: 'Geometric Sans-serif',
+    info: 'Montserrat is inspired by the old signage of the Montserrat neighborhood in Buenos Aires. It has a urban, contemporary feel.'
+  },
+  { 
+    name: 'Poppins',
+    family: 'var(--font-poppins)',
+    displayText: 'Geometric & Friendly',
+    options: ['Poppins', 'Montserrat', 'Ubuntu', 'Nunito'],
+    category: 'Geometric Sans-serif',
+    info: 'Poppins is a geometric sans-serif with a perfect balance of technical precision and friendly curves. Very popular for modern web design.'
+  },
+  { 
+    name: 'Lato',
+    family: 'var(--font-lato)',
+    displayText: 'Humanist & Warm',
+    options: ['Lato', 'Source Sans Pro', 'Open Sans', 'Roboto'],
+    category: 'Humanist Sans-serif',
+    info: 'Lato means "summer" in Polish. It\'s a humanist sans-serif that feels warm and friendly while maintaining serious and stability.'
+  },
+  { 
+    name: 'Open Sans',
+    family: 'var(--font-open-sans)',
+    displayText: 'Neutral & Readable',
+    options: ['Open Sans', 'Lato', 'Source Sans Pro', 'Roboto'],
+    category: 'Humanist Sans-serif',
+    info: 'Open Sans is optimized for legibility across print, web, and mobile interfaces. It has an upright stress and open forms.'
+  },
+  { 
+    name: 'Nunito',
+    family: 'var(--font-nunito)',
+    displayText: 'Rounded & Balanced',
+    options: ['Nunito', 'Comfortaa', 'Quicksand', 'Ubuntu'],
+    category: 'Rounded Sans-serif',
+    info: 'Nunito is a well-balanced sans-serif with rounded terminals. It\'s a perfect choice for headers and body text alike.'
+  },
+  { 
+    name: 'Source Sans Pro',
+    family: 'var(--font-source-sans)',
+    displayText: 'Professional & Clear',
+    options: ['Source Sans Pro', 'Open Sans', 'Lato', 'Roboto'],
+    category: 'Neo-Grotesque',
+    info: 'Source Sans Pro is Adobe\'s first open-source typeface. It was designed to work well in user interfaces and is highly legible.'
+  },
+  { 
+    name: 'Raleway',
+    family: 'var(--font-raleway)',
+    displayText: 'Elegant & Sophisticated',
+    options: ['Raleway', 'Montserrat', 'Poppins', 'Lato'],
+    category: 'Sans-serif',
+    info: 'Raleway is an elegant sans-serif with a sophisticated character. Originally designed as a single thin weight, it now spans nine weights.'
+  },
+  { 
+    name: 'Ubuntu',
+    family: 'var(--font-ubuntu)',
+    displayText: 'Humanist & Modern',
+    options: ['Ubuntu', 'Nunito', 'Open Sans', 'Lato'],
+    category: 'Humanist Sans-serif',
+    info: 'Ubuntu is a humanist sans-serif developed for the Ubuntu operating system. It conveys a sense of warmth and humanity.'
+  },
+  { 
+    name: 'Merriweather',
+    family: 'var(--font-merriweather)',
+    displayText: 'Readable & Pleasant',
+    options: ['Merriweather', 'Playfair Display', 'Georgia', 'Times New Roman'],
+    category: 'Serif',
+    info: 'Merriweather is designed to be pleasant to read on screens. It features a very large x-height, slightly condensed letterforms and a mild diagonal stress.'
   }
 ];
 
@@ -769,28 +866,83 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isCorrect, setIsCorrect] = useState(false);
+  const [gameCompleted, setGameCompleted] = useState(false);
+  const [waitingForContinue, setWaitingForContinue] = useState(false);
+
+  // Shuffled arrays for randomized questions
+  const [shuffledFontOptions, setShuffledFontOptions] = useState(FONT_OPTIONS);
+  const [shuffledFontPairs, setShuffledFontPairs] = useState(FONT_PAIRS);
+  const [shuffledTypographyPrinciples, setShuffledTypographyPrinciples] = useState(TYPOGRAPHY_PRINCIPLES);
+  const [shuffledUIExamples, setShuffledUIExamples] = useState(UI_TYPOGRAPHY_EXAMPLES);
+  const [shuffledColorIdentification, setShuffledColorIdentification] = useState(COLOR_IDENTIFICATION);
+  const [shuffledColorPalettes, setShuffledColorPalettes] = useState(COLOR_PALETTES);
+  const [shuffledColorHarmonies, setShuffledColorHarmonies] = useState(COLOR_HARMONIES);
+
+  // Shuffle arrays when game starts
+  const shuffleGameData = () => {
+    // For font identification, select only 10 random fonts
+    const randomFonts = shuffleArray(FONT_OPTIONS).slice(0, 10);
+    setShuffledFontOptions(randomFonts);
+    
+    setShuffledFontPairs(shuffleArray(FONT_PAIRS));
+    setShuffledTypographyPrinciples(shuffleArray(TYPOGRAPHY_PRINCIPLES));
+    setShuffledUIExamples(shuffleArray(UI_TYPOGRAPHY_EXAMPLES));
+    setShuffledColorIdentification(shuffleArray(COLOR_IDENTIFICATION));
+    setShuffledColorPalettes(shuffleArray(COLOR_PALETTES));
+    setShuffledColorHarmonies(shuffleArray(COLOR_HARMONIES));
+  };
+
+  // Shuffle when component mounts or when starting a new game
+  useEffect(() => {
+    if (selectedGame) {
+      shuffleGameData();
+    }
+  }, [selectedGame]);
 
   const handleUIGuess = (answer: string) => {
+    if (!shuffledFontOptions[currentUIIndex]) {
+      console.error('Font option not found at index', currentUIIndex);
+      return;
+    }
+    
     let correct = false;
     let explanation = '';
 
     switch (selectedGame) {
-      case 'font-pairing':
+      case 'identify':
+        correct = answer === shuffledFontOptions[currentUIIndex].name;
+        if (correct) {
+          explanation = `🎉 Correct! ${shuffledFontOptions[currentUIIndex].info}`;
+        } else {
+          explanation = `❌ That's ${answer}. The correct answer is ${shuffledFontOptions[currentUIIndex].name}. ${shuffledFontOptions[currentUIIndex].info}`;
+        }
+        break;
+      case 'pair':
         const isPairCorrect = answer === 'good';
-        correct = FONT_PAIRS[currentUIIndex].correctPair === isPairCorrect;
-        explanation = FONT_PAIRS[currentUIIndex].explanation;
+        correct = shuffledFontPairs[currentUIIndex].correctPair === isPairCorrect;
+        explanation = shuffledFontPairs[currentUIIndex].explanation;
+        break;
+      case 'principles':
+        const correctPrincipleOption = shuffledTypographyPrinciples[currentUIIndex].options.find(opt => opt.id === answer);
+        correct = correctPrincipleOption?.isCorrect || false;
+        explanation = 'Good eye for typography principles!';
+        break;
+      case 'ui':
+        const correctUIOption = shuffledUIExamples[currentUIIndex].options.find(opt => opt.id === answer);
+        correct = correctUIOption?.isCorrect || false;
+        explanation = shuffledUIExamples[currentUIIndex].explanation;
         break;
       case 'color-identification':
-        correct = answer === COLOR_IDENTIFICATION[colorIdentificationIndex].name;
-        explanation = COLOR_IDENTIFICATION[colorIdentificationIndex].explanation;
+        correct = answer === shuffledColorIdentification[colorIdentificationIndex].name;
+        explanation = shuffledColorIdentification[colorIdentificationIndex].explanation;
         break;
       case 'color-palettes':
-        const correctPaletteOption = COLOR_PALETTES[colorPaletteIndex].options.find(opt => opt.id === answer);
+        const correctPaletteOption = shuffledColorPalettes[colorPaletteIndex].options.find(opt => opt.id === answer);
         correct = correctPaletteOption?.isCorrect || false;
         explanation = correctPaletteOption?.explanation || '';
         break;
       case 'color-harmonies':
-        const correctHarmonyOption = COLOR_HARMONIES[colorHarmonyIndex].options.find(opt => opt.id === answer);
+        const correctHarmonyOption = shuffledColorHarmonies[colorHarmonyIndex].options.find(opt => opt.id === answer);
         correct = correctHarmonyOption?.isCorrect || false;
         explanation = correctHarmonyOption?.explanation || '';
         break;
@@ -803,35 +955,69 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
     if (correct) setScore(score + 1);
     setFeedbackMessage(explanation);
     setShowFeedback(true);
+    setWaitingForContinue(true);
 
-    setTimeout(() => {
-      setShowFeedback(false);
-      switch (selectedGame) {
-        case 'font-pairing':
-          if (currentUIIndex < FONT_PAIRS.length - 1) {
-            setCurrentUIIndex(currentUIIndex + 1);
-          }
-          break;
-        case 'color-identification':
-          if (colorIdentificationIndex < COLOR_IDENTIFICATION.length - 1) {
-            setColorIdentificationIndex(colorIdentificationIndex + 1);
-          }
-          break;
-        case 'color-palettes':
-          if (colorPaletteIndex < COLOR_PALETTES.length - 1) {
-            setColorPaletteIndex(colorPaletteIndex + 1);
-          }
-          break;
-        case 'color-harmonies':
-          if (colorHarmonyIndex < COLOR_HARMONIES.length - 1) {
-            setColorHarmonyIndex(colorHarmonyIndex + 1);
-          }
-          break;
-        default:
-          // Handle other game types
-          break;
-      }
-    }, 2000);
+    // Remove the automatic timeout - now controlled by continue button
+  };
+
+  const handleContinue = () => {
+    setShowFeedback(false);
+    setWaitingForContinue(false);
+    
+    switch (selectedGame) {
+      case 'identify':
+        if (currentUIIndex < shuffledFontOptions.length - 1) {
+          setCurrentUIIndex(currentUIIndex + 1);
+        } else {
+          setGameCompleted(true);
+        }
+        break;
+      case 'pair':
+        if (currentUIIndex < shuffledFontPairs.length - 1) {
+          setCurrentUIIndex(currentUIIndex + 1);
+        } else {
+          setGameCompleted(true);
+        }
+        break;
+      case 'principles':
+        if (currentUIIndex < shuffledTypographyPrinciples.length - 1) {
+          setCurrentUIIndex(currentUIIndex + 1);
+        } else {
+          setGameCompleted(true);
+        }
+        break;
+      case 'ui':
+        if (currentUIIndex < shuffledUIExamples.length - 1) {
+          setCurrentUIIndex(currentUIIndex + 1);
+        } else {
+          setGameCompleted(true);
+        }
+        break;
+      case 'color-identification':
+        if (colorIdentificationIndex < shuffledColorIdentification.length - 1) {
+          setColorIdentificationIndex(colorIdentificationIndex + 1);
+        } else {
+          setGameCompleted(true);
+        }
+        break;
+      case 'color-palettes':
+        if (colorPaletteIndex < shuffledColorPalettes.length - 1) {
+          setColorPaletteIndex(colorPaletteIndex + 1);
+        } else {
+          setGameCompleted(true);
+        }
+        break;
+      case 'color-harmonies':
+        if (colorHarmonyIndex < shuffledColorHarmonies.length - 1) {
+          setColorHarmonyIndex(colorHarmonyIndex + 1);
+        } else {
+          setGameCompleted(true);
+        }
+        break;
+      default:
+        // Handle other game types
+        break;
+    }
   };
 
   const resetGame = () => {
@@ -844,6 +1030,8 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
     setShowFeedback(false);
     setFeedbackMessage('');
     setIsCorrect(false);
+    setGameCompleted(false);
+    setWaitingForContinue(false);
   };
 
   if (!isVisible) return null;
@@ -863,7 +1051,7 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
           exit={{ scale: 0.95 }}
           className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl relative overflow-hidden"
         >
-          <div className="absolute top-0 right-0 p-6 flex items-center gap-4">
+          <div className="absolute top-0 left-0 right-0 p-6 flex items-center justify-between">
             {selectedGame && (
               <button
                 onClick={resetGame}
@@ -885,37 +1073,37 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
             </button>
           </div>
 
-          <div className="p-8">
-            <div className="max-w-4xl mx-auto">
+          <div className="p-6">
+            <div className="max-w-3xl mx-auto">
               {!selectedGame ? (
                 <>
-                  <div className="text-center mb-8">
+                  <div className="text-center mb-6">
                     <h2 
-                      className="text-5xl font-bold mb-2 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent" 
+                      className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent" 
                       style={{ fontFamily: 'var(--font-dm-serif)' }}
                     >
                       Typography & Color Games
                     </h2>
                     <p 
-                      className="text-lg text-gray-600 dark:text-gray-400" 
+                      className="text-base text-gray-600 dark:text-gray-400" 
                       style={{ fontFamily: 'var(--font-quicksand)' }}
                     >
                       Test your typography and color knowledge with these fun challenges
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedGame('identify')}
-                      className="group relative aspect-video bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-6 text-left overflow-hidden border-2 border-transparent hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+                      className="group relative h-32 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-4 text-left overflow-hidden border-2 border-transparent hover:border-blue-500 dark:hover:border-blue-400 transition-colors flex flex-col justify-between"
                     >
                       <div className="relative z-10">
-                        <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-2" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 mb-1" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
                           Font Identification
                         </h3>
-                        <p className="text-sm text-blue-600/80 dark:text-blue-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        <p className="text-xs text-blue-600/80 dark:text-blue-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
                           Test your ability to identify different fonts and their characteristics
                         </p>
                       </div>
@@ -926,13 +1114,13 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedGame('pair')}
-                      className="group relative aspect-video bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-2xl p-6 text-left overflow-hidden border-2 border-transparent hover:border-purple-500 dark:hover:border-purple-400 transition-colors"
+                      className="group relative h-32 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-2xl p-4 text-left overflow-hidden border-2 border-transparent hover:border-purple-500 dark:hover:border-purple-400 transition-colors flex flex-col justify-between"
                     >
                       <div className="relative z-10">
-                        <h3 className="text-xl font-bold text-purple-600 dark:text-purple-400 mb-2" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-1" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
                           Font Pairing
                         </h3>
-                        <p className="text-sm text-purple-600/80 dark:text-purple-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        <p className="text-xs text-purple-600/80 dark:text-purple-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
                           Learn to create harmonious font combinations for better design
                         </p>
                       </div>
@@ -943,13 +1131,13 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedGame('principles')}
-                      className="group relative aspect-video bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl p-6 text-left overflow-hidden border-2 border-transparent hover:border-green-500 dark:hover:border-green-400 transition-colors"
+                      className="group relative h-32 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl p-4 text-left overflow-hidden border-2 border-transparent hover:border-green-500 dark:hover:border-green-400 transition-colors flex flex-col justify-between"
                     >
                       <div className="relative z-10">
-                        <h3 className="text-xl font-bold text-green-600 dark:text-green-400 mb-2" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        <h3 className="text-lg font-bold text-green-600 dark:text-green-400 mb-1" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
                           Typography Principles
                         </h3>
-                        <p className="text-sm text-green-600/80 dark:text-green-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        <p className="text-xs text-green-600/80 dark:text-green-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
                           Master the fundamental principles of typography and hierarchy
                         </p>
                       </div>
@@ -960,13 +1148,13 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedGame('ui')}
-                      className="group relative aspect-video bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-2xl p-6 text-left overflow-hidden border-2 border-transparent hover:border-amber-500 dark:hover:border-amber-400 transition-colors"
+                      className="group relative h-32 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-2xl p-4 text-left overflow-hidden border-2 border-transparent hover:border-amber-500 dark:hover:border-amber-400 transition-colors flex flex-col justify-between"
                     >
                       <div className="relative z-10">
-                        <h3 className="text-xl font-bold text-amber-600 dark:text-amber-400 mb-2" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 mb-1" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
                           UI Typography
                         </h3>
-                        <p className="text-sm text-amber-600/80 dark:text-amber-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        <p className="text-xs text-amber-600/80 dark:text-amber-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
                           Learn best practices for typography in UI design
                         </p>
                       </div>
@@ -977,13 +1165,13 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedGame('color-identification')}
-                      className="group relative aspect-video bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-2xl p-6 text-left overflow-hidden border-2 border-transparent hover:border-pink-500 dark:hover:border-pink-400 transition-colors"
+                      className="group relative h-32 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-2xl p-4 text-left overflow-hidden border-2 border-transparent hover:border-pink-500 dark:hover:border-pink-400 transition-colors flex flex-col justify-between"
                     >
                       <div className="relative z-10">
-                        <h3 className="text-xl font-bold text-pink-600 dark:text-pink-400 mb-2" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        <h3 className="text-lg font-bold text-pink-600 dark:text-pink-400 mb-1" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
                           Color Identification
                         </h3>
-                        <p className="text-sm text-pink-600/80 dark:text-pink-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        <p className="text-xs text-pink-600/80 dark:text-pink-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
                           Test your ability to identify different colors and their characteristics
                         </p>
                       </div>
@@ -994,13 +1182,13 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedGame('color-palettes')}
-                      className="group relative aspect-video bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-900/20 dark:to-fuchsia-800/20 rounded-2xl p-6 text-left overflow-hidden border-2 border-transparent hover:border-fuchsia-500 dark:hover:border-fuchsia-400 transition-colors"
+                      className="group relative h-32 bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-900/20 dark:to-fuchsia-800/20 rounded-2xl p-4 text-left overflow-hidden border-2 border-transparent hover:border-fuchsia-500 dark:hover:border-fuchsia-400 transition-colors flex flex-col justify-between"
                     >
                       <div className="relative z-10">
-                        <h3 className="text-xl font-bold text-fuchsia-600 dark:text-fuchsia-400 mb-2" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        <h3 className="text-lg font-bold text-fuchsia-600 dark:text-fuchsia-400 mb-1" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
                           Color Palettes
                         </h3>
-                        <p className="text-sm text-fuchsia-600/80 dark:text-fuchsia-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        <p className="text-xs text-fuchsia-600/80 dark:text-fuchsia-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
                           Learn to create harmonious color combinations for better design
                         </p>
                       </div>
@@ -1011,13 +1199,13 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setSelectedGame('color-harmonies')}
-                      className="group relative aspect-video bg-gradient-to-br from-lime-50 to-lime-100 dark:from-lime-900/20 dark:to-lime-800/20 rounded-2xl p-6 text-left overflow-hidden border-2 border-transparent hover:border-lime-500 dark:hover:border-lime-400 transition-colors"
+                      className="group relative h-32 bg-gradient-to-br from-lime-50 to-lime-100 dark:from-lime-900/20 dark:to-lime-800/20 rounded-2xl p-4 text-left overflow-hidden border-2 border-transparent hover:border-lime-500 dark:hover:border-lime-400 transition-colors flex flex-col justify-between"
                     >
                       <div className="relative z-10">
-                        <h3 className="text-xl font-bold text-lime-600 dark:text-lime-400 mb-2" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        <h3 className="text-lg font-bold text-lime-600 dark:text-lime-400 mb-1" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
                           Color Harmonies
                         </h3>
-                        <p className="text-sm text-lime-600/80 dark:text-lime-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        <p className="text-xs text-lime-600/80 dark:text-lime-400/80" style={{ fontFamily: 'var(--font-quicksand)' }}>
                           Learn to create harmonious color combinations for better design
                         </p>
                       </div>
@@ -1025,97 +1213,174 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     </motion.button>
                   </div>
 
-                  <div className="mt-6 text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
                       Click any game to start • Your progress will be saved
                     </p>
                   </div>
                 </>
               ) : selectedGame === 'identify' ? (
-                <div className="text-center space-y-8">
-                  <div className="flex items-center justify-center gap-2 mb-8">
-                    <span className="text-blue-500 dark:text-blue-400 text-xl" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
-                      Font Identification
-                    </span>
-                    <span className="text-gray-400 dark:text-gray-500">•</span>
-                    <span className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                      Question {currentUIIndex + 1} of {FONT_OPTIONS.length}
-                    </span>
-                  </div>
-
-                  <div className="min-h-[400px] flex flex-col">
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-2 mb-8">
-                      <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-inner">
-                        <div className="mb-4 inline-block px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400 text-sm" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                          {FONT_OPTIONS[currentUIIndex].category}
-                        </div>
-                        <div 
-                          className="text-4xl leading-relaxed max-w-2xl mx-auto"
-                          style={{ fontFamily: FONT_OPTIONS[currentUIIndex].family }}
-                        >
-                          {FONT_OPTIONS[currentUIIndex].displayText}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 max-w-xl mx-auto mb-8">
-                      {FONT_OPTIONS[currentUIIndex].options.map((option) => (
-                        <motion.button
-                          key={option}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleUIGuess(option)}
-                          className={`p-4 rounded-xl transition-all duration-300 ${
-                            showFeedback 
-                              ? option === FONT_OPTIONS[currentUIIndex].name
-                                ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500'
-                                : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent opacity-50'
-                              : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400'
-                          }`}
-                          style={{ fontFamily: 'var(--font-quicksand)' }}
-                          disabled={showFeedback}
-                        >
-                          <span className="text-lg font-medium">
-                            {option}
-                          </span>
-                        </motion.button>
-                      ))}
-                    </div>
-
-                    <div className="h-[60px] flex items-center justify-center">
-                      {showFeedback && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                        >
-                          <div className={`inline-block px-6 py-3 rounded-full text-lg ${
-                            score > currentUIIndex 
-                              ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
-                              : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                          }`}
-                          style={{ fontFamily: 'var(--font-quicksand)' }}>
-                            {score > currentUIIndex ? '🎉 Correct!' : '❌ Incorrect!'} 
-                            <span className="font-medium ml-1">
-                              This is {FONT_OPTIONS[currentUIIndex].name}
-                            </span>
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-center gap-2 mt-auto">
-                      <div className="h-1 w-20 rounded-full bg-blue-100 dark:bg-blue-900/20">
-                        <div 
-                          className="h-full rounded-full bg-blue-500 dark:bg-blue-400 transition-all duration-500"
-                          style={{ width: `${((currentUIIndex + 1) / FONT_OPTIONS.length) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-blue-500 dark:text-blue-400 font-medium" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                        {score} / {FONT_OPTIONS.length}
+                gameCompleted ? (
+                  <div className="text-center space-y-6">
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                      <span className="text-blue-500 dark:text-blue-400 text-xl" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        Font Identification - Complete!
                       </span>
                     </div>
+                    
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 max-w-xl mx-auto">
+                      <div className="text-5xl mb-3">🎯</div>
+                      <h3 className="text-2xl font-bold mb-3 text-blue-600 dark:text-blue-400" style={{ fontFamily: 'var(--font-dm-serif)' }}>
+                        Congratulations!
+                      </h3>
+                      <div className="text-4xl font-bold mb-3 text-gray-900 dark:text-white" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        {score} / {shuffledFontOptions.length}
+                      </div>
+                      <p className="text-base text-gray-600 dark:text-gray-400 mb-5" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        {score === shuffledFontOptions.length 
+                          ? "Perfect score! You're a typography expert! 🏆" 
+                          : score >= shuffledFontOptions.length * 0.8 
+                          ? "Excellent work! You have a great eye for fonts! 🌟"
+                          : score >= shuffledFontOptions.length * 0.6
+                          ? "Good job! Keep practicing to improve your font recognition! 👍"
+                          : "Keep learning! Typography takes practice to master! 💪"
+                        }
+                      </p>
+                      <div className="flex gap-4 justify-center">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            setGameCompleted(false);
+                            setCurrentUIIndex(0);
+                            setScore(0);
+                            setWaitingForContinue(false);
+                            shuffleGameData();
+                          }}
+                          className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors"
+                          style={{ fontFamily: 'var(--font-quicksand)' }}
+                        >
+                          Play Again
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={resetGame}
+                          className="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-colors"
+                          style={{ fontFamily: 'var(--font-quicksand)' }}
+                        >
+                          Choose New Game
+                        </motion.button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  shuffledFontOptions.length > 0 && shuffledFontOptions[currentUIIndex] ? (
+                    <div className="text-center space-y-6">
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                      <span className="text-blue-500 dark:text-blue-400 text-xl" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
+                        Font Identification
+                      </span>
+                      <span className="text-gray-400 dark:text-gray-500">•</span>
+                      <span className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                        Question {currentUIIndex + 1} of {shuffledFontOptions.length}
+                      </span>
+                    </div>
+
+                    <div className="min-h-[350px] flex flex-col">
+                      <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-2 mb-6">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-inner">
+                          <div className="mb-3 inline-block px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400 text-sm" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                            {shuffledFontOptions[currentUIIndex].category}
+                          </div>
+                          <div 
+                            className="text-3xl leading-relaxed max-w-2xl mx-auto"
+                            style={{ fontFamily: shuffledFontOptions[currentUIIndex].family }}
+                          >
+                            {shuffledFontOptions[currentUIIndex].displayText}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto mb-6">
+                        {shuffledFontOptions[currentUIIndex].options.map((option) => (
+                          <motion.button
+                            key={option}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleUIGuess(option)}
+                            className={`p-3 rounded-xl transition-all duration-300 ${
+                              showFeedback 
+                                ? option === shuffledFontOptions[currentUIIndex].name
+                                  ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500'
+                                  : 'bg-gray-50 dark:bg-gray-800 border-2 border-transparent opacity-50'
+                                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400'
+                            }`}
+                            style={{ fontFamily: 'var(--font-quicksand)' }}
+                            disabled={showFeedback || waitingForContinue}
+                          >
+                            <span className="text-base font-medium">
+                              {option}
+                            </span>
+                          </motion.button>
+                        ))}
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between min-h-[120px]">
+                        <div className="flex items-center justify-center flex-1">
+                          {showFeedback && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="max-w-xl text-center"
+                            >
+                              <div className={`inline-block px-4 py-2 rounded-xl text-center mb-3 ${
+                                isCorrect 
+                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
+                                  : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                              }`}
+                              style={{ fontFamily: 'var(--font-quicksand)' }}>
+                                <div className="text-base font-medium mb-1">
+                                  {feedbackMessage}
+                                </div>
+                              </div>
+                              {waitingForContinue && (
+                                <motion.button
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={handleContinue}
+                                  className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors"
+                                  style={{ fontFamily: 'var(--font-quicksand)' }}
+                                >
+                                  Continue
+                                </motion.button>
+                              )}
+                            </motion.div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-center gap-2 pt-3">
+                          <div className="h-1 w-16 rounded-full bg-blue-100 dark:bg-blue-900/20">
+                            <div 
+                              className="h-full rounded-full bg-blue-500 dark:bg-blue-400 transition-all duration-500"
+                              style={{ width: `${((currentUIIndex + 1) / shuffledFontOptions.length) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-blue-500 dark:text-blue-400 font-medium text-sm" style={{ fontFamily: 'var(--font-quicksand)' }}>
+                            {score} / {shuffledFontOptions.length}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  ) : (
+                    <div className="text-center">
+                      <p>Loading fonts...</p>
+                    </div>
+                  )
+                )
               ) : selectedGame === 'pair' ? (
                 <div className="text-center space-y-8">
                   <div className="flex items-center justify-center gap-2 mb-8">
@@ -1124,7 +1389,7 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     </span>
                     <span className="text-gray-400 dark:text-gray-500">•</span>
                     <span className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                      Question {currentUIIndex + 1} of {FONT_PAIRS.length}
+                      Question {currentUIIndex + 1} of {shuffledFontPairs.length}
                     </span>
                   </div>
 
@@ -1133,13 +1398,13 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-inner">
                         <h3 
                           className="text-3xl mb-4"
-                          style={{ fontFamily: FONT_PAIRS[currentUIIndex].heading.font }}
+                          style={{ fontFamily: shuffledFontPairs[currentUIIndex].heading.font }}
                         >
                           Typography Design
                         </h3>
                         <p
                           className="text-lg max-w-2xl mx-auto"
-                          style={{ fontFamily: FONT_PAIRS[currentUIIndex].body.font }}
+                          style={{ fontFamily: shuffledFontPairs[currentUIIndex].body.font }}
                         >
                           This is an example of how these two fonts work together in a real design context. Pay attention to the contrast and harmony between the heading and body text.
                         </p>
@@ -1189,14 +1454,14 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                           animate={{ opacity: 1, y: 0 }}
                         >
                           <div className={`inline-block px-6 py-3 rounded-full text-lg ${
-                            score > currentUIIndex 
+                            isCorrect 
                               ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
                               : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
                           }`}
                           style={{ fontFamily: 'var(--font-quicksand)' }}>
-                            {score > currentUIIndex ? '🎉 Correct!' : '❌ Incorrect!'} 
+                            {isCorrect ? '🎉 Correct!' : '❌ Incorrect!'} 
                             <span className="font-medium ml-1">
-                              {FONT_PAIRS[currentUIIndex].explanation}
+                              {shuffledFontPairs[currentUIIndex].explanation}
                             </span>
                           </div>
                         </motion.div>
@@ -1207,11 +1472,11 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       <div className="h-1 w-20 rounded-full bg-purple-100 dark:bg-purple-900/20">
                         <div 
                           className="h-full rounded-full bg-purple-500 dark:bg-purple-400 transition-all duration-500"
-                          style={{ width: `${((currentUIIndex + 1) / FONT_PAIRS.length) * 100}%` }}
+                          style={{ width: `${((currentUIIndex + 1) / shuffledFontPairs.length) * 100}%` }}
                         />
                       </div>
                       <span className="text-purple-500 dark:text-purple-400 font-medium" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                        {score} / {FONT_PAIRS.length}
+                        {score} / {shuffledFontPairs.length}
                       </span>
                     </div>
                   </div>
@@ -1224,7 +1489,7 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     </span>
                     <span className="text-gray-400 dark:text-gray-500">•</span>
                     <span className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                      Question {currentUIIndex + 1} of {TYPOGRAPHY_PRINCIPLES.length}
+                      Question {currentUIIndex + 1} of {shuffledTypographyPrinciples.length}
                     </span>
                   </div>
 
@@ -1232,16 +1497,16 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-2 mb-8">
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-inner">
                         <div className="mb-4 inline-block px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-full text-green-600 dark:text-green-400 text-sm" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                          {TYPOGRAPHY_PRINCIPLES[currentUIIndex].principle}
+                          {shuffledTypographyPrinciples[currentUIIndex].principle}
                         </div>
                         <div className="text-xl mb-6" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
-                          {TYPOGRAPHY_PRINCIPLES[currentUIIndex].question}
+                          {shuffledTypographyPrinciples[currentUIIndex].question}
                         </div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 max-w-xl mx-auto mb-8">
-                      {TYPOGRAPHY_PRINCIPLES[currentUIIndex].options.map((option) => (
+                      {shuffledTypographyPrinciples[currentUIIndex].options.map((option) => (
                         <motion.button
                           key={option.id}
                           whileHover={{ scale: 1.02 }}
@@ -1268,12 +1533,12 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                           animate={{ opacity: 1, y: 0 }}
                         >
                           <div className={`inline-block px-6 py-3 rounded-full text-lg ${
-                            score > currentUIIndex 
+                            isCorrect 
                               ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
                               : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
                           }`}
                           style={{ fontFamily: 'var(--font-quicksand)' }}>
-                            {score > currentUIIndex ? '🎉 Correct!' : '❌ Incorrect!'} 
+                            {isCorrect ? '🎉 Correct!' : '❌ Incorrect!'} 
                           </div>
                         </motion.div>
                       )}
@@ -1283,11 +1548,11 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       <div className="h-1 w-20 rounded-full bg-green-100 dark:bg-green-900/20">
                         <div 
                           className="h-full rounded-full bg-green-500 dark:bg-green-400 transition-all duration-500"
-                          style={{ width: `${((currentUIIndex + 1) / TYPOGRAPHY_PRINCIPLES.length) * 100}%` }}
+                          style={{ width: `${((currentUIIndex + 1) / shuffledTypographyPrinciples.length) * 100}%` }}
                         />
                       </div>
                       <span className="text-green-500 dark:text-green-400 font-medium" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                        {score} / {TYPOGRAPHY_PRINCIPLES.length}
+                        {score} / {shuffledTypographyPrinciples.length}
                       </span>
                     </div>
                   </div>
@@ -1300,7 +1565,7 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     </span>
                     <span className="text-gray-400 dark:text-gray-500">•</span>
                     <span className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                      Question {currentUIIndex + 1} of {UI_TYPOGRAPHY_EXAMPLES.length}
+                      Question {currentUIIndex + 1} of {shuffledUIExamples.length}
                     </span>
                   </div>
 
@@ -1308,16 +1573,16 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-2 mb-8">
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-inner">
                         <div className="mb-4 inline-block px-4 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-full text-amber-600 dark:text-amber-400 text-sm" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                          {UI_TYPOGRAPHY_EXAMPLES[currentUIIndex].category}
+                          {shuffledUIExamples[currentUIIndex].category}
                         </div>
                         <div className="text-xl mb-6" style={{ fontFamily: 'var(--font-space-grotesk)' }}>
-                          {UI_TYPOGRAPHY_EXAMPLES[currentUIIndex].question}
+                          {shuffledUIExamples[currentUIIndex].question}
                         </div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 max-w-xl mx-auto mb-8">
-                      {UI_TYPOGRAPHY_EXAMPLES[currentUIIndex].options.map((option) => (
+                      {shuffledUIExamples[currentUIIndex].options.map((option) => (
                         <motion.button
                           key={option.id}
                           whileHover={{ scale: 1.02 }}
@@ -1344,14 +1609,14 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                           animate={{ opacity: 1, y: 0 }}
                         >
                           <div className={`inline-block px-6 py-3 rounded-full text-lg ${
-                            score > currentUIIndex 
+                            isCorrect 
                               ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400'
                               : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
                           }`}
                           style={{ fontFamily: 'var(--font-quicksand)' }}>
-                            {score > currentUIIndex ? '🎉 Correct!' : '❌ Incorrect!'} 
+                            {isCorrect ? '🎉 Correct!' : '❌ Incorrect!'} 
                             <span className="font-medium ml-1">
-                              {UI_TYPOGRAPHY_EXAMPLES[currentUIIndex].explanation}
+                              {shuffledUIExamples[currentUIIndex].explanation}
                             </span>
                           </div>
                         </motion.div>
@@ -1362,11 +1627,11 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                       <div className="h-1 w-20 rounded-full bg-amber-100 dark:bg-amber-900/20">
                         <div 
                           className="h-full rounded-full bg-amber-500 dark:bg-amber-400 transition-all duration-500"
-                          style={{ width: `${((currentUIIndex + 1) / UI_TYPOGRAPHY_EXAMPLES.length) * 100}%` }}
+                          style={{ width: `${((currentUIIndex + 1) / shuffledUIExamples.length) * 100}%` }}
                         />
                       </div>
                       <span className="text-amber-500 dark:text-amber-400 font-medium" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                        {score} / {UI_TYPOGRAPHY_EXAMPLES.length}
+                        {score} / {shuffledUIExamples.length}
                       </span>
                     </div>
                   </div>
@@ -1379,16 +1644,16 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     </span>
                     <span className="text-gray-400 dark:text-gray-500">•</span>
                     <span className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                      Question {colorIdentificationIndex + 1} of {COLOR_IDENTIFICATION.length}
+                      Question {colorIdentificationIndex + 1} of {shuffledColorIdentification.length}
                     </span>
                   </div>
 
                   <div className="min-h-[400px] flex flex-col">
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-2 mb-8">
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-inner">
-                        <div className="w-24 h-24 rounded-lg mb-4" style={{ backgroundColor: COLOR_IDENTIFICATION[colorIdentificationIndex].color }}></div>
+                        <div className="w-24 h-24 rounded-lg mb-4" style={{ backgroundColor: shuffledColorIdentification[colorIdentificationIndex].color }}></div>
                         <div className="grid grid-cols-2 gap-2">
-                          {COLOR_IDENTIFICATION[colorIdentificationIndex].options.map((option) => (
+                          {shuffledColorIdentification[colorIdentificationIndex].options.map((option) => (
                             <button
                               key={option}
                               onClick={() => handleUIGuess(option)}
@@ -1415,16 +1680,16 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     </span>
                     <span className="text-gray-400 dark:text-gray-500">•</span>
                     <span className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                      Question {colorPaletteIndex + 1} of {COLOR_PALETTES.length}
+                      Question {colorPaletteIndex + 1} of {shuffledColorPalettes.length}
                     </span>
                   </div>
 
                   <div className="min-h-[400px] flex flex-col">
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-2 mb-8">
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-inner">
-                        <h3 className="text-lg font-medium mb-4">Select the correct {COLOR_PALETTES[colorPaletteIndex].name} palette:</h3>
+                        <h3 className="text-lg font-medium mb-4">Select the correct {shuffledColorPalettes[colorPaletteIndex].name} palette:</h3>
                         <div className="space-y-4">
-                          {COLOR_PALETTES[colorPaletteIndex].options.map((option) => (
+                          {shuffledColorPalettes[colorPaletteIndex].options.map((option) => (
                             <button
                               key={option.id}
                               onClick={() => handleUIGuess(option.id)}
@@ -1451,17 +1716,17 @@ const UIGame: React.FC<UIGameProps> = ({ isVisible, onClose }) => {
                     </span>
                     <span className="text-gray-400 dark:text-gray-500">•</span>
                     <span className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'var(--font-quicksand)' }}>
-                      Question {colorHarmonyIndex + 1} of {COLOR_HARMONIES.length}
+                      Question {colorHarmonyIndex + 1} of {shuffledColorHarmonies.length}
                     </span>
                   </div>
 
                   <div className="min-h-[400px] flex flex-col">
                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-2xl p-2 mb-8">
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-inner">
-                        <h3 className="text-lg font-medium mb-4">{COLOR_HARMONIES[colorHarmonyIndex].type} Colors</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{COLOR_HARMONIES[colorHarmonyIndex].question}</p>
+                        <h3 className="text-lg font-medium mb-4">{shuffledColorHarmonies[colorHarmonyIndex].type} Colors</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{shuffledColorHarmonies[colorHarmonyIndex].question}</p>
                         <div className="space-y-4">
-                          {COLOR_HARMONIES[colorHarmonyIndex].options.map((option) => (
+                          {shuffledColorHarmonies[colorHarmonyIndex].options.map((option) => (
                             <button
                               key={option.id}
                               onClick={() => handleUIGuess(option.id)}
