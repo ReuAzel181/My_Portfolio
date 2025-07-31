@@ -21,196 +21,118 @@ export const useAnalytics = () => {
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
             const gpuInfo = gl ? {
               vendor: gl.getParameter(gl.VENDOR),
-              renderer: gl.getParameter(gl.RENDERER),
-              maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
-              maxViewportDims: gl.getParameter(gl.MAX_VIEWPORT_DIMS),
-              maxRenderbufferSize: gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),
-              antialias: gl.getContextAttributes()?.antialias || false,
-              extensions: gl.getSupportedExtensions()
+              renderer: gl.getParameter(gl.RENDERER)
             } : null;
 
-            // Get detailed hardware info
+            // Get user agent data for enhanced system detection
+            const userAgentData = (navigator as any).userAgentData;
+            let systemName = 'Unknown';
+            let systemManufacturer = 'Unknown';
+            let userName = 'Not Available';
+
+            // Try to get system information from various sources
+            try {
+              // Get OS name from user agent with better Windows 11 detection
+              const ua = navigator.userAgent.toLowerCase();
+              if (ua.includes('windows nt')) {
+                const version = ua.match(/windows nt ([\d.]+)/);
+                if (version) {
+                  const winVersion = parseFloat(version[1]);
+                  if (winVersion >= 10.0) {
+                    // Check for Windows 11 indicators
+                    if (ua.includes('edg/') || ua.includes('chrome/') && 
+                        (navigator.userAgent.includes('Windows NT 10.0') && 
+                         navigator.userAgent.includes('Win64; x64'))) {
+                      // Additional check for Windows 11
+                      systemName = navigator.userAgent.includes('Windows NT 10.0') ? 'Windows 11' : `Windows ${version[1]}`;
+                    } else {
+                      systemName = `Windows ${version[1]}`;
+                    }
+                  } else {
+                    systemName = `Windows ${version[1]}`;
+                  }
+                } else {
+                  systemName = 'Windows';
+                }
+              } else if (ua.includes('mac os x')) {
+                const version = ua.match(/mac os x ([\d_]+)/);
+                systemName = version ? `macOS ${version[1].replace(/_/g, '.')}` : 'macOS';
+              } else if (ua.includes('android')) {
+                const version = ua.match(/android ([\d.]+)/);
+                systemName = version ? `Android ${version[1]}` : 'Android';
+              } else if (ua.includes('iphone os')) {
+                const version = ua.match(/iphone os ([\d_]+)/);
+                systemName = version ? `iOS ${version[1].replace(/_/g, '.')}` : 'iOS';
+              } else if (ua.includes('linux')) {
+                systemName = 'Linux';
+              }
+
+              // Enhanced manufacturer detection from GPU renderer
+              if (gpuInfo?.renderer) {
+                const renderer = gpuInfo.renderer.toLowerCase();
+                if (renderer.includes('machenike') || renderer.includes('mechrevo')) {
+                  systemManufacturer = 'MACHENIKE';
+                } else if (renderer.includes('nvidia') && renderer.includes('laptop')) {
+                  // Check for gaming laptop brands in GPU info
+                  if (renderer.includes('asus')) {
+                    systemManufacturer = 'ASUS';
+                  } else if (renderer.includes('msi')) {
+                    systemManufacturer = 'MSI';
+                  } else if (renderer.includes('dell')) {
+                    systemManufacturer = 'Dell';
+                  } else if (renderer.includes('hp')) {
+                    systemManufacturer = 'HP';
+                  } else if (renderer.includes('lenovo')) {
+                    systemManufacturer = 'Lenovo';
+                  }
+                }
+              }
+
+              // Try to get user info from environment (very limited)
+              try {
+                const platform = userAgentData?.platform || navigator.platform;
+                // Try to extract username from any available source
+                // Note: This is extremely limited due to browser security
+                if (platform) {
+                  userName = 'Browser User'; // Fallback since we can't access Windows username
+                }
+              } catch (e) {
+                userName = 'Privacy Protected';
+              }
+            } catch (e) {
+              console.log('Could not get detailed system info:', e);
+            }
+
+            // Get enhanced hardware info
             const hardwareInfo = {
               cores: navigator.hardwareConcurrency,
               memory: (navigator as any).deviceMemory,
               platform: navigator.platform,
               maxTouchPoints: navigator.maxTouchPoints,
-              hasMouse: matchMedia('(pointer:fine)').matches,
-              hasTouch: matchMedia('(pointer:coarse)').matches,
-              hasHover: matchMedia('(hover:hover)').matches,
               primaryInput: matchMedia('(pointer:fine)').matches ? 'mouse' : 
-                           matchMedia('(pointer:coarse)').matches ? 'touch' : 'none',
-              audioCodecs: {
-                mp3: testAudioFormat('audio/mpeg'),
-                ogg: testAudioFormat('audio/ogg'),
-                wav: testAudioFormat('audio/wav'),
-                aac: testAudioFormat('audio/aac')
-              },
-              videoCodecs: {
-                h264: testVideoFormat('video/mp4; codecs="avc1.42E01E"'),
-                hevc: testVideoFormat('video/mp4; codecs="hevc,mp4a.40.2"'),
-                vp8: testVideoFormat('video/webm; codecs="vp8,vorbis"'),
-                vp9: testVideoFormat('video/webm; codecs="vp9"')
-              }
+                           matchMedia('(pointer:coarse)').matches ? 'touch' : 'none'
             };
-
-            // Get screen information
-            const screenInfo = {
-              resolution: `${window.screen.width}x${window.screen.height}`,
-              colorDepth: `${window.screen.colorDepth}-bit`,
-              orientation: window.screen.orientation?.type || 'unknown',
-              pixelRatio: window.devicePixelRatio,
-              availWidth: window.screen.availWidth,
-              availHeight: window.screen.availHeight,
-              colorGamut: window.matchMedia('(color-gamut: p3)').matches ? 'p3' : 
-                          window.matchMedia('(color-gamut: srgb)').matches ? 'srgb' : 'default',
-              refreshRate: 'requestVideoFrameCallback' in HTMLVideoElement.prototype ? 60 : undefined,
-              prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-              prefersDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-              prefersContrast: window.matchMedia('(prefers-contrast: more)').matches
-            };
-
-            // Get browser capabilities
-            const browserCapabilities = {
-              userAgent: navigator.userAgent,
-              language: navigator.language,
-              online: navigator.onLine,
-              cookiesEnabled: navigator.cookieEnabled,
-              storageQuota: await getStorageQuota(),
-              hasSecureContext: window.isSecureContext,
-              permissions: await getAvailablePermissions(),
-              mediaDevices: await getMediaDevices()
-            };
-
-            // Get performance metrics
-            const performanceMetrics = getDetailedPerformanceMetrics();
-
-            // Get battery info
-            const batteryInfo = await getBatteryInfo();
 
             return {
               gpu: gpuInfo,
               hardware: hardwareInfo,
-              screen: screenInfo,
-              browser: browserCapabilities,
-              performance: performanceMetrics,
-              battery: batteryInfo,
               timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
               locale: navigator.language,
               platform: navigator.platform,
-              theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+              theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+              systemName,
+              systemManufacturer,
+              userName,
+              userAgentData: userAgentData ? {
+                brands: userAgentData.brands,
+                mobile: userAgentData.mobile,
+                platform: userAgentData.platform
+              } : null,
+              vendor: (navigator as any).vendor || 'Unknown',
+              architecture: (navigator as any).cpuClass || (navigator as any).oscpu || 'Unknown'
             };
           } catch (error) {
             console.error('Error getting system info:', error);
-            return null;
-          }
-        };
-
-        // Helper functions
-        const testAudioFormat = (format: string) => {
-          const audio = document.createElement('audio');
-          return audio.canPlayType(format) !== '';
-        };
-
-        const testVideoFormat = (format: string) => {
-          const video = document.createElement('video');
-          return video.canPlayType(format) !== '';
-        };
-
-        const getStorageQuota = async () => {
-          try {
-            if ('storage' in navigator && 'estimate' in navigator.storage) {
-              const estimate = await navigator.storage.estimate();
-              return {
-                quota: estimate.quota,
-                usage: estimate.usage
-              };
-            }
-            return null;
-          } catch (e) {
-            console.error('Error getting storage quota:', e);
-            return null;
-          }
-        };
-
-        const getAvailablePermissions = async () => {
-          const permissions = [
-            'background-fetch',
-            'background-sync',
-            'clipboard-write',
-            'payment-handler',
-            'accelerometer',
-            'gyroscope',
-            'magnetometer',
-            'screen-wake-lock'
-          ];
-          
-          const results: Record<string, string> = {};
-          
-          if ('permissions' in navigator) {
-            for (const permission of permissions) {
-              try {
-                const status = await navigator.permissions.query({ name: permission as PermissionName });
-                results[permission] = status.state;
-              } catch (e) {
-                // Permission not supported
-              }
-            }
-          }
-          
-          return results;
-        };
-
-        const getMediaDevices = async () => {
-          try {
-            if (!navigator.mediaDevices) return null;
-            
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            return {
-              audioInputs: devices.filter(d => d.kind === 'audioinput').length,
-              audioOutputs: devices.filter(d => d.kind === 'audiooutput').length,
-              videoInputs: devices.filter(d => d.kind === 'videoinput').length
-            };
-          } catch (e) {
-            console.error('Error getting media devices:', e);
-            return null;
-          }
-        };
-
-        const getBatteryInfo = async () => {
-          try {
-            if ('getBattery' in navigator) {
-              const battery: any = await (navigator as any).getBattery();
-              return {
-                charging: battery.charging,
-                level: battery.level,
-                chargingTime: battery.chargingTime,
-                dischargingTime: battery.dischargingTime
-              };
-            }
-            return null;
-          } catch (e) {
-            console.error('Error getting battery info:', e);
-            return null;
-          }
-        };
-
-        const getDetailedPerformanceMetrics = () => {
-          try {
-            const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-            if (!navigation) return null;
-
-            return {
-              dnsLookup: navigation.domainLookupEnd - navigation.domainLookupStart,
-              tcpConnection: navigation.connectEnd - navigation.connectStart,
-              tlsNegotiation: navigation.secureConnectionStart ? navigation.connectEnd - navigation.secureConnectionStart : 0,
-              serverResponse: navigation.responseStart - navigation.requestStart,
-              contentDownload: navigation.responseEnd - navigation.responseStart,
-              domInteractive: navigation.domInteractive - navigation.responseEnd,
-              totalPageLoad: navigation.loadEventEnd - navigation.startTime
-            };
-          } catch (e) {
-            console.error('Error getting performance metrics:', e);
             return null;
           }
         };
@@ -223,13 +145,7 @@ export const useAnalytics = () => {
           visitCount: parseInt(localStorage.getItem('visit_count') || '0') + 1,
           entryPage: window.location.pathname,
           referrer: document.referrer,
-          previousVisits: JSON.parse(localStorage.getItem('previous_visits') || '[]'),
-          interactions: {
-            clicks: 0,
-            scrolls: 0,
-            keystrokes: 0,
-            mouseMovements: 0
-          }
+          previousVisits: JSON.parse(localStorage.getItem('previous_visits') || '[]')
         };
 
         // Update visit history
@@ -276,26 +192,5 @@ export const useAnalytics = () => {
 
     // Call trackPageView immediately
     trackPageView();
-
-    // Track user interactions
-    const trackInteraction = (type: string) => {
-      const interactions = JSON.parse(sessionStorage.getItem('interactions') || '{}');
-      interactions[type] = (interactions[type] || 0) + 1;
-      sessionStorage.setItem('interactions', JSON.stringify(interactions));
-    };
-
-    // Event listeners for interaction tracking
-    window.addEventListener('click', () => trackInteraction('clicks'));
-    window.addEventListener('scroll', () => trackInteraction('scrolls'));
-    window.addEventListener('keypress', () => trackInteraction('keystrokes'));
-    window.addEventListener('mousemove', () => trackInteraction('mouseMovements'));
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('click', () => trackInteraction('clicks'));
-      window.removeEventListener('scroll', () => trackInteraction('scrolls'));
-      window.removeEventListener('keypress', () => trackInteraction('keystrokes'));
-      window.removeEventListener('mousemove', () => trackInteraction('mouseMovements'));
-    };
   }, []);
 }; 

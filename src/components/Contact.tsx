@@ -7,6 +7,7 @@ import { z } from 'zod'
 import ErrorBoundary from './ErrorBoundary'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import WebRTCGameModal from './WebRTCGameModal'
 
 // Define the form validation schema
 const contactFormSchema = z.object({
@@ -33,6 +34,7 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [gameModalOpen, setGameModalOpen] = useState(false)
 
   const {
     register,
@@ -335,10 +337,34 @@ const Contact = () => {
                     <span className="text-sm font-medium">{link.name}</span>
                   </a>
                 ))}
+                
+                {/* Hello Button - Only visible and clickable in dark mode */}
+                <button
+                  onClick={(e) => {
+                    // Only work in dark mode
+                    if (document.documentElement.classList.contains('dark')) {
+                      setGameModalOpen(true)
+                    } else {
+                      e.preventDefault()
+                    }
+                  }}
+                  className="hidden dark:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/30 cursor-pointer dark:cursor-pointer"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                  <span className="text-sm font-medium">Hello!</span>
+                </button>
               </div>
             </motion.div>
           </div>
         </div>
+
+        {/* WebRTC Game Modal */}
+        <WebRTCGameModal 
+          isOpen={gameModalOpen} 
+          onClose={() => setGameModalOpen(false)} 
+        />
       </section>
     </ErrorBoundary>
   )
