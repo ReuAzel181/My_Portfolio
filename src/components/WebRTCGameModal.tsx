@@ -310,25 +310,26 @@ const WebRTCGameModal: React.FC<WebRTCGameModalProps> = ({ isOpen, onClose }) =>
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-2"
+          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[9999] p-4"
           onClick={onClose}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-lg p-3 w-[98vw] h-[98vh] max-w-6xl flex flex-col"
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-[95vw] h-[90vh] max-w-5xl flex flex-col mx-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+            <div className="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <span className="text-purple-500">⚡</span>
                 Pulse Battle Game
               </h2>
               <button
                 onClick={onClose}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -336,44 +337,56 @@ const WebRTCGameModal: React.FC<WebRTCGameModalProps> = ({ isOpen, onClose }) =>
 
             <div className="flex-1 overflow-y-auto">
               {!gameStarted ? (
-                <div className="space-y-3">
+                <div className="space-y-6 h-full flex flex-col justify-center">
                   <div className="text-center">
-                    <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
-                      Welcome to Pulse Battle! Choose how to play:
-                    </p>
+                    <div className="mb-6">
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        Welcome to Pulse Battle!
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-base">
+                        Choose how to play and start your adventure
+                      </p>
+                    </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                       {/* Host Game */}
-                      <div className="p-3 border rounded-lg dark:border-gray-700">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm">Host Game</h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                          Start a new game and invite others
-                        </p>
+                      <div className="p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-purple-300 dark:hover:border-purple-600 transition-colors bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
+                        <div className="text-center mb-4">
+                          <div className="w-16 h-16 bg-purple-100 dark:bg-purple-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <span className="text-2xl">🎮</span>
+                          </div>
+                          <h3 className="font-bold text-gray-900 dark:text-white mb-2">Host Game</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Start a new game and invite friends to join
+                          </p>
+                        </div>
                         <button
                           onClick={startAsHost}
-                          className="w-full px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-sm"
+                          className="w-full px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium shadow-lg hover:shadow-xl"
                         >
-                          Start Game
+                          Start New Game
                         </button>
                         {isHost && (
-                          <div className="mt-2">
+                          <div className="mt-4">
                             <button
                               onClick={generateOffer}
-                              className="w-full px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+                              className="w-full px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
                             >
                               Generate Connection Code
                             </button>
                             {offerCode && (
-                              <div className="mt-1">
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Share this code:
+                              <div className="mt-3">
+                                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                  Share this code with friends:
                                 </label>
-                                <textarea
-                                  value={offerCode}
-                                  readOnly
-                                  className="w-full p-1 text-xs border rounded dark:bg-gray-800 dark:border-gray-700"
-                                  rows={2}
-                                />
+                                <div className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                                  <textarea
+                                    value={offerCode}
+                                    readOnly
+                                    className="w-full p-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 text-center font-mono tracking-wider"
+                                    rows={2}
+                                  />
+                                </div>
                               </div>
                             )}
                           </div>
@@ -381,49 +394,64 @@ const WebRTCGameModal: React.FC<WebRTCGameModalProps> = ({ isOpen, onClose }) =>
                       </div>
 
                       {/* Join Game */}
-                      <div className="p-3 border rounded-lg dark:border-gray-700">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm">Join Game</h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                          Enter a connection code to join
-                        </p>
-                        <input
-                          value={connectionCode}
-                          onChange={(e) => setConnectionCode(e.target.value.toUpperCase().slice(0, 6))}
-                          placeholder="Enter 6-character code..."
-                          className="w-full p-2 text-xs border rounded dark:bg-gray-800 dark:border-gray-700 mb-2 text-center font-mono tracking-widest"
-                          maxLength={6}
-                        />
-                        <button
-                          onClick={handleJoinGame}
-                          disabled={connectionCode.trim().length !== 6}
-                          className="w-full px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 text-sm"
-                        >
-                          Join Game
-                        </button>
+                      <div className="p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 transition-colors bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                        <div className="text-center mb-4">
+                          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <span className="text-2xl">🚀</span>
+                          </div>
+                          <h3 className="font-bold text-gray-900 dark:text-white mb-2">Join Game</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Enter a connection code to join an existing game
+                          </p>
+                        </div>
+                        <div className="space-y-3">
+                          <input
+                            value={connectionCode}
+                            onChange={(e) => setConnectionCode(e.target.value.toUpperCase().slice(0, 6))}
+                            placeholder="Enter 6-character code..."
+                            className="w-full p-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 text-center font-mono tracking-widest focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
+                            maxLength={6}
+                          />
+                          <button
+                            onClick={handleJoinGame}
+                            disabled={connectionCode.trim().length !== 6}
+                            className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl"
+                          >
+                            Join Game
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3 h-full flex flex-col">
+                <div className="space-y-4 h-full flex flex-col">
                   {/* Game Canvas */}
                   <div className="flex justify-center flex-shrink-0">
-                    <canvas
-                      ref={canvasRef}
-                      width={900}
-                      height={380}
-                      className="border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-900"
-                    />
+                    <div className="relative">
+                      <canvas
+                        ref={canvasRef}
+                        width={900}
+                        height={380}
+                        className="border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-gray-900 shadow-lg"
+                      />
+                      <div className="absolute top-2 left-2 bg-black bg-opacity-60 text-white px-3 py-1 rounded-lg text-sm">
+                        Players online: {players.size}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Connection Code for Host */}
                   {isHost && offerCode && (
-                    <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg flex-shrink-0">
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Share this game code with friends:
-                      </label>
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-700 p-4 rounded-xl flex-shrink-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-green-500">🎯</span>
+                        <label className="block text-sm font-medium text-green-700 dark:text-green-300">
+                          Share this game code with friends:
+                        </label>
+                      </div>
                       <div
-                        className="w-full p-2 text-center text-lg font-mono tracking-widest border rounded dark:bg-gray-900 dark:border-gray-700 bg-white cursor-pointer select-all"
+                        className="w-full p-3 text-center text-xl font-mono tracking-widest border-2 border-dashed border-green-300 dark:border-green-600 rounded-lg dark:bg-gray-800 bg-white cursor-pointer select-all hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
                         onClick={(e) => {
                           window.getSelection()?.selectAllChildren(e.currentTarget)
                           navigator.clipboard?.writeText(offerCode)
@@ -431,39 +459,53 @@ const WebRTCGameModal: React.FC<WebRTCGameModalProps> = ({ isOpen, onClose }) =>
                       >
                         {offerCode}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Click to select and copy</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-2 text-center">
+                        ✨ Click to select and copy • Share with friends to play together
+                      </p>
                     </div>
                   )}
 
                   {/* Game Controls */}
-                  <div className="flex justify-between items-center flex-shrink-0">
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                      <p>WASD/Arrows: Move • Space: Shoot (2s cooldown)</p>
-                      <p>Players online: {players.size}</p>
+                  <div className="flex justify-between items-center flex-shrink-0 bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <span className="text-blue-500">⌨️</span>
+                          <span>WASD/Arrows: Move</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-red-500">🎯</span>
+                          <span>Space: Shoot (2s cooldown)</span>
+                        </div>
+                      </div>
                     </div>
                     <button
                       onClick={exitGame}
-                      className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors font-medium shadow-md hover:shadow-lg flex items-center gap-2"
                     >
+                      <span>🚪</span>
                       Exit Game
                     </button>
                   </div>
 
                   {/* Player Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1 flex-shrink-0">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
                     {Array.from(players.values()).map(player => (
                       <div 
                         key={player.id}
-                        className="p-1 rounded border dark:border-gray-700 text-center text-xs"
+                        className="p-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 hover:shadow-md transition-shadow"
                       >
                         <div 
-                          className="w-2 h-2 rounded-full mx-auto mb-1" 
+                          className="w-4 h-4 rounded-full mx-auto mb-2 border-2 border-white shadow-sm" 
                           style={{ backgroundColor: player.color }}
                         />
-                        <div className="text-gray-600 dark:text-gray-400 text-xs">
-                          {player.id === localPlayerId ? 'You' : `P${player.id.slice(0, 2)}`}
+                        <div className="text-gray-700 dark:text-gray-300 text-sm font-medium mb-1">
+                          {player.id === localPlayerId ? '👤 You' : `🤖 P${player.id.slice(0, 2)}`}
                         </div>
-                        <div className="text-xs">❤️ {player.health}/3</div>
+                        <div className="text-sm flex items-center justify-center gap-1">
+                          <span>❤️</span>
+                          <span className="font-bold">{player.health}/3</span>
+                        </div>
                       </div>
                     ))}
                   </div>

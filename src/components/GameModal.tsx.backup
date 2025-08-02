@@ -1,0 +1,845 @@
+'use client'
+
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+
+interface Player {
+  id: string
+  x: number
+  y: number
+  color: string
+  health: number
+  lastShot: number
+  rotation: number
+  hitTime?: number // Track when player was hit for blink animation
+}
+
+interface Pulse {
+  id: string
+  x: number
+  y: number
+  dx: number
+  dy: number
+  playerId: string
+  color: string
+}
+
+interface GameModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animationFrameRef = useRef<number>()
+  const keysRef = useRef<Set<string>>(new Set())
+  const gameStateIntervalRef = useRef<NodeJS.Timeout>()
+  const channelRef = useRef<BroadcastChannel | null>(null)
+  const playersRef = useRef<Map<string, Player>>(new Map())
+  const pulsesRef = useRef<Pulse[]>([])
+  
+  // Game state
+  const [players, setPlayers] = useState<Map<string, Player>>(new Map())
+  const [pulses, setPulses] = useState<Pulse[]>([])
+  const [gameStarted, setGameStarted] = useState(false)
+  const [localPlayerId] = useState(() => Math.random().toString(36).substr(2, 9))
+  const [currentGameCode, setCurrentGameCode] = useState('')
+  const [hitPlayers, setHitPlayers] = useState<Set<string>>(new Set()) // Track hit players for animation
+  const [gameEnded, setGameEnded] = useState(false)
+  const [winner, setWinner] = useState<string | null>(null)
+  const [isEliminated, setIsEliminated] = useState(false)
+  
+  // Update refs when state changes
+  useEffect(() => {
+    playersRef.current = players
+  }, [players])
+  
+  useEffect(() => {
+    pulsesRef.current = pulses
+  }, [pulses])
+  
+  // WebRTC state
+  const [connections, setConnections] = useState<Map<string, RTCPeerConnection>>(new Map())
+  const [isHost, setIsHost] = useState(false)
+  const [offerCode, setOfferCode] = useState('')
+  const [answerCode, setAnswerCode] = useState('')
+  const [connectionCode, setConnectionCode] = useState('')
+
+  // Initialize local player
+  useEffect(() => {
+    if (gameStarted) {
+      // Initialize local player
+      const localPlayer: Player = {
+        id: localPlayerId,
+        x: Math.random() * 750 + 25,
+        y: Math.random() * 300 + 25,
+        color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+        health: 3,
+        lastShot: 0,
+        rotation: 0
+      }
+      setPlayers(new Map([[localPlayerId, localPlayer]]))
+    }
+  }, [gameStarted, localPlayerId])
+
+  // Keyboard handlers
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      keysRef.current.add(e.key.toLowerCase())
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keysRef.current.delete(e.key.toLowerCase())
+    }
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown)
+      window.addEventListener('keyup', handleKeyUp)
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [isOpen])
+
+  // Cleanup on modal close
+  useEffect(() => {
+    if (!isOpen) {
+      // Close BroadcastChannel when modal closes
+      if (channelRef.current) {
+        channelRef.current.close()
+        channelRef.current = null
+      }
+      
+      // Clear intervals
+      if (gameStateIntervalRef.current) {
+        clearInterval(gameStateIntervalRef.current)
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [isOpen])
+
+  // Load other players from localStorage
+
+  // Sync game state with proper API backend
+  useEffect(() => {
+    if (gameStarted && currentGameCode) {
+      
+      // Function to sync our player data to server
+      const syncToServer = async () => {
+        const localPlayer = playersRef.current.get(localPlayerId)
+        if (!localPlayer) return
+
+        try {
+          const response = await fetch(`/api/game/${currentGameCode}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              playerId: localPlayerId,
+              playerData: localPlayer,
+              pulses: pulsesRef.current // Sync all pulses
+            })
+          })
+          
+          if (!response.ok) {
+            console.error('Failed to sync player data')
+          }
+        } catch (error) {
+          console.error('Error syncing to server:', error)
+        }
+      }
+
+      // Function to load all players from server
+      const loadFromServer = async () => {
+        try {
+          const response = await fetch(`/api/game/${currentGameCode}`)
+          if (response.ok) {
+            const gameState = await response.json()
+            
+            if (gameState.players) {
+              const newPlayers = new Map()
+              const now = Date.now()
+              
+              // Add all players from server
+              Object.entries(gameState.players).forEach(([playerId, playerData]: [string, any]) => {
+                if (now - playerData.lastUpdate < 30000) { // 30 second timeout
+                  newPlayers.set(playerId, {
+                    id: playerData.id,
+                    x: playerData.x,
+                    y: playerData.y,
+                    color: playerData.color,
+                    health: playerData.health,
+                    lastShot: playerData.lastShot,
+                    rotation: playerData.rotation,
+                    hitTime: playerData.hitTime
+                  })
+                }
+              })
+              
+              // Ensure our local player is always included with latest data
+              const ourLocalPlayer = playersRef.current.get(localPlayerId)
+              if (ourLocalPlayer) {
+                newPlayers.set(localPlayerId, ourLocalPlayer)
+              }
+              
+              setPlayers(newPlayers)
+              
+              // Check for game end conditions after setting players
+              const alivePlayers = Array.from(newPlayers.values()).filter((p: any) => p.health > 0)
+              
+              if (alivePlayers.length <= 1 && newPlayers.size > 1 && !gameEnded) {
+                // Game should end - either one winner or no survivors
+                if (alivePlayers.length === 1) {
+                  const winnerPlayer = alivePlayers[0] as any
+                  setWinner(winnerPlayer.id)
+                  setGameEnded(true)
+                  console.log(`🏆 WINNER: ${winnerPlayer.id}`)
+                } else if (alivePlayers.length === 0) {
+                  setWinner(null) // Draw - everyone eliminated
+                  setGameEnded(true)
+                  console.log(`🤝 DRAW: All players eliminated`)
+                }
+              }
+
+              // Check if local player is eliminated
+              const localPlayer = newPlayers.get(localPlayerId)
+              if (localPlayer && localPlayer.health <= 0 && !isEliminated) {
+                setIsEliminated(true)
+                console.log(`💀 You have been eliminated!`)
+              }
+            }
+
+            // Load pulses from server (from other players)
+            if (gameState.pulses && Array.isArray(gameState.pulses)) {
+              const serverPulses = gameState.pulses.filter((pulse: any) => 
+                pulse && pulse.playerId !== localPlayerId // Only get pulses from other players
+              )
+              
+              // Merge with our local pulses
+              setPulses(prevPulses => {
+                const ourPulses = prevPulses.filter(pulse => pulse.playerId === localPlayerId)
+                return [...ourPulses, ...serverPulses]
+              })
+            }
+          }
+        } catch (error) {
+          console.error('Error loading from server:', error)
+        }
+      }
+
+      // Initial sync - upload our player and load others
+      const doInitialSync = async () => {
+        await syncToServer()
+        await loadFromServer()
+      }
+      
+      doInitialSync()
+      
+      // Set up periodic sync - much faster for real-time movement
+      const syncInterval = setInterval(syncToServer, 500) // Upload our data every 500ms for smooth movement
+      const loadInterval = setInterval(loadFromServer, 300) // Download other players every 300ms for responsiveness
+      
+      gameStateIntervalRef.current = syncInterval
+
+      return () => {
+        clearInterval(syncInterval)
+        clearInterval(loadInterval)
+      }
+    }
+
+    return () => {
+      if (gameStateIntervalRef.current) {
+        clearInterval(gameStateIntervalRef.current)
+      }
+    }
+  }, [gameStarted, currentGameCode, localPlayerId])
+
+  // Game loop
+  const gameLoop = useCallback(() => {
+    if (!gameStarted || !canvasRef.current || gameEnded) return
+
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Clear canvas
+    ctx.fillStyle = '#1a1a2e'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // Update local player only if not eliminated
+    if (!isEliminated) {
+      setPlayers(prevPlayers => {
+        const newPlayers = new Map(prevPlayers)
+        const localPlayer = newPlayers.get(localPlayerId)
+        if (!localPlayer || localPlayer.health <= 0) return prevPlayers
+
+        const speed = 1
+        let newX = localPlayer.x
+        let newY = localPlayer.y
+        let newRotation = localPlayer.rotation
+
+      // Movement with rotation facing direction
+      let isMoving = false
+      let targetRotation = localPlayer.rotation
+      
+      if (keysRef.current.has('w') || keysRef.current.has('arrowup')) {
+        newY -= speed
+        targetRotation = 0 // Face up
+        isMoving = true
+      }
+      if (keysRef.current.has('s') || keysRef.current.has('arrowdown')) {
+        newY += speed
+        targetRotation = 180 // Face down
+        isMoving = true
+      }
+      if (keysRef.current.has('a') || keysRef.current.has('arrowleft')) {
+        newX -= speed
+        targetRotation = 270 // Face left
+        isMoving = true
+      }
+      if (keysRef.current.has('d') || keysRef.current.has('arrowright')) {
+        newX += speed
+        targetRotation = 90 // Face right
+        isMoving = true
+      }
+
+      // Handle diagonal movement
+      if ((keysRef.current.has('w') || keysRef.current.has('arrowup')) && 
+          (keysRef.current.has('d') || keysRef.current.has('arrowright'))) {
+        targetRotation = 45 // Up-right
+      } else if ((keysRef.current.has('w') || keysRef.current.has('arrowup')) && 
+                 (keysRef.current.has('a') || keysRef.current.has('arrowleft'))) {
+        targetRotation = 315 // Up-left
+      } else if ((keysRef.current.has('s') || keysRef.current.has('arrowdown')) && 
+                 (keysRef.current.has('d') || keysRef.current.has('arrowright'))) {
+        targetRotation = 135 // Down-right
+      } else if ((keysRef.current.has('s') || keysRef.current.has('arrowdown')) && 
+                 (keysRef.current.has('a') || keysRef.current.has('arrowleft'))) {
+        targetRotation = 225 // Down-left
+      }
+
+      // Smooth rotation towards target when moving
+      if (isMoving) {
+        // Calculate shortest rotation path
+        let rotationDiff = targetRotation - newRotation
+        if (rotationDiff > 180) rotationDiff -= 360
+        if (rotationDiff < -180) rotationDiff += 360
+        
+        // Smooth rotation
+        newRotation += rotationDiff * 0.15
+        
+        // Normalize rotation
+        if (newRotation < 0) newRotation += 360
+        if (newRotation >= 360) newRotation -= 360
+      }
+
+      // Boundaries
+      newX = Math.max(7, Math.min(canvas.width - 7, newX))
+      newY = Math.max(7, Math.min(canvas.height - 7, newY))
+
+      // Shooting
+      const now = Date.now()
+      if (keysRef.current.has(' ') && now - localPlayer.lastShot > 2000) {
+        // Calculate shooting direction based on player rotation
+        const angle = (newRotation * Math.PI) / 180
+        const bulletSpeed = 2 // Even slower bullet speed
+        
+        const newPulse: Pulse = {
+          id: Math.random().toString(36).substr(2, 9),
+          x: newX,
+          y: newY,
+          dx: Math.sin(angle) * bulletSpeed,
+          dy: -Math.cos(angle) * bulletSpeed,
+          playerId: localPlayerId,
+          color: localPlayer.color
+        }
+        
+        // Add pulse locally immediately
+        setPulses(prev => [...prev, newPulse])
+        
+        // Sync the new pulse to server immediately
+        fetch(`/api/game/${currentGameCode}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            newPulse: newPulse
+          })
+        }).catch(error => {
+          console.error('Error syncing new pulse:', error)
+        })
+        
+        localPlayer.lastShot = now
+      }
+
+      newPlayers.set(localPlayerId, { ...localPlayer, x: newX, y: newY, rotation: newRotation })
+      return newPlayers
+    })
+
+    // Update pulses and check for collisions
+    setPulses(prevPulses => {
+      const activePulses: Pulse[] = []
+      const currentPlayers = playersRef.current
+      let playersWereHit = false
+      
+      prevPulses.forEach(pulse => {
+        // Update pulse position
+        const updatedPulse = {
+          ...pulse,
+          x: pulse.x + pulse.dx,
+          y: pulse.y + pulse.dy
+        }
+        
+        // Check if pulse is still in bounds
+        if (updatedPulse.x > -50 && updatedPulse.x < canvas.width + 50 && 
+            updatedPulse.y > -50 && updatedPulse.y < canvas.height + 50) {
+          
+          // Check collision with players
+          let hitAnyPlayer = false
+          
+          // Check collision with all current players
+          Array.from(currentPlayers.entries()).forEach(([playerId, player]) => {
+            // Don't hit the player who shot the bullet
+            if (playerId === pulse.playerId || hitAnyPlayer) return
+            
+            // Calculate distance between pulse and player center
+            const distance = Math.sqrt(
+              Math.pow(updatedPulse.x - player.x, 2) + 
+              Math.pow(updatedPulse.y - player.y, 2)
+            )
+            
+            console.log(`Checking collision: Player ${playerId} at (${player.x.toFixed(1)},${player.y.toFixed(1)}) vs Pulse at (${updatedPulse.x.toFixed(1)},${updatedPulse.y.toFixed(1)}) = ${distance.toFixed(2)}px`)
+            
+            if (distance < 12) { // Hit detected!
+              hitAnyPlayer = true
+              playersWereHit = true
+              
+              console.log(`🎯 HIT DETECTED! Player ${playerId} hit by bullet from ${pulse.playerId}`)
+              
+              // Update the hit player immediately
+              setPlayers(prevPlayers => {
+                const newPlayers = new Map(prevPlayers)
+                const hitPlayer = newPlayers.get(playerId)
+                if (hitPlayer) {
+                  const updatedPlayer = {
+                    ...hitPlayer,
+                    health: Math.max(0, hitPlayer.health - 1),
+                    hitTime: Date.now()
+                  }
+                  newPlayers.set(playerId, updatedPlayer)
+                  
+                  // Add to hit players for blink animation
+                  setHitPlayers(prev => new Set(prev).add(playerId))
+                  
+                  // Remove from hit players after 500ms
+                  setTimeout(() => {
+                    setHitPlayers(prev => {
+                      const newSet = new Set(prev)
+                      newSet.delete(playerId)
+                      return newSet
+                    })
+                  }, 500)
+                }
+                return newPlayers
+              })
+            }
+          })
+          
+          // Only keep the pulse if it didn't hit anyone
+          if (!hitAnyPlayer) {
+            activePulses.push(updatedPulse)
+          } else {
+            console.log(`💥 Bullet destroyed after hitting player`)
+          }
+        }
+      })
+      
+      return activePulses
+    })
+
+    } // Close the if (!isEliminated) block
+
+    // Draw players - read from current state instead of dependency
+    const playersForRendering = Array.from(playersRef.current.values()).filter(player => player.health > 0)
+    const renderTime = Date.now()
+    
+    playersForRendering.forEach(player => {
+      ctx.save()
+      ctx.translate(player.x, player.y)
+      ctx.rotate((player.rotation * Math.PI) / 180)
+      
+      // Check if player should blink (hit animation)
+      const isHit = hitPlayers.has(player.id)
+      const timeSinceHit = player.hitTime ? renderTime - player.hitTime : 1000
+      const shouldBlink = isHit && timeSinceHit < 500 // Blink for 500ms
+      const blinkInterval = 100 // Blink every 100ms
+      const isVisible = !shouldBlink || Math.floor(timeSinceHit / blinkInterval) % 2 === 0
+      
+      if (isVisible) {
+        // Draw player as a rotating triangle
+        ctx.fillStyle = player.color
+        ctx.beginPath()
+        ctx.moveTo(0, -7)
+        ctx.lineTo(-5, 5)
+        ctx.lineTo(5, 5)
+        ctx.closePath()
+        ctx.fill()
+        
+        // Debug: Draw collision circle
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(0, 0, 12, 0, 2 * Math.PI)
+        ctx.stroke()
+      }
+      
+      ctx.restore()
+    })
+
+    // Draw pulses - read from current state instead of dependency
+    const currentPulses = pulsesRef.current
+    currentPulses.forEach(pulse => {
+      ctx.fillStyle = pulse.color
+      ctx.beginPath()
+      ctx.arc(pulse.x, pulse.y, 3, 0, 2 * Math.PI)
+      ctx.fill()
+      
+      // Debug: Draw pulse collision circle
+      ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.arc(pulse.x, pulse.y, 3, 0, 2 * Math.PI)
+      ctx.stroke()
+    })
+
+    animationFrameRef.current = requestAnimationFrame(gameLoop)
+  }, [gameStarted, localPlayerId, currentGameCode, gameEnded, isEliminated])
+
+  useEffect(() => {
+    if (gameStarted) {
+      gameLoop()
+    }
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [gameLoop, gameStarted])
+
+  const generateSimpleCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let result = ''
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return result
+  }
+
+  const startAsHost = async () => {
+    const gameCode = generateSimpleCode()
+    setIsHost(true)
+    setGameStarted(true)
+    setOfferCode(gameCode)
+    setCurrentGameCode(gameCode)
+  }
+
+  const generateOffer = async () => {
+    // Generate simple 6-character code
+    setOfferCode(generateSimpleCode())
+  }
+
+  const handleJoinGame = async () => {
+    if (connectionCode.trim().length === 6) {
+      try {
+        setCurrentGameCode(connectionCode)
+        setGameStarted(true)
+        setIsHost(false)
+      } catch (error) {
+        console.error('Error joining game:', error)
+        alert('Failed to join game. Please try again.')
+      }
+    } else {
+      alert('Please enter a valid 6-character game code!')
+    }
+  }
+
+  const exitGame = async () => {
+    // Remove our player from the server
+    if (currentGameCode && localPlayerId) {
+      try {
+        await fetch(`/api/game/${currentGameCode}?playerId=${localPlayerId}`, {
+          method: 'DELETE'
+        })
+      } catch (error) {
+        console.error('Error removing player from server:', error)
+      }
+    }
+
+    // Close BroadcastChannel
+    if (channelRef.current) {
+      channelRef.current.close()
+      channelRef.current = null
+    }
+
+    // Clear intervals
+    if (gameStateIntervalRef.current) {
+      clearInterval(gameStateIntervalRef.current)
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+
+    // Reset all state
+    setGameStarted(false)
+    setIsHost(false)
+    setOfferCode('')
+    setConnectionCode('')
+    setCurrentGameCode('')
+    setPlayers(new Map())
+    setPulses([])
+    setHitPlayers(new Set())
+    setGameEnded(false)
+    setWinner(null)
+    setIsEliminated(false)
+  }
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white dark:bg-gray-900 rounded-lg p-3 w-full h-full max-w-5xl max-h-[90vh] flex flex-col mx-auto my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Pulse Battle Game - FRESH BUILD
+              </h2>
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-3 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-xs text-green-700 dark:text-green-300">
+                <strong>✅ Real Multiplayer with Backend!</strong> Uses Vercel KV (Redis) for persistent data storage. Works across all browsers, devices, and networks!
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {!gameStarted ? (
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <p className="text-gray-600 dark:text-gray-400 mb-3 text-sm">
+                      Welcome to Pulse Battle! Choose how to play:
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded">
+                      🌐 Cross-Browser Multiplayer: Works in Chrome, Firefox, Safari, Edge, incognito mode, and different devices!
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Host Game */}
+                      <div className="p-3 border rounded-lg dark:border-gray-700">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm">Host Game</h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                          Start a new game and invite others from any browser or device
+                        </p>
+                        <button
+                          onClick={startAsHost}
+                          className="w-full px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-sm"
+                        >
+                          Start Game
+                        </button>
+                        {isHost && (
+                          <div className="mt-2">
+                            <button
+                              onClick={generateOffer}
+                              className="w-full px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+                            >
+                              Generate Connection Code
+                            </button>
+                            {offerCode && (
+                              <div className="mt-1">
+                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                  Share this code:
+                                </label>
+                                <textarea
+                                  value={offerCode}
+                                  readOnly
+                                  className="w-full p-1 text-xs border rounded dark:bg-gray-800 dark:border-gray-700"
+                                  rows={2}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Join Game */}
+                      <div className="p-3 border rounded-lg dark:border-gray-700">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1 text-sm">Join Game</h3>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                          Enter a connection code to join from any browser or device
+                        </p>
+                        <input
+                          value={connectionCode}
+                          onChange={(e) => setConnectionCode(e.target.value.toUpperCase().slice(0, 6))}
+                          placeholder="Enter 6-character code..."
+                          className="w-full p-2 text-xs border rounded dark:bg-gray-800 dark:border-gray-700 mb-2 text-center font-mono tracking-widest"
+                          maxLength={6}
+                        />
+                        <button
+                          onClick={handleJoinGame}
+                          disabled={connectionCode.trim().length !== 6}
+                          className="w-full px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 text-sm"
+                        >
+                          Join Game
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 h-full flex flex-col">
+                  {/* Victory/Elimination Screen */}
+                  {gameEnded && (
+                    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg text-center max-w-md mx-4">
+                        {winner === localPlayerId ? (
+                          <div>
+                            <h2 className="text-3xl font-bold text-green-600 mb-4">🏆 VICTORY!</h2>
+                            <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
+                              Congratulations! You are the last player standing!
+                            </p>
+                          </div>
+                        ) : winner ? (
+                          <div>
+                            <h2 className="text-3xl font-bold text-red-600 mb-4">💀 DEFEATED</h2>
+                            <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
+                              Player {winner.slice(0, 6)} wins the battle!
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            <h2 className="text-3xl font-bold text-yellow-600 mb-4">🤝 DRAW</h2>
+                            <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
+                              All players eliminated! No one wins.
+                            </p>
+                          </div>
+                        )}
+                        <button
+                          onClick={exitGame}
+                          className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                          Return to Menu
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Elimination Notice */}
+                  {isEliminated && !gameEnded && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-3">
+                      <p className="text-red-700 dark:text-red-300 font-semibold text-center">
+                        💀 You have been eliminated! Waiting for the battle to end...
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Game Canvas */}
+                  <div className="flex justify-center flex-shrink-0">
+                    <canvas
+                      ref={canvasRef}
+                      width={800}
+                      height={350}
+                      className="border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-900"
+                    />
+                  </div>
+
+                  {/* Connection Code for Host */}
+                  {isHost && offerCode && (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg flex-shrink-0">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Share this game code with others (works across all browsers and devices):
+                      </label>
+                      <div
+                        className="w-full p-2 text-center text-lg font-mono tracking-widest border rounded dark:bg-gray-900 dark:border-gray-700 bg-white cursor-pointer select-all"
+                        onClick={(e) => {
+                          window.getSelection()?.selectAllChildren(e.currentTarget)
+                          navigator.clipboard?.writeText(offerCode)
+                        }}
+                      >
+                        {offerCode}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Click to select and copy • Test with incognito mode or different browsers!</p>
+                    </div>
+                  )}
+
+                  {/* Game Controls */}
+                  <div className="flex justify-between items-center flex-shrink-0">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      <p>WASD/Arrows: Move • Space: Shoot (2s cooldown)</p>
+                      <p>Players online: {players.size} • Real multiplayer with backend!</p>
+                    </div>
+                    <button
+                      onClick={exitGame}
+                      className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
+                    >
+                      Exit Game
+                    </button>
+                  </div>
+
+                  {/* Player Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1 flex-shrink-0">
+                    {Array.from(players.values()).map(player => (
+                      <div 
+                        key={player.id}
+                        className={`p-1 rounded border text-center text-xs ${
+                          player.health <= 0 
+                            ? 'border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-900/20' 
+                            : 'dark:border-gray-700'
+                        }`}
+                      >
+                        <div 
+                          className={`w-2 h-2 rounded-full mx-auto mb-1 ${
+                            player.health <= 0 ? 'opacity-50' : ''
+                          }`}
+                          style={{ backgroundColor: player.color }}
+                        />
+                        <div className="text-gray-600 dark:text-gray-400 text-xs">
+                          {player.id === localPlayerId ? 'You' : `P${player.id.slice(0, 2)}`}
+                          {player.health <= 0 && ' 💀'}
+                        </div>
+                        <div className={`text-xs ${player.health <= 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                          {player.health <= 0 ? 'ELIMINATED' : `❤️ ${player.health}/3`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+export default GameModal

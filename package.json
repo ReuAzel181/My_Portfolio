@@ -1,6 +1,6 @@
 {
   "name": "reu-portfolio",
-  "version": "0.1.0",
+  "version": "7.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -14,6 +14,7 @@
     "@sendgrid/mail": "^8.1.5",
     "@types/ua-parser-js": "^0.7.39",
     "@vercel/blob": "^1.1.1",
+    "@vercel/kv": "^3.0.0",
     "@vercel/postgres": "^0.10.0",
     "autoprefixer": "^10.0.1",
     "framer-motion": "^12.23.0",
