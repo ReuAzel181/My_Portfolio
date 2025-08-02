@@ -7,7 +7,7 @@ import { z } from 'zod'
 import ErrorBoundary from './ErrorBoundary'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import WebRTCGameModal from './WebRTCGameModal'
+import GameModal from './GameModal'
 
 // Define the form validation schema
 const contactFormSchema = z.object({
@@ -361,9 +361,9 @@ const Contact = () => {
         </div>
 
         {/* WebRTC Game Modal */}
-        <WebRTCGameModal 
-          isOpen={gameModalOpen} 
-          onClose={() => setGameModalOpen(false)} 
+        <GameModal 
+          isOpen={gameModalOpen}
+          onClose={() => setGameModalOpen(false)}
         />
       </section>
     </ErrorBoundary>
