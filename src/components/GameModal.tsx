@@ -482,8 +482,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       const syncWorldStateFromServer = async () => {
         const now = Date.now()
         
-        // 30 FPS world state sync for smoother bullet movement at high speeds
-        if (now - lastWorldStateSync.current < 33) {
+        // Reduced sync frequency for production stability (10 FPS instead of 30 FPS)
+        if (now - lastWorldStateSync.current < 100) {
           return
         }
         lastWorldStateSync.current = now
@@ -493,17 +493,26 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
           if (response.ok) {
             const gameState = await response.json()
             
-            // Update obstacles (always sync with server)
+            // Update obstacles only if they've actually changed or if we don't have any
             if (gameState.obstacles && Array.isArray(gameState.obstacles)) {
-              // Always update obstacles from server to ensure sync - even if empty array
+              const currentObstacles = obstaclesRef.current
               const serverObstacles = gameState.obstacles
               
-              setObstacles(serverObstacles)
-              obstaclesRef.current = serverObstacles
+              // Only update obstacles if they're different or we have none
+              if (currentObstacles.length === 0 || 
+                  currentObstacles.length !== serverObstacles.length ||
+                  JSON.stringify(currentObstacles) !== JSON.stringify(serverObstacles)) {
+                console.log(`🔄 Updating obstacles: ${currentObstacles.length} → ${serverObstacles.length}`)
+                setObstacles(serverObstacles)
+                obstaclesRef.current = serverObstacles
+              }
             } else {
-              // If no obstacles property, clear client obstacles
-              setObstacles([])
-              obstaclesRef.current = []
+              // Only clear obstacles if we currently have some (prevent unnecessary clears)
+              if (obstaclesRef.current.length > 0) {
+                console.log(`🗑️ Clearing obstacles`)
+                setObstacles([])
+                obstaclesRef.current = []
+              }
             }
             
             if (gameState.players) {
@@ -545,8 +554,14 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
                         lastSuccessfulShot.current || 0
                       )
                       
+                      // Only trust server position if local player hasn't moved recently (500ms threshold)
+                      const shouldTrustServerPosition = (now - (localPlayer.timestamp || 0)) > 500
+                      
                       const reconciledPlayer = {
                         ...localPlayer, // Keep local position for responsiveness
+                        // Only override position if we haven't moved recently (prevents server lag from teleporting player)
+                        x: shouldTrustServerPosition ? player.x : localPlayer.x,
+                        y: shouldTrustServerPosition ? player.y : localPlayer.y,
                         health: player.health, // Trust server for health
                         hitTime: player.hitTime, // Sync hit animations
                         color: player.color, // Ensure color consistency
@@ -694,6 +709,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
           }
         } catch (error) {
           console.error('World state sync error:', error)
+          // On error, don't clear obstacles to prevent flickering in production
+          // The next successful sync will update them properly
         }
       }
 
@@ -812,9 +829,9 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       
       doInitialSync()
       
-      // Set up separated sync intervals
-      movementSyncInterval.current = setInterval(syncMovementToServer, 33) // 30 FPS movement
-      worldStateSyncInterval.current = setInterval(syncWorldStateFromServer, 33) // 30 FPS world state for smooth bullets
+      // Set up separated sync intervals with production-friendly frequencies
+      movementSyncInterval.current = setInterval(syncMovementToServer, 50) // 20 FPS movement (reduced from 30 FPS)
+      worldStateSyncInterval.current = setInterval(syncWorldStateFromServer, 100) // 10 FPS world state (reduced from 30 FPS)
       
       // Set up single shooting handler interval - more responsive for better cooldown feedback
       const shootingInterval = setInterval(handleShooting, 50) // Check shooting every 50ms for responsive feedback
