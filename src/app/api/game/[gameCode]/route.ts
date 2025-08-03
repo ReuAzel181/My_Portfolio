@@ -343,14 +343,20 @@ export async function GET(
     let gameState = gameStorage[gameCode]
     
     if (!gameState) {
-      // Return empty game state if not found
-      return NextResponse.json({
+      // Create new game state with obstacles when not found (for cold starts)
+      const obstacles = generateObstacles()
+      gameState = {
         players: {},
         pulses: [],
-        obstacles: [],
+        obstacles: obstacles,
+        powerups: [],
+        bombs: [],
         lastUpdate: Date.now(),
-        created: Date.now()
-      })
+        created: Date.now(),
+        lastPowerupSpawn: Date.now()
+      }
+      // Save the new game state
+      gameStorage[gameCode] = gameState
     }
 
     // Clean up old players (older than 30 seconds)
@@ -377,8 +383,15 @@ export async function GET(
       // Update game physics
       updateGamePhysics(gameState)
     } else {
-      // Clear players but keep the game state with obstacles
+      // Keep the game state with obstacles even if no players (for reconnection)
       gameState.players = {}
+      gameStorage[gameCode] = gameState
+    }
+
+    // Ensure we always have obstacles in response (critical for client stability)
+    if (!gameState.obstacles || !Array.isArray(gameState.obstacles)) {
+      console.log(`⚠️ Missing obstacles for game ${gameCode}, regenerating...`)
+      gameState.obstacles = generateObstacles()
       gameStorage[gameCode] = gameState
     }
 
@@ -485,7 +498,7 @@ export async function POST(
         
         // Apply powerup effect to player
         if (powerup.type === 'invisibility') {
-          const powerupDuration = 8000 // 8 seconds
+          const powerupDuration = 2000 // 2 seconds
           player.invisibilityEnd = Date.now() + powerupDuration
           console.log(`🟣 Applied invisibility to player ${body.playerId} until ${player.invisibilityEnd}`)
         } else if (powerup.type === 'bomb') {
