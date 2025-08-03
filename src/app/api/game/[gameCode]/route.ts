@@ -80,14 +80,30 @@ const CANVAS_WIDTH = 1000 // Updated to match GameModal canvas
 const CANVAS_HEIGHT = 450 // Updated to match GameModal canvas
 const PLAYER_RADIUS = 7
 const BULLET_RADIUS = 5
+const BOMB_RADIUS = 6
 const SHOOT_COOLDOWN = 2000
 const OBSTACLE_COUNT = 10 // Fixed number of obstacles per game (as requested)
 const BULLET_MAX_AGE = 5000 // Maximum bullet age in milliseconds (5 seconds)
 
 // Generate 10 static obstacles with varying sizes for a new game
-function generateObstacles(): Obstacle[] {
+function generateObstacles(gameCode?: string): Obstacle[] {
   const obstacles: Obstacle[] = []
   const margin = 50 // Keep obstacles away from edges and spawn areas
+  
+  // Use game code to seed random generation for consistent obstacles
+  let seed = 12345 // default seed
+  if (gameCode) {
+    seed = gameCode.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  }
+  
+  // Simple seeded random function
+  const seededRandom = (function() {
+    let seedValue = seed
+    return function() {
+      seedValue = (seedValue * 9301 + 49297) % 233280
+      return seedValue / 233280
+    }
+  })()
   
   // Create 10 obstacles with predefined size variations
   const sizePresets = [
@@ -106,13 +122,13 @@ function generateObstacles(): Obstacle[] {
   for (let i = 0; i < OBSTACLE_COUNT; i++) {
     const size = sizePresets[i] || { width: 30, height: 30 } // Fallback size
     
-    // Find a non-overlapping position
+    // Find a non-overlapping position using seeded random
     let x, y, attempts = 0
     let validPosition = false
     
     do {
-      x = margin + Math.random() * (CANVAS_WIDTH - 2 * margin - size.width)
-      y = margin + Math.random() * (CANVAS_HEIGHT - 2 * margin - size.height)
+      x = margin + seededRandom() * (CANVAS_WIDTH - 2 * margin - size.width)
+      y = margin + seededRandom() * (CANVAS_HEIGHT - 2 * margin - size.height)
       
       // Check overlap with existing obstacles
       validPosition = true
@@ -131,11 +147,11 @@ function generateObstacles(): Obstacle[] {
     
     obstacles.push({
       id: `obstacle_${i + 1}`,
-      x,
-      y,
+      x: Math.round(x),
+      y: Math.round(y),
       width: size.width,
       height: size.height,
-      type: Math.random() > 0.5 ? 'wall' : 'rock'
+      type: seededRandom() > 0.5 ? 'wall' : 'rock'
     })
   }
   
@@ -229,9 +245,10 @@ function handleBombExplosion(gameState: GameState, bomb: Bomb, now: number): voi
 // Update game physics (bullets movement and collision)
 function updateGamePhysics(gameState: GameState): void {
   const now = Date.now()
-  const deltaTime = 8.33 // ~120 FPS for smoother bullet movement at high speeds
+  const lastPhysicsUpdate = gameState.lastUpdate || now
+  const deltaTime = Math.min(now - lastPhysicsUpdate, 50) // Cap at 50ms for smoother updates
   
-  // Update bullet positions
+  // STABLE PHYSICS: Simple, reliable updates for consistent movement
   gameState.pulses = gameState.pulses.filter(pulse => {
     // Check bullet age - remove bullets older than 5 seconds
     const bulletAge = now - pulse.timestamp
@@ -239,22 +256,24 @@ function updateGamePhysics(gameState: GameState): void {
       return false
     }
     
-    // Move bullet with smaller time steps for smoother movement
-    pulse.x += pulse.dx * pulse.speed * (deltaTime / 1000)
-    pulse.y += pulse.dy * pulse.speed * (deltaTime / 1000)
+    // Move bullet with consistent time step
+    const movement = pulse.speed * (deltaTime / 1000)
+    pulse.x += pulse.dx * movement
+    pulse.y += pulse.dy * movement
     
-    // Remove bullets that are off-screen (give more margin for high-speed bullets)
-    if (pulse.x < -50 || pulse.x > CANVAS_WIDTH + 50 || 
-        pulse.y < -50 || pulse.y > CANVAS_HEIGHT + 50) {
+    // DO NOT update timestamp - preserve original creation time for stable client interpolation
+    
+    // Remove bullets that are off-screen (give margin for high-speed bullets)
+    if (pulse.x < -30 || pulse.x > CANVAS_WIDTH + 30 || 
+        pulse.y < -30 || pulse.y > CANVAS_HEIGHT + 30) {
       return false
     }
     
-    // Check collision with obstacles - precise collision detection
+    // Standard collision detection with obstacles
     for (const obstacle of gameState.obstacles || []) {
-      // Check if bullet center is inside the obstacle rectangle
-      if (pulse.x >= obstacle.x && pulse.x <= obstacle.x + obstacle.width &&
-          pulse.y >= obstacle.y && pulse.y <= obstacle.y + obstacle.height) {
-        return false // Remove bullet immediately when it touches obstacle
+      if (checkCircleRectCollision(pulse.x, pulse.y, BULLET_RADIUS, 
+                                 obstacle.x, obstacle.y, obstacle.width, obstacle.height)) {
+        return false // Remove bullet when it hits obstacle
       }
     }
     
@@ -272,8 +291,6 @@ function updateGamePhysics(gameState: GameState): void {
           player.lastUpdate = now
           hitPlayer = true
           console.log(`🎯 Player ${player.id} hit by ${pulse.playerId}! Health: ${player.health}`)
-        } else if (isInvisible) {
-          // console.log(`🟣 Bullet passed through invisible player ${player.id}`)
         }
       }
     })
@@ -282,21 +299,25 @@ function updateGamePhysics(gameState: GameState): void {
     return !hitPlayer
   })
 
-  // BOMB PHYSICS: Update bomb positions and handle explosions
+  // BOMB PHYSICS: Update bomb positions with stable movement
   gameState.bombs = gameState.bombs.filter(bomb => {
-    // Update bomb position
-    bomb.x += bomb.dx * bomb.speed * (deltaTime / 1000)
-    bomb.y += bomb.dy * bomb.speed * (deltaTime / 1000)
+    // Move bomb with consistent time step (same as bullets)
+    const movement = bomb.speed * (deltaTime / 1000)
+    bomb.x += bomb.dx * movement
+    bomb.y += bomb.dy * movement
+    
+    // DO NOT update timestamp - preserve original creation time for stable client interpolation
     
     // Check if bomb is out of bounds
-    if (bomb.x < 0 || bomb.x > 1000 || bomb.y < 0 || bomb.y > 450) {
+    if (bomb.x < -30 || bomb.x > CANVAS_WIDTH + 30 || 
+        bomb.y < -30 || bomb.y > CANVAS_HEIGHT + 30) {
       return false // Remove bomb
     }
     
-    // Check collision with obstacles
+    // Check collision with obstacles using precise circle-rectangle collision
     for (const obstacle of gameState.obstacles || []) {
-      if (bomb.x >= obstacle.x && bomb.x <= obstacle.x + obstacle.width &&
-          bomb.y >= obstacle.y && bomb.y <= obstacle.y + obstacle.height) {
+      if (checkCircleRectCollision(bomb.x, bomb.y, BOMB_RADIUS,
+                                 obstacle.x, obstacle.y, obstacle.width, obstacle.height)) {
         // Bomb hit obstacle - explode immediately
         handleBombExplosion(gameState, bomb, now)
         return false // Remove bomb
@@ -311,6 +332,9 @@ function updateGamePhysics(gameState: GameState): void {
     
     return true // Keep bomb
   })
+  
+  // Update game state timestamp for consistent physics timing
+  gameState.lastUpdate = now
 }
 
 // Simple cleanup of old games
@@ -344,7 +368,7 @@ export async function GET(
     
     if (!gameState) {
       // Create new game state with obstacles when not found (for cold starts)
-      const obstacles = generateObstacles()
+      const obstacles = generateObstacles(gameCode)
       gameState = {
         players: {},
         pulses: [],
@@ -357,6 +381,7 @@ export async function GET(
       }
       // Save the new game state
       gameStorage[gameCode] = gameState
+      console.log(`🆕 Created new game ${gameCode} with ${obstacles.length} obstacles`)
     }
 
     // Clean up old players (older than 30 seconds)
@@ -369,29 +394,38 @@ export async function GET(
       }
     })
 
-    gameState = {
-      ...gameState,
-      players: activePlayers,
-      lastUpdate: now
+    // Only update game state if there are changes
+    const hasPlayerChanges = Object.keys(activePlayers).length !== Object.keys(gameState.players).length
+    
+    if (hasPlayerChanges) {
+      gameState = {
+        ...gameState,
+        players: activePlayers,
+        lastUpdate: now
+      }
     }
 
     // Update the cleaned state and run physics
     if (Object.keys(activePlayers).length > 0) {
-      gameState.players = activePlayers
-      gameStorage[gameCode] = gameState
+      if (hasPlayerChanges) {
+        gameState.players = activePlayers
+        gameStorage[gameCode] = gameState
+      }
       
       // Update game physics
       updateGamePhysics(gameState)
     } else {
       // Keep the game state with obstacles even if no players (for reconnection)
-      gameState.players = {}
-      gameStorage[gameCode] = gameState
+      if (hasPlayerChanges) {
+        gameState.players = {}
+        gameStorage[gameCode] = gameState
+      }
     }
 
     // Ensure we always have obstacles in response (critical for client stability)
-    if (!gameState.obstacles || !Array.isArray(gameState.obstacles)) {
+    if (!gameState.obstacles || !Array.isArray(gameState.obstacles) || gameState.obstacles.length === 0) {
       console.log(`⚠️ Missing obstacles for game ${gameCode}, regenerating...`)
-      gameState.obstacles = generateObstacles()
+      gameState.obstacles = generateObstacles(gameCode)
       gameStorage[gameCode] = gameState
     }
 
@@ -420,7 +454,7 @@ export async function POST(
     
     if (!gameState) {
       // Create new game state with 10 static obstacles
-      const obstacles = generateObstacles()
+      const obstacles = generateObstacles(gameCode)
       gameState = {
         players: {},
         pulses: [],

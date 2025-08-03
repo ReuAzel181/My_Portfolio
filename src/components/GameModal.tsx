@@ -89,6 +89,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
   const explosionsRef = useRef<Explosion[]>([]) // Add explosions ref
   const lastMovementSync = useRef<number>(0) // Movement sync debouncing
   const lastWorldStateSync = useRef<number>(0) // World state sync debouncing
+  const lastBulletSync = useRef<number>(0) // Bullet-specific sync for smoothness
+  const lastBombSync = useRef<number>(0) // Bomb-specific sync for smoothness
   const inputBuffer = useRef<any[]>([]) // Store input history for reconciliation
   const lastServerState = useRef<Player | null>(null) // Store last confirmed server state
   const shootingRequested = useRef<boolean>(false) // Track shooting requests to prevent spam
@@ -97,9 +99,14 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
   const seenBulletIds = useRef<Set<string>>(new Set()) // Track seen bullet IDs to prevent duplicates
   const movementSyncInterval = useRef<NodeJS.Timeout>() // Movement sync interval
   const worldStateSyncInterval = useRef<NodeJS.Timeout>() // World state sync interval
+  const bulletSyncInterval = useRef<NodeJS.Timeout>() // High-frequency bullet sync interval
+  const bombSyncInterval = useRef<NodeJS.Timeout>() // High-frequency bomb sync interval
   const lastSuccessfulShot = useRef<number>(0) // Track last successful shot globally
+  const localBulletPositions = useRef<Map<string, {x: number, y: number, lastUpdate: number}>>(new Map()) // Track local bullet positions
+  const localBombPositions = useRef<Map<string, {x: number, y: number, lastUpdate: number}>>(new Map()) // Track local bomb positions
   const recoilRef = useRef<{active: boolean, angle: number, intensity: number}>({ active: false, angle: 0, intensity: 0 }) // Recoil effect ref
   const screenShakeRef = useRef<{active: boolean, intensity: number}>({ active: false, intensity: 0 }) // Screen shake ref
+  const obstaclesHash = useRef<string>('') // Track obstacles hash to prevent unnecessary updates
   
   // Game state
   const [players, setPlayers] = useState<Map<string, Player>>(new Map())
@@ -382,6 +389,12 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       if (worldStateSyncInterval.current) {
         clearInterval(worldStateSyncInterval.current)
       }
+      if (bulletSyncInterval.current) {
+        clearInterval(bulletSyncInterval.current)
+      }
+      if (bombSyncInterval.current) {
+        clearInterval(bombSyncInterval.current)
+      }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
@@ -411,6 +424,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       lastShootingRequest.current = 0
       lastSuccessfulShot.current = 0 // Reset global shot tracking
       seenBulletIds.current.clear() // Clear bullet tracking
+      localBulletPositions.current.clear() // Clear local bullet positions
+      localBombPositions.current.clear() // Clear local bomb positions
       
       // console.log('🧹 Modal closed - all state cleaned up')
     }
@@ -482,8 +497,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       const syncWorldStateFromServer = async () => {
         const now = Date.now()
         
-        // Reduced sync frequency for production stability (10 FPS instead of 30 FPS)
-        if (now - lastWorldStateSync.current < 100) {
+        // Conservative sync frequency for game state (5 FPS)
+        if (now - lastWorldStateSync.current < 200) {
           return
         }
         lastWorldStateSync.current = now
@@ -498,13 +513,15 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
               const currentObstacles = obstaclesRef.current
               const serverObstacles = gameState.obstacles
               
-              // Only update obstacles if they're different or we have none
-              if (currentObstacles.length === 0 || 
-                  currentObstacles.length !== serverObstacles.length ||
-                  JSON.stringify(currentObstacles) !== JSON.stringify(serverObstacles)) {
+              // Create a simple hash of obstacle data for quick comparison
+              const newObstaclesHash = serverObstacles.map((o: Obstacle) => `${o.id}-${o.x}-${o.y}-${o.width}-${o.height}`).join('|')
+              
+              // Only update if hash is different or we have no obstacles
+              if (currentObstacles.length === 0 || obstaclesHash.current !== newObstaclesHash) {
                 console.log(`🔄 Updating obstacles: ${currentObstacles.length} → ${serverObstacles.length}`)
                 setObstacles(serverObstacles)
                 obstaclesRef.current = serverObstacles
+                obstaclesHash.current = newObstaclesHash
               }
             } else {
               // Only clear obstacles if we currently have some (prevent unnecessary clears)
@@ -512,9 +529,34 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
                 console.log(`🗑️ Clearing obstacles`)
                 setObstacles([])
                 obstaclesRef.current = []
+                obstaclesHash.current = ''
               }
             }
-            
+
+            // FAST BULLET SYNC: Update bullets with higher frequency for smoothness
+            if (gameState.pulses && Array.isArray(gameState.pulses)) {
+              const serverPulses = gameState.pulses.map((serverPulse: any) => ({
+                id: serverPulse.id,
+                x: serverPulse.x,
+                y: serverPulse.y,
+                dx: serverPulse.dx,
+                dy: serverPulse.dy,
+                playerId: serverPulse.playerId,
+                color: serverPulse.color,
+                damage: serverPulse.damage || 1,
+                timestamp: serverPulse.timestamp || now,
+                speed: serverPulse.speed || 500 // Ensure speed is always set for smooth interpolation
+              }))
+              
+              setPulses(serverPulses)
+              pulsesRef.current = serverPulses
+            } else {
+              // Clear bullets if none received
+              setPulses([])
+              pulsesRef.current = []
+            }
+
+            // PLAYER STATE SYNC: Less frequent but authoritative
             if (gameState.players) {
               const newPlayers = new Map()
               
@@ -554,8 +596,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
                         lastSuccessfulShot.current || 0
                       )
                       
-                      // Only trust server position if local player hasn't moved recently (500ms threshold)
-                      const shouldTrustServerPosition = (now - (localPlayer.timestamp || 0)) > 500
+                      // Only trust server position if local player hasn't moved recently (2 seconds threshold)
+                      const shouldTrustServerPosition = (now - (localPlayer.timestamp || 0)) > 2000
                       
                       const reconciledPlayer = {
                         ...localPlayer, // Keep local position for responsiveness
@@ -616,29 +658,6 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
               }
             }
 
-            // SERVER-AUTHORITATIVE BULLETS: Only use server bullets
-            if (gameState.pulses && Array.isArray(gameState.pulses)) {
-              const serverPulses = gameState.pulses.map((serverPulse: any) => ({
-                id: serverPulse.id,
-                x: serverPulse.x,
-                y: serverPulse.y,
-                dx: serverPulse.dx,
-                dy: serverPulse.dy,
-                playerId: serverPulse.playerId,
-                color: serverPulse.color,
-                damage: serverPulse.damage || 1,
-                timestamp: serverPulse.timestamp || now,
-                speed: serverPulse.speed || 500 // Ensure speed is always set for smooth interpolation
-              }))
-              
-              setPulses(serverPulses)
-              pulsesRef.current = serverPulses
-            } else {
-              // Clear bullets if none received
-              setPulses([])
-              pulsesRef.current = []
-            }
-
             // SERVER-AUTHORITATIVE POWERUPS: Sync powerups from server
             if (gameState.powerups && Array.isArray(gameState.powerups)) {
               const serverPowerups = gameState.powerups.map((serverPowerup: any) => ({
@@ -658,7 +677,81 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
               powerupsRef.current = []
             }
 
-            // SERVER-AUTHORITATIVE BOMBS: Sync bombs from server
+            // Note: Bombs are now synced separately for smoother movement
+          }
+        } catch (error) {
+          console.error('World state sync error:', error)
+          // On error, don't clear obstacles to prevent flickering in production
+          // The next successful sync will update them properly
+        }
+      }
+
+      // STABLE BULLET SYNC: Moderate frequency for consistent updates
+      const syncBulletsFromServer = async () => {
+        const now = Date.now()
+        
+        // Stable sync frequency for bullets (15 FPS for reliable updates without overwhelming)
+        if (now - lastBulletSync.current < 67) { // ~15 FPS
+          return
+        }
+        lastBulletSync.current = now
+
+        try {
+          const response = await fetch(`/api/game/${currentGameCode}`)
+          if (response.ok) {
+            const gameState = await response.json()
+            
+            // STABLE BULLET UPDATE: Update bullets with timestamp preservation
+            if (gameState.pulses && Array.isArray(gameState.pulses)) {
+              const serverPulses = gameState.pulses.map((serverPulse: any) => ({
+                id: serverPulse.id,
+                x: serverPulse.x,
+                y: serverPulse.y,
+                dx: serverPulse.dx,
+                dy: serverPulse.dy,
+                playerId: serverPulse.playerId,
+                color: serverPulse.color,
+                damage: serverPulse.damage || 1,
+                timestamp: serverPulse.timestamp || now,
+                speed: serverPulse.speed || 500
+              }))
+              
+              // Always update bullets to ensure smooth sync
+              setPulses(serverPulses)
+              pulsesRef.current = serverPulses
+              
+              // Clean up local bullet positions for bullets that no longer exist
+              const currentBulletIds = new Set(serverPulses.map((p: Pulse) => p.id))
+              const localBulletIds = Array.from(localBulletPositions.current.keys())
+              for (const bulletId of localBulletIds) {
+                if (!currentBulletIds.has(bulletId)) {
+                  localBulletPositions.current.delete(bulletId)
+                }
+              }
+            }
+          }
+        } catch (error) {
+          // Silently handle errors for sync
+          console.debug('Bullet sync error:', error)
+        }
+      }
+
+      // STABLE BOMB SYNC: Dedicated sync for smooth bomb movement
+      const syncBombsFromServer = async () => {
+        const now = Date.now()
+        
+        // Stable sync frequency for bombs (15 FPS for reliable updates, same as bullets)
+        if (now - lastBombSync.current < 67) { // ~15 FPS
+          return
+        }
+        lastBombSync.current = now
+
+        try {
+          const response = await fetch(`/api/game/${currentGameCode}`)
+          if (response.ok) {
+            const gameState = await response.json()
+            
+            // STABLE BOMB UPDATE: Update bombs with timestamp preservation
             if (gameState.bombs && Array.isArray(gameState.bombs)) {
               const serverBombs = gameState.bombs.map((serverBomb: any) => ({
                 id: serverBomb.id,
@@ -699,8 +792,18 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
                 }
               })
               
+              // Always update bombs to ensure smooth sync
               setBombs(serverBombs)
               bombsRef.current = serverBombs
+              
+              // Clean up local bomb positions for bombs that no longer exist
+              const cleanupBombIds = new Set(serverBombs.map((b: Bomb) => b.id))
+              const localBombIds = Array.from(localBombPositions.current.keys())
+              for (const bombId of localBombIds) {
+                if (!cleanupBombIds.has(bombId)) {
+                  localBombPositions.current.delete(bombId)
+                }
+              }
             } else {
               // Clear bombs if none received
               setBombs([])
@@ -708,9 +811,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
             }
           }
         } catch (error) {
-          console.error('World state sync error:', error)
-          // On error, don't clear obstacles to prevent flickering in production
-          // The next successful sync will update them properly
+          // Silently handle errors for sync
+          console.debug('Bomb sync error:', error)
         }
       }
 
@@ -830,8 +932,10 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       doInitialSync()
       
       // Set up separated sync intervals with production-friendly frequencies
-      movementSyncInterval.current = setInterval(syncMovementToServer, 50) // 20 FPS movement (reduced from 30 FPS)
-      worldStateSyncInterval.current = setInterval(syncWorldStateFromServer, 100) // 10 FPS world state (reduced from 30 FPS)
+      movementSyncInterval.current = setInterval(syncMovementToServer, 100) // 10 FPS movement
+      worldStateSyncInterval.current = setInterval(syncWorldStateFromServer, 200) // 5 FPS world state
+      bulletSyncInterval.current = setInterval(syncBulletsFromServer, 67) // 15 FPS bullet sync for stability
+      bombSyncInterval.current = setInterval(syncBombsFromServer, 67) // 15 FPS bomb sync for stability
       
       // Set up single shooting handler interval - more responsive for better cooldown feedback
       const shootingInterval = setInterval(handleShooting, 50) // Check shooting every 50ms for responsive feedback
@@ -839,6 +943,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       return () => {
         if (movementSyncInterval.current) clearInterval(movementSyncInterval.current)
         if (worldStateSyncInterval.current) clearInterval(worldStateSyncInterval.current)
+        if (bulletSyncInterval.current) clearInterval(bulletSyncInterval.current)
+        if (bombSyncInterval.current) clearInterval(bombSyncInterval.current)
         clearInterval(shootingInterval)
       }
     }
@@ -846,6 +952,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
     return () => {
       if (movementSyncInterval.current) clearInterval(movementSyncInterval.current)
       if (worldStateSyncInterval.current) clearInterval(worldStateSyncInterval.current)
+      if (bulletSyncInterval.current) clearInterval(bulletSyncInterval.current)
+      if (bombSyncInterval.current) clearInterval(bombSyncInterval.current)
     }
   }, [gameStarted, currentGameCode, localPlayerId])
 
@@ -1494,42 +1602,56 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       ctx.restore()
     })
 
-    // RENDERING: Draw server-authoritative bullets with interpolation
+    // RENDERING: Draw server-authoritative bullets with smooth interpolation
     const currentPulses = pulsesRef.current
     const currentTime = Date.now()
     
     currentPulses.forEach((pulse, index) => {
-      // Enhanced client-side interpolation for ultra-smooth bullet movement
+      // SMOOTH LOCAL INTERPOLATION: Track bullets locally for consistent movement
       let renderX = pulse.x
       let renderY = pulse.y
       
-      // Advanced interpolation with acceleration smoothing
-      if (pulse.timestamp && pulse.speed) {
-        const timeSinceUpdate = currentTime - pulse.timestamp
-        const interpolationTime = Math.min(timeSinceUpdate, 50) // Reduced cap to 50ms for smoother movement
-        
-        // Apply smooth acceleration curve for more natural movement
-        const smoothFactor = 1 - Math.exp(-interpolationTime / 20) // Exponential smoothing
-        const effectiveTime = interpolationTime * smoothFactor
-        
-        renderX += pulse.dx * pulse.speed * (effectiveTime / 1000)
-        renderY += pulse.dy * pulse.speed * (effectiveTime / 1000)
+      // Get or create local position tracking for this bullet
+      let localPos = localBulletPositions.current.get(pulse.id)
+      
+      if (!localPos) {
+        // First time seeing this bullet - initialize with server position
+        localPos = { x: pulse.x, y: pulse.y, lastUpdate: currentTime }
+        localBulletPositions.current.set(pulse.id, localPos)
+      } else {
+        // Update local position with smooth interpolation
+        const deltaTime = currentTime - localPos.lastUpdate
+        if (deltaTime > 0 && pulse.speed && pulse.dx !== undefined && pulse.dy !== undefined) {
+          // Smoothly interpolate from last local position
+          const movement = (deltaTime / 1000) * pulse.speed
+          localPos.x += pulse.dx * movement
+          localPos.y += pulse.dy * movement
+          localPos.lastUpdate = currentTime
+          
+          // Gradually sync with server position to prevent drift
+          const syncStrength = 0.1 // 10% correction per frame
+          localPos.x = localPos.x * (1 - syncStrength) + pulse.x * syncStrength
+          localPos.y = localPos.y * (1 - syncStrength) + pulse.y * syncStrength
+        }
       }
       
-      // Client-side collision detection with obstacles - prevent visual pass-through
+      // Use the smoothly interpolated local position
+      renderX = localPos.x
+      renderY = localPos.y
+      
+      // Enhanced client-side collision detection - prevent visual pass-through
       let shouldRenderBullet = true
       const bulletRadius = 5 // Match server BULLET_RADIUS
       
       for (const obstacle of obstaclesRef.current) {
-        // Check if bullet (with its radius) intersects with obstacle rectangle
-        // Use circle-rectangle collision detection for accurate results
+        // Optimized circle-rectangle collision detection
         const closestX = Math.max(obstacle.x, Math.min(renderX, obstacle.x + obstacle.width))
         const closestY = Math.max(obstacle.y, Math.min(renderY, obstacle.y + obstacle.height))
         const distanceX = renderX - closestX
         const distanceY = renderY - closestY
-        const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY)
+        const distanceSquared = distanceX * distanceX + distanceY * distanceY
         
-        if (distance <= bulletRadius) {
+        if (distanceSquared <= bulletRadius * bulletRadius) {
           shouldRenderBullet = false
           break
         }
@@ -1540,23 +1662,25 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
         return
       }
       
-      // Draw bullet with enhanced visual effects and motion blur
+      // Draw bullet with simple, smooth visual effects
       ctx.save()
       
-      // Add motion blur trail for ultra-smooth appearance
+      // Simple motion trail for visual smoothness (reduced complexity)
       if (pulse.dx !== 0 || pulse.dy !== 0) {
-        const trailLength = Math.min(pulse.speed || 500, 600) / 20 // Scale trail with speed
+        const velocity = Math.sqrt(pulse.dx * pulse.dx + pulse.dy * pulse.dy)
+        const speed = pulse.speed || 500
+        const trailLength = Math.min(velocity * speed / 500 * 15, 25) // Simplified trail calculation
+        
+        // Single motion trail line (much simpler than multi-segment)
         const trailX = renderX - (pulse.dx * trailLength)
         const trailY = renderY - (pulse.dy * trailLength)
         
-        // Draw motion trail
         const gradient = ctx.createLinearGradient(trailX, trailY, renderX, renderY)
         gradient.addColorStop(0, 'rgba(0, 0, 0, 0)') // Transparent start
-        gradient.addColorStop(0.7, pulse.color?.replace(')', ', 0.3)').replace('rgb', 'rgba') || 'rgba(0, 255, 0, 0.3)')
         gradient.addColorStop(1, pulse.color || '#00ff00') // Full color at bullet
         
         ctx.strokeStyle = gradient
-        ctx.lineWidth = 4
+        ctx.lineWidth = 3
         ctx.lineCap = 'round'
         ctx.beginPath()
         ctx.moveTo(trailX, trailY)
@@ -1564,54 +1688,72 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
         ctx.stroke()
       }
       
-      // Enhanced glow effect for better visibility
+      // Simple glow effect
       ctx.shadowColor = pulse.color || '#00ff00'
-      ctx.shadowBlur = 12
+      ctx.shadowBlur = 8
       ctx.shadowOffsetX = 0
       ctx.shadowOffsetY = 0
       
-      // Main bullet body with pulsing effect
-      const pulseIntensity = (Math.sin(currentTime / 100) + 1) / 2 // Fast pulse
-      const bulletSize = 4 + (pulseIntensity * 2) // Size varies 4-6px
+      // Standard bullet size (no complex size calculations)
+      const bulletSize = 4
       
+      // Outer glow
+      ctx.fillStyle = pulse.color?.replace(')', ', 0.4)').replace('rgb', 'rgba') || 'rgba(0, 255, 0, 0.4)'
+      ctx.beginPath()
+      ctx.arc(renderX, renderY, bulletSize * 1.3, 0, 2 * Math.PI)
+      ctx.fill()
+      
+      // Main bullet body
       ctx.fillStyle = pulse.color || '#00ff00'
       ctx.beginPath()
       ctx.arc(renderX, renderY, bulletSize, 0, 2 * Math.PI)
       ctx.fill()
       
-      // Inner bright core with enhanced brightness
+      // Inner bright core
       ctx.shadowBlur = 0
       ctx.fillStyle = '#ffffff'
       ctx.beginPath()
-      ctx.arc(renderX, renderY, bulletSize * 0.4, 0, 2 * Math.PI)
+      ctx.arc(renderX, renderY, bulletSize * 0.5, 0, 2 * Math.PI)
       ctx.fill()
-      
-      // Outer ring for definition with animated thickness
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 1 + (pulseIntensity * 0.5)
-      ctx.beginPath()
-      ctx.arc(renderX, renderY, bulletSize, 0, 2 * Math.PI)
-      ctx.stroke()
       
       ctx.restore()
     })
 
-    // RENDERING: Draw server-authoritative bombs with interpolation
+    // RENDERING: Draw server-authoritative bombs with smooth interpolation
     const currentBombs = bombsRef.current
     
     currentBombs.forEach((bomb, index) => {
-      // Enhanced client-side interpolation for smooth bomb movement
+      // SMOOTH LOCAL INTERPOLATION: Track bombs locally for consistent movement
       let renderX = bomb.x
       let renderY = bomb.y
       
-      // Interpolate bomb position based on movement
-      if (bomb.timestamp && bomb.speed) {
-        const timeSinceUpdate = currentTime - bomb.timestamp
-        const interpolationTime = Math.min(timeSinceUpdate, 100) // Cap interpolation
-        
-        renderX += bomb.dx * bomb.speed * (interpolationTime / 1000)
-        renderY += bomb.dy * bomb.speed * (interpolationTime / 1000)
+      // Get or create local position tracking for this bomb
+      let localPos = localBombPositions.current.get(bomb.id)
+      
+      if (!localPos) {
+        // First time seeing this bomb - initialize with server position
+        localPos = { x: bomb.x, y: bomb.y, lastUpdate: currentTime }
+        localBombPositions.current.set(bomb.id, localPos)
+      } else {
+        // Update local position with smooth interpolation
+        const deltaTime = currentTime - localPos.lastUpdate
+        if (deltaTime > 0 && bomb.speed && bomb.dx !== undefined && bomb.dy !== undefined) {
+          // Smoothly interpolate from last local position
+          const movement = (deltaTime / 1000) * bomb.speed
+          localPos.x += bomb.dx * movement
+          localPos.y += bomb.dy * movement
+          localPos.lastUpdate = currentTime
+          
+          // Gradually sync with server position to prevent drift
+          const syncStrength = 0.15 // 15% correction per frame (slightly more than bullets for faster sync)
+          localPos.x = localPos.x * (1 - syncStrength) + bomb.x * syncStrength
+          localPos.y = localPos.y * (1 - syncStrength) + bomb.y * syncStrength
+        }
       }
+      
+      // Use the smoothly interpolated local position
+      renderX = localPos.x
+      renderY = localPos.y
       
       // Check if bomb should explode soon (visual warning)
       const timeUntilExplosion = bomb.explodeTime - currentTime
@@ -1642,20 +1784,22 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       // Draw bomb with enhanced visual effects
       ctx.save()
       
-      // Add motion trail for flying bomb
+      // Add smooth motion trail for flying bomb
       if (bomb.dx !== 0 || bomb.dy !== 0) {
-        const trailLength = Math.min(bomb.speed || 200, 300) / 15
+        const velocity = Math.sqrt(bomb.dx * bomb.dx + bomb.dy * bomb.dy)
+        const speed = bomb.speed || 200
+        const trailLength = Math.min(velocity * speed / 200 * 12, 20) // Proportional trail length
         const trailX = renderX - (bomb.dx * trailLength)
         const trailY = renderY - (bomb.dy * trailLength)
         
-        // Draw motion trail
+        // Draw smooth motion trail
         const gradient = ctx.createLinearGradient(trailX, trailY, renderX, renderY)
         gradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
-        gradient.addColorStop(0.7, 'rgba(50, 50, 50, 0.3)')
-        gradient.addColorStop(1, 'rgba(50, 50, 50, 0.8)')
+        gradient.addColorStop(0.5, 'rgba(80, 80, 80, 0.4)')
+        gradient.addColorStop(1, 'rgba(100, 100, 100, 0.8)')
         
         ctx.strokeStyle = gradient
-        ctx.lineWidth = 6
+        ctx.lineWidth = 4
         ctx.lineCap = 'round'
         ctx.beginPath()
         ctx.moveTo(trailX, trailY)
@@ -1873,6 +2017,12 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
     if (worldStateSyncInterval.current) {
       clearInterval(worldStateSyncInterval.current)
     }
+    if (bulletSyncInterval.current) {
+      clearInterval(bulletSyncInterval.current)
+    }
+    if (bombSyncInterval.current) {
+      clearInterval(bombSyncInterval.current)
+    }
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
     }
@@ -1912,6 +2062,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
     lastServerUpdate.current = 0
     interpolationBuffer.current.clear()
     seenBulletIds.current.clear() // Clear bullet tracking
+    localBulletPositions.current.clear() // Clear local bullet positions
+    localBombPositions.current.clear() // Clear local bomb positions
     
     // Reset prediction state
     setServerReconciliation(new Map())
