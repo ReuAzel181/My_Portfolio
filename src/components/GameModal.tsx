@@ -419,6 +419,7 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       pulsesRef.current = []
       powerupsRef.current = [] // Add powerup ref cleanup
       bombsRef.current = [] // Add bomb ref cleanup
+      explosionsRef.current = [] // Add explosion ref cleanup
       shootingRequested.current = false
       spacePressed.current = false
       lastShootingRequest.current = 0
@@ -426,6 +427,19 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       seenBulletIds.current.clear() // Clear bullet tracking
       localBulletPositions.current.clear() // Clear local bullet positions
       localBombPositions.current.clear() // Clear local bomb positions
+      
+      // Reset sync timing to prevent conflicts
+      lastMovementSync.current = 0
+      lastWorldStateSync.current = 0
+      lastBulletSync.current = 0
+      lastBombSync.current = 0
+      
+      // Reset prediction state
+      setInputSequence(0)
+      setPendingInputs([])
+      setServerReconciliation(new Map())
+      interpolationBuffer.current.clear()
+      obstaclesHash.current = ''
       
       // console.log('🧹 Modal closed - all state cleaned up')
     }
@@ -497,8 +511,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       const syncWorldStateFromServer = async () => {
         const now = Date.now()
         
-        // Conservative sync frequency for game state (5 FPS)
-        if (now - lastWorldStateSync.current < 200) {
+        // Higher frequency for smoother bullets/bombs (10 FPS)
+        if (now - lastWorldStateSync.current < 100) {
           return
         }
         lastWorldStateSync.current = now
@@ -533,7 +547,7 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
               }
             }
 
-            // FAST BULLET SYNC: Update bullets with higher frequency for smoothness
+            // FAST BULLET SYNC: Update bullets from world state data
             if (gameState.pulses && Array.isArray(gameState.pulses)) {
               const serverPulses = gameState.pulses.map((serverPulse: any) => ({
                 id: serverPulse.id,
@@ -548,10 +562,28 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
                 speed: serverPulse.speed || 500 // Ensure speed is always set for smooth interpolation
               }))
               
-              setPulses(serverPulses)
-              pulsesRef.current = serverPulses
-            } else {
-              // Clear bullets if none received
+              // Only update bullets if there are actual changes to prevent flicker
+              const currentBulletIds = new Set(pulsesRef.current.map((p: any) => p.id))
+              const serverBulletIds = new Set(serverPulses.map((p: any) => p.id))
+              
+              const hasChanges = currentBulletIds.size !== serverBulletIds.size ||
+                                 Array.from(currentBulletIds).some(id => !serverBulletIds.has(id)) ||
+                                 Array.from(serverBulletIds).some(id => !currentBulletIds.has(id))
+              
+              if (hasChanges || pulsesRef.current.length === 0) {
+                setPulses(serverPulses)
+                pulsesRef.current = serverPulses
+                
+                // Clean up local bullet positions for bullets that no longer exist
+                const localBulletIds = Array.from(localBulletPositions.current.keys())
+                for (const bulletId of localBulletIds) {
+                  if (!serverBulletIds.has(bulletId)) {
+                    localBulletPositions.current.delete(bulletId)
+                  }
+                }
+              }
+            } else if (pulsesRef.current.length > 0) {
+              // Only clear bullets if we currently have some (prevent unnecessary clears)
               setPulses([])
               pulsesRef.current = []
             }
@@ -596,17 +628,21 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
                         lastSuccessfulShot.current || 0
                       )
                       
-                      // Only trust server position if local player hasn't moved recently (2 seconds threshold)
-                      const shouldTrustServerPosition = (now - (localPlayer.timestamp || 0)) > 2000
+                      // Only trust server position if local player hasn't moved recently (5 seconds threshold) or if there's a significant position difference
+                      const shouldTrustServerPosition = (now - (localPlayer.timestamp || 0)) > 5000
+                      const positionDifference = Math.sqrt(
+                        Math.pow(player.x - localPlayer.x, 2) + Math.pow(player.y - localPlayer.y, 2)
+                      )
+                      const hasSignificantPositionDrift = positionDifference > 50 // Only reconcile if positions are very different
                       
                       const reconciledPlayer = {
-                        ...localPlayer, // Keep local position for responsiveness
-                        // Only override position if we haven't moved recently (prevents server lag from teleporting player)
-                        x: shouldTrustServerPosition ? player.x : localPlayer.x,
-                        y: shouldTrustServerPosition ? player.y : localPlayer.y,
+                        ...localPlayer, // Keep local data for responsiveness
+                        // Only override position if we haven't moved recently AND there's significant drift
+                        x: (shouldTrustServerPosition && hasSignificantPositionDrift) ? player.x : localPlayer.x,
+                        y: (shouldTrustServerPosition && hasSignificantPositionDrift) ? player.y : localPlayer.y,
                         health: player.health, // Trust server for health
                         hitTime: player.hitTime, // Sync hit animations
-                        color: player.color, // Ensure color consistency
+                        color: player.color || localPlayer.color, // Ensure color consistency
                         lastShot: mostRecentLastShot, // Use most recent shot time
                         // SERVER-AUTHORITATIVE: Always trust server for powerup data
                         invisibilityEnd: player.invisibilityEnd,
@@ -658,7 +694,7 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
               }
             }
 
-            // SERVER-AUTHORITATIVE POWERUPS: Sync powerups from server
+            // SERVER-AUTHORITATIVE POWERUPS: Stable sync (prevent flickering)
             if (gameState.powerups && Array.isArray(gameState.powerups)) {
               const serverPowerups = gameState.powerups.map((serverPowerup: any) => ({
                 id: serverPowerup.id,
@@ -669,15 +705,89 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
                 duration: serverPowerup.duration
               }))
               
-              setPowerups(serverPowerups)
-              powerupsRef.current = serverPowerups
-            } else {
-              // Clear powerups if none received
+              // Only update if there are actual changes to prevent flickering
+              const currentPowerupIds = new Set(powerupsRef.current.map((p: any) => p.id))
+              const serverPowerupIds = new Set(serverPowerups.map((p: any) => p.id))
+              
+              const hasChanges = currentPowerupIds.size !== serverPowerupIds.size ||
+                                 Array.from(currentPowerupIds).some(id => !serverPowerupIds.has(id)) ||
+                                 Array.from(serverPowerupIds).some(id => !currentPowerupIds.has(id))
+              
+              if (hasChanges || powerupsRef.current.length === 0) {
+                setPowerups(serverPowerups)
+                powerupsRef.current = serverPowerups
+              }
+            } else if (powerupsRef.current.length > 0) {
+              // Only clear powerups if we currently have some (prevent unnecessary clears)
               setPowerups([])
               powerupsRef.current = []
             }
 
-            // Note: Bombs are now synced separately for smoother movement
+            // SERVER-AUTHORITATIVE BOMBS: Sync bombs from world state for efficiency
+            if (gameState.bombs && Array.isArray(gameState.bombs)) {
+              const serverBombs = gameState.bombs.map((serverBomb: any) => ({
+                id: serverBomb.id,
+                x: serverBomb.x,
+                y: serverBomb.y,
+                dx: serverBomb.dx,
+                dy: serverBomb.dy,
+                playerId: serverBomb.playerId,
+                color: serverBomb.color,
+                timestamp: serverBomb.timestamp || now,
+                explodeTime: serverBomb.explodeTime,
+                speed: serverBomb.speed || 200
+              }))
+              
+              // Check for bombs that exploded (were removed from server)
+              const currentBombIds = new Set(bombsRef.current.map((b: any) => b.id))
+              const serverBombIds = new Set(serverBombs.map((b: any) => b.id))
+              
+              bombsRef.current.forEach((bomb: any) => {
+                if (!serverBombIds.has(bomb.id)) {
+                  // This bomb was removed from server, likely exploded
+                  const explosion = {
+                    id: `explosion_${bomb.id}`,
+                    x: bomb.x,
+                    y: bomb.y,
+                    timestamp: now,
+                    radius: 80 // Match server explosion radius
+                  }
+                  
+                  setExplosions((prevExplosions: any) => [...prevExplosions, explosion])
+                  
+                  // Remove explosion after animation (1 second)
+                  setTimeout(() => {
+                    setExplosions((prevExplosions: any) => 
+                      prevExplosions.filter((e: any) => e.id !== explosion.id)
+                    )
+                  }, 1000)
+                }
+              })
+              
+              // Only update bombs if there are actual changes
+              const hasChanges = currentBombIds.size !== serverBombIds.size ||
+                                 Array.from(currentBombIds).some(id => !serverBombIds.has(id)) ||
+                                 Array.from(serverBombIds).some(id => !currentBombIds.has(id))
+              
+              if (hasChanges || bombsRef.current.length === 0) {
+                setBombs(serverBombs)
+                bombsRef.current = serverBombs
+                
+                // Clean up local bomb positions for bombs that no longer exist
+                const localBombIds = Array.from(localBombPositions.current.keys())
+                for (const bombId of localBombIds) {
+                  if (!serverBombIds.has(bombId)) {
+                    localBombPositions.current.delete(bombId)
+                  }
+                }
+              }
+            } else if (bombsRef.current.length > 0) {
+              // Only clear bombs if we currently have some
+              setBombs([])
+              bombsRef.current = []
+            }
+
+            // Note: Bullets and bombs are now synced together for efficiency
           }
         } catch (error) {
           console.error('World state sync error:', error)
@@ -933,9 +1043,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
       
       // Set up separated sync intervals with production-friendly frequencies
       movementSyncInterval.current = setInterval(syncMovementToServer, 100) // 10 FPS movement
-      worldStateSyncInterval.current = setInterval(syncWorldStateFromServer, 200) // 5 FPS world state
-      bulletSyncInterval.current = setInterval(syncBulletsFromServer, 67) // 15 FPS bullet sync for stability
-      bombSyncInterval.current = setInterval(syncBombsFromServer, 67) // 15 FPS bomb sync for stability
+      worldStateSyncInterval.current = setInterval(syncWorldStateFromServer, 100) // 10 FPS world state (includes bullets, bombs, powerups for smoothness)
+      // Note: Bullet and bomb sync are now combined in worldStateSync to prevent redundant API calls
       
       // Set up single shooting handler interval - more responsive for better cooldown feedback
       const shootingInterval = setInterval(handleShooting, 50) // Check shooting every 50ms for responsive feedback
@@ -2051,6 +2160,7 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
     pulsesRef.current = []
     powerupsRef.current = [] // Add powerup ref cleanup
     bombsRef.current = [] // Add bomb ref cleanup
+    explosionsRef.current = [] // Add explosion ref cleanup
     inputBuffer.current = []
     lastServerState.current = null
     shootingRequested.current = false
@@ -2059,18 +2169,27 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
     lastSuccessfulShot.current = 0 // Reset global shot tracking
     lastMovementSync.current = 0
     lastWorldStateSync.current = 0
+    lastBulletSync.current = 0 // Reset bullet sync timing
+    lastBombSync.current = 0 // Reset bomb sync timing
     lastServerUpdate.current = 0
     interpolationBuffer.current.clear()
     seenBulletIds.current.clear() // Clear bullet tracking
     localBulletPositions.current.clear() // Clear local bullet positions
     localBombPositions.current.clear() // Clear local bomb positions
+    obstaclesHash.current = '' // Reset obstacles hash
+    
+    // Reset effects
+    recoilRef.current = { active: false, angle: 0, intensity: 0 }
+    screenShakeRef.current = { active: false, intensity: 0 }
+    setRecoilEffect({ active: false, angle: 0, intensity: 0 })
+    setScreenShake({ active: false, intensity: 0 })
     
     // Reset prediction state
     setServerReconciliation(new Map())
     setInputSequence(0)
     setPendingInputs([])
     
-    // console.log('🔄 Game state completely reset')
+    console.log('🔄 Game state completely reset and cleaned up')
   }
 
   return (
