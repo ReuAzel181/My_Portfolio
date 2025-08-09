@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { UAParser } from 'ua-parser-js';
 
-const DISCORD_WEBHOOK_URL = 'https://discordapp.com/api/webhooks/1394523318765355111/DaQC8RZ4cIU5Nt6TPw-k9LAG_jPk-Z_5L4lXq6q6GCwt5G2uyqylVxzc6Xh2-3kC-obd';
+const DISCORD_WEBHOOK_URL = 'https://discordapp.com/api/webhooks/1403749144505356329/rBkfDj9K-Bc5Kvkcd4u7BiQxYpw-6E_kce2FgxjnDAisd9dCLSx6p7er48sOjo-y9s8j';
 
 // Test Discord webhook
 async function testDiscordWebhook() {
