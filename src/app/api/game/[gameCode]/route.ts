@@ -176,11 +176,12 @@ function checkCollision(x1: number, y1: number, r1: number, x2: number, y2: numb
 }
 
 // Spawn random powerup at safe location
-function spawnRandomPowerup(): Powerup | null {
+function spawnRandomPowerup(obstacles: Obstacle[] = []): Powerup | null {
   const CANVAS_WIDTH = 1000
   const CANVAS_HEIGHT = 450
   const MARGIN = 30 // Keep powerups away from edges
   const MAX_ATTEMPTS = 50 // Prevent infinite loops
+  const POWERUP_RADIUS = 15 // Safe radius around powerup (10 radius + 5 buffer)
 
   // Randomly choose between invisibility and bomb powerups
   const powerupTypes: ('invisibility' | 'bomb')[] = ['invisibility', 'bomb']
@@ -190,23 +191,35 @@ function spawnRandomPowerup(): Powerup | null {
     const x = MARGIN + Math.random() * (CANVAS_WIDTH - 2 * MARGIN)
     const y = MARGIN + Math.random() * (CANVAS_HEIGHT - 2 * MARGIN)
     
-    // Check if position is safe (not too close to obstacles)
-    // For now, we'll spawn anywhere since we don't have obstacle data here
-    // In a full implementation, you'd pass obstacles and check collision
+    // Check if position is safe (not colliding with obstacles)
+    let isSafePosition = true
     
-    const powerup: Powerup = {
-      id: `powerup_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      x: x,
-      y: y,
-      type: powerupType,
-      timestamp: Date.now(),
-      duration: powerupType === 'invisibility' ? 8000 : undefined
+    for (const obstacle of obstacles) {
+      // Check collision between powerup circle and obstacle rectangle
+      if (checkCircleRectCollision(x, y, POWERUP_RADIUS, 
+                                 obstacle.x, obstacle.y, obstacle.width, obstacle.height)) {
+        isSafePosition = false
+        break
+      }
     }
     
-    return powerup
+    // If position is safe, create the powerup
+    if (isSafePosition) {
+      const powerup: Powerup = {
+        id: `powerup_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        x: x,
+        y: y,
+        type: powerupType,
+        timestamp: Date.now(),
+        duration: powerupType === 'invisibility' ? 8000 : undefined
+      }
+      
+      return powerup
+    }
   }
   
   // If we couldn't find a safe spot after MAX_ATTEMPTS, don't spawn
+  console.log('⚠️ Could not find safe position for powerup after', MAX_ATTEMPTS, 'attempts')
   return null
 }
 
@@ -405,15 +418,16 @@ export async function GET(
       }
     }
 
-    // Update the cleaned state and run physics
+    // CRITICAL FIX: Always update physics on every GET request for smooth bullet movement
+    // This ensures bullets move consistently regardless of player activity
+    updateGamePhysics(gameState)
+
+    // Update the cleaned state
     if (Object.keys(activePlayers).length > 0) {
       if (hasPlayerChanges) {
         gameState.players = activePlayers
         gameStorage[gameCode] = gameState
       }
-      
-      // Update game physics
-      updateGamePhysics(gameState)
     } else {
       // Keep the game state with obstacles even if no players (for reconnection)
       if (hasPlayerChanges) {
@@ -613,11 +627,13 @@ export async function POST(
       // Only spawn powerups if there are players in the game
       const playerCount = Object.keys(gameState.players).length
       if (playerCount > 0) {
-        const powerup = spawnRandomPowerup()
+        const powerup = spawnRandomPowerup(gameState.obstacles || [])
         if (powerup) {
           gameState.powerups.push(powerup)
           gameState.lastPowerupSpawn = now
           console.log(`🟣 Spawned ${powerup.type} powerup at (${powerup.x}, ${powerup.y})`)
+        } else {
+          console.log('⚠️ Failed to spawn powerup - no safe location found')
         }
       }
     }
