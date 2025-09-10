@@ -52,12 +52,12 @@ export default function BuyMeACoffee() {
 
   return (
     <>
-      <div className="fixed z-50 bottom-6 right-6 flex flex-col items-end">
-        {/* QR code card with scale/fade animation */}
+      <div className="relative flex flex-col items-center w-full">
+        {/* QR code card - Absolutely positioned overlay */}
         <div
           id="qr-section"
-          className={`mb-3 p-4 bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col items-center transition-transform transition-opacity duration-300 ${showQR ? 'scale-100 opacity-100' : 'scale-90 opacity-0 pointer-events-none'}`}
-          style={{ transformOrigin: 'bottom right' }}
+          className={`absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 p-3 sm:p-4 bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col items-center transition-all duration-300 z-20 ${showQR ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-2 pointer-events-none'}`}
+          style={{ transformOrigin: 'bottom center' }}
         >
           <span className="mb-2 text-gray-700 text-sm">Scan with GCash</span>
           <Image
@@ -70,26 +70,24 @@ export default function BuyMeACoffee() {
             priority
           />
         </div>
-        <div className="relative flex flex-col items-center w-full">
-          {/* Floating coffee beans animation on hover */}
-          <div className={`absolute -top-12 left-1/2 -translate-x-1/2 w-[80px] h-[48px] flex justify-center pointer-events-none transition-opacity duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}
-               aria-hidden="true">
-            <CoffeeBean className="bean bean-1" />
-            <CoffeeBean className="bean bean-2" />
-            <CoffeeBean className="bean bean-3" />
-          </div>
-          <button
-            onClick={handleCoffeeClick}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-full shadow-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 flex items-center gap-2"
-            aria-expanded={showQR}
-            aria-controls="qr-section"
-          >
-            <CoffeeCupIcon />
-            Buy Me a Coffee
-          </button>
+        {/* Floating coffee beans animation on hover */}
+        <div className={`absolute -top-12 left-1/2 -translate-x-1/2 w-[80px] h-[48px] flex justify-center pointer-events-none transition-opacity duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+             aria-hidden="true">
+          <CoffeeBean className="bean bean-1" />
+          <CoffeeBean className="bean bean-2" />
+          <CoffeeBean className="bean bean-3" />
         </div>
+        <button
+          onClick={handleCoffeeClick}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-full shadow-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 flex items-center gap-2"
+          aria-expanded={showQR}
+          aria-controls="qr-section"
+        >
+          <CoffeeCupIcon />
+          Buy Me a Coffee
+        </button>
       </div>
       <HiddenGame isVisible={showGame} onClose={() => setShowGame(false)} />
     </>
@@ -99,4 +97,4 @@ export default function BuyMeACoffee() {
 // Add a simple fade-in animation for the QR card
 // Add this to your global CSS if you want a smooth effect:
 // .animate-fade-in { animation: fadeIn 0.2s ease; }
-// @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } } 
+// @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

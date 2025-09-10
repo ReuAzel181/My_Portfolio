@@ -125,7 +125,7 @@ a, button, [role="button"], .cursor-pointer {
   }
 
   .section-padding {
-    @apply px-4 py-20 md:px-6 lg:px-8;
+    @apply py-20;
   }
 
   .button-primary {
@@ -263,4 +263,4 @@ a, button, [role="button"], .cursor-pointer {
 
 .rotate-y-180 {
   transform: rotateY(180deg);
-} 
+}

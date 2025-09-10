@@ -1778,9 +1778,23 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
     const destroyedBullets = new Set<string>() // Track bullets already processed this frame
     const bulletsForCollision = pulsesRef.current
     
+    // DEBUG: Log collision detection start
+    if (bulletsForCollision.length > 0 && Math.random() < 0.1) {
+      console.log(`🔍 COLLISION CHECK START: Processing ${bulletsForCollision.length} bullets`, bulletsForCollision.map(b => ({
+        id: b.id?.substring(0, 8),
+        destroyed: (b as any).destroyed || false,
+        pos: `(${b.x?.toFixed(1)}, ${b.y?.toFixed(1)})`
+      })))
+    }
+    
     bulletsForCollision.forEach((pulse) => {
       // Skip if already marked for removal, already processed, or already destroyed
-      if (bulletsToRemove.includes(pulse.id) || destroyedBullets.has(pulse.id) || (pulse as any).destroyed) return
+      if (bulletsToRemove.includes(pulse.id) || destroyedBullets.has(pulse.id) || (pulse as any).destroyed) {
+        if (Math.random() < 0.1) {
+          console.log(`⏭️ SKIPPING BULLET: ${pulse.id?.substring(0, 8)} - InRemoveList: ${bulletsToRemove.includes(pulse.id)}, InDestroyedSet: ${destroyedBullets.has(pulse.id)}, DestroyedFlag: ${(pulse as any).destroyed}`)
+        }
+        return
+      }
       
       // Get the current rendered position (same logic as rendering)
       let renderX = pulse.x
@@ -1826,8 +1840,8 @@ const GameModal: React.FC<GameModalProps> = ({ isOpen, onClose }) => {
             }).catch(error => console.error('Error notifying server of bullet destruction:', error))
           }
           
-          if (Math.random() < 0.1) {
-            console.log(`💥 BULLET DESTROYED: ${pulse.id?.substring(0, 8)} hit obstacle at (${renderX.toFixed(1)}, ${renderY.toFixed(1)})`)
+          if (Math.random() < 0.3) { // Increased logging frequency for debugging
+            console.log(`💥 BULLET DESTROYED: ${pulse.id?.substring(0, 8)} hit obstacle at (${renderX.toFixed(1)}, ${renderY.toFixed(1)}) - Destroyed flag: ${(pulse as any).destroyed}, Already in remove list: ${bulletsToRemove.includes(pulse.id)}`)
           }
           break
         }

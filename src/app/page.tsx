@@ -6,7 +6,7 @@ import Projects from '@/components/Projects'
 import Services from '@/components/Services'
 import Skills from '@/components/Skills'
 import Contact from '@/components/Contact'
-import BuyMeACoffee from '@/components/BuyMeACoffee'
+import AIAssistant from '@/components/AIAssistant'
 import HorizontalScroller from '@/components/HorizontalScroller'
 import SectionTransition from '@/components/SectionTransition'
 
@@ -32,9 +32,7 @@ export default function Home() {
       <SectionTransition delay={0.3}>
         <Contact />
       </SectionTransition>
-      <SectionTransition delay={0.35}>
-        <BuyMeACoffee />
-      </SectionTransition>
+      <AIAssistant />
     </div>
   )
-} 
+}

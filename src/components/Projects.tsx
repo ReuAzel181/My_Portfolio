@@ -47,7 +47,6 @@ const SAMPLE_PROJECTS: Project[] = [
     description: 'An intelligent chatbot powered by advanced NLP models',
     image: '/projects/Project1.png',
     tags: ['AI', 'Chatbot', 'Next.js'],
-    liveUrl: 'https://example.com',
     githubUrl: 'https://github.com/example/project',
     longDescription: 'A sophisticated chatbot that uses natural language processing to provide intelligent responses.',
     technologies: ['Next.js', 'OpenAI', 'TailwindCSS', 'TypeScript']
@@ -58,7 +57,6 @@ const SAMPLE_PROJECTS: Project[] = [
     description: 'A showcase of creative design work and UI/UX projects',
     image: '/projects/Project2.png',
     tags: ['UI/UX', 'Development', 'Web'],
-    liveUrl: 'https://example.com',
     githubUrl: 'https://github.com/example/project',
     longDescription: 'A comprehensive veterinary care platform with appointment scheduling and patient management.',
     technologies: ['React', 'Framer Motion', 'TailwindCSS', 'Figma'],
@@ -70,11 +68,22 @@ const SAMPLE_PROJECTS: Project[] = [
     description: 'A modern note-taking platform with AI features',
     image: '/projects/Project3.png',
     tags: ['Web', 'Development', 'AI'],
-    liveUrl: 'https://example.com',
     githubUrl: 'https://github.com/example/project',
     longDescription: 'An intelligent note-taking platform with AI-powered organization and search capabilities.',
     technologies: ['Next.js', 'OpenAI', 'MongoDB', 'TailwindCSS']
+  },
+  {
+    id: '4',
+    title: 'News Site',
+    description: 'A modern news platform with personalized content',
+    image: '/projects/Project4.png',
+    tags: ['Web', 'Development', 'News'],
+    liveUrl: 'https://veritas-bulletin.vercel.app/',
+    githubUrl: 'https://github.com/ReuAzel181/News-Site',
+    longDescription: 'A fully responsive news website featuring categorized news sections, search functionality, and user-friendly design. Built to deliver the latest news efficiently and intuitively.',
+    technologies: ['React', 'Next.js', 'TailwindCSS', 'API Integration', 'Node.js']
   }
+
 ];
 
 const Projects = () => {
@@ -161,7 +170,7 @@ const Projects = () => {
 
   return (
     <section id="projects" className="section-padding bg-[var(--bg-primary)]">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto">
         <motion.div
           ref={ref}
           initial={{ opacity: 0, y: 20 }}
@@ -175,7 +184,7 @@ const Projects = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 gap-8">
           {projects.map((project, index) => (
             <motion.div
               key={project.id}
@@ -345,6 +354,6 @@ const Projects = () => {
   )
 }
 
-export default Projects 
+export default Projects
 
 
