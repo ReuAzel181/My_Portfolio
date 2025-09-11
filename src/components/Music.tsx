@@ -130,7 +130,7 @@ const Music = () => {
           <h2 className="text-5xl md:text-6xl font-extrabold mb-2 text-center heading-gradient drop-shadow-xl tracking-tight">
             My Music
           </h2>
-          <div className="flex items-center gap-2 text-lg text-[var(--text-secondary)] font-medium">
+          <div className="flex items-center gap-2 text-[var(--text-secondary)] font-medium" style={{ fontSize: '18px' }}>
             <svg xmlns='http://www.w3.org/2000/svg' className='w-7 h-7 text-[var(--button-hover)]' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 19V6l12-2v13' /><circle cx='6' cy='18' r='3' /><circle cx='18' cy='16' r='3' /></svg>
             <span>Compilation of my original tracks & sound experiments</span>
           </div>
@@ -316,4 +316,4 @@ const Music = () => {
   )
 }
 
-export default Music 
+export default Music

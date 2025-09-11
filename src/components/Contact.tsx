@@ -365,7 +365,7 @@ const Contact = () => {
 
   return (
     <ErrorBoundary>
-      <section ref={ref} id="contact" className="section-padding bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900 relative overflow-hidden z-10">
+      <section ref={ref} id="contact" className="section-padding bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900 relative overflow-hidden z-10 px-16">
         {/* Decorative accent */}
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-gradient-to-tr from-secondary/20 to-transparent dark:from-secondary/30 rounded-full blur-3xl z-0" />
         <div className="max-w-6xl mx-auto relative">
@@ -378,7 +378,7 @@ const Contact = () => {
               className="flex flex-col justify-center bg-transparent z-10"
             >
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-xl font-bold text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">Let's Connect!</h2>
+                <h2 className="font-bold text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ fontSize: '20px' }}>Let's Connect!</h2>
                 {/* Animated Waving Hand SVG */}
                 <span className="inline-block cursor-pointer group">
                   <svg

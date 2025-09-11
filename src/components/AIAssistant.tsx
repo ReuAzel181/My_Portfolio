@@ -30,7 +30,7 @@ const ThinkingDots = () => (
 )
 
 // Function to format message text with proper bold and line breaks
-const formatMessageText = (text: string) => {
+const formatMessageText = (text: string, messageId: string) => {
   // Split by line breaks and process each line
   const lines = text.split('\n');
   
@@ -42,14 +42,14 @@ const formatMessageText = (text: string) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         // Remove asterisks and make bold
         const boldText = part.slice(2, -2);
-        return <strong key={`${lineIndex}-${partIndex}`} className="font-semibold">{boldText}</strong>;
+        return <strong key={`${messageId}-${lineIndex}-${partIndex}`} className="font-semibold">{boldText}</strong>;
       }
       return part;
     });
     
     // Add line break after each line except the last one
     return (
-      <span key={lineIndex}>
+      <span key={`${messageId}-line-${lineIndex}`}>
         {formattedLine}
         {lineIndex < lines.length - 1 && <br />}
       </span>
@@ -301,7 +301,7 @@ export default function AIAssistant() {
                           : 'bg-gray-100 text-gray-800 rounded-bl-md'
                       }`}
                     >
-                      {message.isUser ? message.text : formatMessageText(message.text)}
+                      {message.isUser ? message.text : formatMessageText(message.text, message.id)}
                     </div>
                   </div>
                 ))}

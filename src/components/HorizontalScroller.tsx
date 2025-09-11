@@ -112,27 +112,62 @@ export default function HorizontalScroller() {
     <div>
       <section
         ref={containerRef}
-        className="relative w-full min-h-[350px] py-20 flex flex-col items-center justify-center overflow-visible"
+        className="relative w-full min-h-[500px] py-32 flex flex-col items-center justify-center overflow-visible"
         style={{
-          background: 'linear-gradient(120deg, #18181b 60%, #232946 100%)',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)',
+          boxShadow: '0 20px 60px 0 rgba(31, 38, 135, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
           zIndex: 1,
           overflow: 'hidden',
           maxWidth: '100vw',
         }}
       >
-      {/* Section Title */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-[#385780] dark:text-[#5A7A9D] tracking-tight drop-shadow-[0_0_5px_rgba(255,255,255,0.1)] dark:drop-shadow-[0_0_5px_rgba(255,255,255,0.05)]">
-          Design & Graphics
-        </h2>
-        <p className="text-base text-white/70 mt-2">A dynamic, immersive gallery</p>
+      {/* Enhanced Section Title with Better Spacing */}
+      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none">
+        {/* Main Title with Enhanced Visibility */}
+        <div className="relative mb-6">
+          {/* Glowing background effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/30 to-pink-400/20 blur-xl rounded-full scale-150" />
+          
+          {/* Main title */}
+          <h2 className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 tracking-tight leading-tight" style={{ fontSize: '48px' }}>
+            Design & Graphics
+          </h2>
+          
+          {/* Subtle text shadow for depth */}
+          <div className="absolute inset-0 text-4xl md:text-6xl lg:text-7xl font-black text-white/5 blur-sm">
+            Design & Graphics
+          </div>
+        </div>
+        
+        {/* Enhanced Subtitle */}
+        <div className="relative">
+          <p className="text-white/90 font-medium tracking-wide mb-2" style={{ fontSize: '18px' }}>
+            A dynamic, immersive gallery
+          </p>
+          <p className="text-white/60 font-light italic" style={{ fontSize: '18px' }}>
+            Scroll to explore my creative journey
+          </p>
+        </div>
+        
+        {/* Decorative elements */}
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <div className="w-12 h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
+          <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+          <div className="w-12 h-[2px] bg-gradient-to-r from-transparent via-pink-400 to-transparent" />
+        </div>
       </div>
-      {/* Single Row */}
+
+      {/* Enhanced Gallery Row with Better Positioning */}
       <div
         ref={rowRef}
-        className="flex gap-8 absolute left-0 top-1/2 -translate-y-1/2 z-20"
-        style={{ pointerEvents: 'auto', width: TOTAL_WIDTH, maxWidth: '100vw', top: '150px' }}
+        className="flex gap-8 absolute left-0 z-20"
+        style={{ 
+          pointerEvents: 'auto', 
+          width: TOTAL_WIDTH, 
+          maxWidth: '100vw', 
+          top: '280px', // Increased spacing from title
+          transform: 'translateY(-50%)'
+        }}
       >
         {[...(shuffledImages.length ? shuffledImages : images), ...(shuffledImages.length ? shuffledImages : images)].map((src, i) => {
           // Extract image name without extension and path
@@ -155,12 +190,14 @@ export default function HorizontalScroller() {
               className="relative group flex flex-col items-center justify-end"
               style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}
             >
-              {/* Name overlay on hover */}
+              {/* Enhanced name overlay with better styling */}
               <span
-                className="absolute -top-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-md bg-black/80 text-white text-sm font-semibold opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 transition-all duration-300 pointer-events-none select-none shadow-lg z-30"
+                className="absolute -top-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-gradient-to-r from-gray-900/95 to-black/95 backdrop-blur-sm text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-3 transition-all duration-300 pointer-events-none select-none shadow-2xl z-30 border border-white/10"
                 style={{ whiteSpace: 'nowrap' }}
               >
                 {name}
+                {/* Small arrow pointing down */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900/95" />
               </span>
               <div
                 className="w-full h-full flex items-center justify-center"
@@ -171,7 +208,7 @@ export default function HorizontalScroller() {
                   alt={`Project ${i % images.length + 1}`}
                   width={IMAGE_WIDTH}
                   height={IMAGE_HEIGHT}
-                  className="select-none object-contain rounded-xl border-2 border-white/10 shadow-xl bg-transparent transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6"
+                  className="select-none object-contain rounded-xl border-2 border-white/20 shadow-2xl bg-gradient-to-br from-white/5 to-transparent backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-3xl group-hover:border-white/40"
                   draggable={false}
                   priority={i < 2}
                 />
@@ -180,8 +217,11 @@ export default function HorizontalScroller() {
           );
         })}
       </div>
-      {/* Decorative blurred gradient */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[60vw] h-64 bg-gradient-to-r from-blue-400/30 via-purple-400/20 to-pink-400/30 rounded-full blur-3xl z-0" />
+      
+      {/* Enhanced decorative elements */}
+      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[80vw] h-80 bg-gradient-to-r from-blue-500/20 via-purple-500/30 to-pink-500/20 rounded-full blur-3xl z-0 animate-pulse" />
+      <div className="absolute -bottom-20 left-1/4 w-[40vw] h-40 bg-gradient-to-r from-cyan-400/15 via-blue-400/25 to-purple-400/15 rounded-full blur-2xl z-0" />
+      <div className="absolute -bottom-20 right-1/4 w-[40vw] h-40 bg-gradient-to-r from-purple-400/15 via-pink-400/25 to-red-400/15 rounded-full blur-2xl z-0" />
     </section>
     </div>
   );

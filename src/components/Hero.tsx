@@ -1,11 +1,12 @@
 'use client'
 
-import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 // import AudioPlayer from './AudioPlayer'
 import AudioVisualizer from './AudioVisualizer'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import UIGame from './UIGame'
+import { motion, AnimatePresence, useAnimation } from 'framer-motion'
+
 
 const Hero = () => {
   const profileImage = '/user-profile3.png'
@@ -16,6 +17,9 @@ const Hero = () => {
   const [isDragging, setIsDragging] = useState(false)
   const [sparkles, setSparkles] = useState<Array<{id: number, x: number, y: number}>>([])
   const [sparkleId, setSparkleId] = useState(0)
+  const [nameVisible, setNameVisible] = useState(true)
+  const [nameKey, setNameKey] = useState(0) // Force re-render for respawn
+  const [isThrown, setIsThrown] = useState(false)
 
   // Direct download URL with export=download parameter
   const FILE_ID = '1yPI53anhVujRUf_mssiopLCOXrOyCX0-'
@@ -87,24 +91,208 @@ const Hero = () => {
     }, 1000)
   }
 
-  // Handle drag events
-  const handleDragStart = () => {
+  // Enhanced drag tracking with high-frequency sampling
+  const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
+  const [momentumVelocity, setMomentumVelocity] = useState({ x: 0, y: 0 }) // Isolated for throwing
+  const velocityHistoryRef = useRef<Array<{x: number, y: number, timestamp: number}>>([])
+  const nameRef = useRef<HTMLSpanElement>(null)
+  const animationFrameRef = useRef<number | null>(null)
+  const isThrowingRef = useRef(false) // Track throwing state to prevent interference
+
+  // Handle drag events with improved velocity tracking and cursor management
+  const handleDragStart = (event: any, info: any) => {
     setIsDragging(true)
+    setDragVelocity({ x: 0, y: 0 })
+    
+    // Cancel any existing animation frame to prevent conflicts
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = null
+    }
+    
+    // Initialize velocity history for high-frequency sampling
+    velocityHistoryRef.current = []
+    
+    // Disable custom cursor during drag
+    document.body.style.cursor = 'none'
+    document.documentElement.style.setProperty('--cursor-disabled', 'true')
+    
+    // Set consistent transform origin to center for smooth rotation
+    if (nameRef.current) {
+      nameRef.current.style.transformOrigin = 'center center'
+    }
   }
 
   const handleDrag = (event: any, info: any) => {
-    // Create sparkles during drag
-    if (Math.random() > 0.7) { // 30% chance per frame
+    if (!isDragging || isThrowingRef.current) return // Prevent interference during throwing
+    
+    const currentTime = Date.now()
+    const deltaX = info.delta.x
+    const deltaY = info.delta.y
+    const deltaTime = 16 // Assume 60fps for consistent calculation
+    
+    // Calculate instantaneous velocity with smoothing
+    const instantVelocityX = (deltaX / deltaTime) * 1000
+    const instantVelocityY = (deltaY / deltaTime) * 1000
+    
+    // Store velocity sample with timestamp
+    velocityHistoryRef.current.push({
+      x: instantVelocityX,
+      y: instantVelocityY,
+      timestamp: currentTime
+    })
+    
+    // Keep only recent samples (last 30ms for ultra-smooth calculation)
+    velocityHistoryRef.current = velocityHistoryRef.current.filter(
+      sample => currentTime - sample.timestamp < 30
+    )
+    
+    // Calculate exponentially weighted average velocity (more recent samples have much higher weight)
+    if (velocityHistoryRef.current.length > 0) {
+      let totalWeightedX = 0
+      let totalWeightedY = 0
+      let totalWeight = 0
+      
+      velocityHistoryRef.current.forEach((sample, index) => {
+        // Exponential weight increase for recent samples
+        const weight = Math.pow(2, index)
+        totalWeightedX += sample.x * weight
+        totalWeightedY += sample.y * weight
+        totalWeight += weight
+      })
+      
+      const avgVelocityX = totalWeightedX / totalWeight
+      const avgVelocityY = totalWeightedY / totalWeight
+      
+      // Update drag velocity for UI feedback only
+      setDragVelocity({ x: avgVelocityX, y: avgVelocityY })
+    }
+    
+    // Reduce sparkle frequency for better performance
+    if (Math.random() > 0.85) {
       createSparkle(info.point.x, info.point.y)
     }
   }
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (event: any, info: any) => {
     setIsDragging(false)
+    
+    // Calculate final velocity using smoothed custom velocity and Framer Motion velocity
+    const customVelocity = Math.sqrt(dragVelocity.x ** 2 + dragVelocity.y ** 2)
+    const framerVelocity = Math.sqrt(info.velocity.x ** 2 + info.velocity.y ** 2)
+    
+    // Use weighted combination of both velocities for optimal momentum
+    const finalVelocity = (customVelocity * 0.7) + (framerVelocity * 0.3)
+    
+    // Use lower threshold for easier throwing
+    if (finalVelocity > 100) {
+      // Set throwing state to prevent interference
+      isThrowingRef.current = true
+      
+      // Store momentum velocity separately for throwing calculations
+      setMomentumVelocity({ 
+        x: dragVelocity.x * 0.7 + info.velocity.x * 0.3,
+        y: dragVelocity.y * 0.7 + info.velocity.y * 0.3
+      })
+      
+      // Clear drag velocity tracking immediately to prevent interference
+      setDragVelocity({ x: 0, y: 0 })
+      velocityHistoryRef.current = []
+      
+      // Re-enable custom cursor immediately since drag is done
+      document.body.style.cursor = ''
+      document.documentElement.style.removeProperty('--cursor-disabled')
+      
+      // Use optimized boundary checking with longer delay to avoid momentum conflicts
+      const startBoundaryCheck = () => {
+        const checkBoundaries = () => {
+          if (!nameRef.current || !isThrowingRef.current) return
+          
+          const rect = nameRef.current.getBoundingClientRect()
+          const windowWidth = window.innerWidth
+          const windowHeight = window.innerHeight
+          
+          // More generous boundary detection with buffer
+          const buffer = 250 // Increased buffer for smoother detection
+          const isOutside = (
+            rect.right < -buffer ||
+            rect.left > windowWidth + buffer ||
+            rect.bottom < -buffer ||
+            rect.top > windowHeight + buffer
+          )
+          
+          if (isOutside) {
+            // Reset transform origin only when destroying
+            if (nameRef.current) {
+              nameRef.current.style.transformOrigin = ''
+            }
+            isThrowingRef.current = false // Reset throwing state
+            setMomentumVelocity({ x: 0, y: 0 }) // Clear momentum velocity
+            destroyAndRespawn()
+          } else {
+            // Continue checking with requestAnimationFrame for smooth monitoring
+            animationFrameRef.current = requestAnimationFrame(checkBoundaries)
+          }
+        }
+        
+        // Significantly increased delay to let momentum physics fully settle
+        // This prevents interference with the throwing animation
+        setTimeout(() => {
+          if (isThrowingRef.current) { // Only start if still throwing
+            animationFrameRef.current = requestAnimationFrame(checkBoundaries)
+          }
+        }, 400) // Increased from 200ms to 400ms for better momentum settling
+      }
+      
+      startBoundaryCheck()
+    } else {
+      // Reset everything for normal state (not thrown)
+      document.body.style.cursor = ''
+      document.documentElement.style.removeProperty('--cursor-disabled')
+      
+      // Reset transform origin for normal state
+      if (nameRef.current) {
+        nameRef.current.style.transformOrigin = ''
+      }
+      setDragVelocity({ x: 0, y: 0 })
+      setMomentumVelocity({ x: 0, y: 0 })
+      velocityHistoryRef.current = []
+      isThrowingRef.current = false
+    }
   }
 
+  const checkBoundaries = () => {
+    if (!nameRef.current) return
+    
+    const rect = nameRef.current.getBoundingClientRect()
+    const windowWidth = window.innerWidth
+    const windowHeight = window.innerHeight
+    
+    // More generous boundary detection
+    if (rect.right < -150 || rect.left > windowWidth + 150 || 
+        rect.bottom < -150 || rect.top > windowHeight + 150) {
+      destroyAndRespawn()
+    }
+  }
+
+  // Destroy current name and spawn new one
+  const destroyAndRespawn = () => {
+    setNameVisible(false)
+    
+    // Respawn after destruction animation
+    setTimeout(() => {
+      setNameKey(prev => prev + 1) // Force new instance
+      setNameVisible(true)
+      setIsThrown(false)
+    }, 300)
+  }
+
+
+  const controls = useAnimation()
+
+
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center section-padding relative overflow-hidden">
+    <section id="home" className="min-h-screen flex items-center justify-center section-padding relative overflow-hidden px-16">
       {/* Centered download animation */}
       <AnimatePresence mode="wait">
         {(isDownloading || downloadError) && (
@@ -241,49 +429,123 @@ const Hero = () => {
         className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row justify-between items-center gap-12"
       >
         <div className="max-w-xl lg:pl-0 pr-4 md:pr-6">
-          <h1 className="text-3xl md:text-5xl font-bold mb-4 whitespace-nowrap">
+          <h1 className="font-bold mb-4 whitespace-nowrap" style={{ fontSize: '56px' }}>
             <span className="text-[#385780]/40 dark:text-[#5A7A9D]/40">Hi, I'm</span>{" "}
-            <motion.span 
-              className="text-[#385780] dark:text-[#5A7A9D] font-extrabold relative inline-block transform hover:scale-105 transition-transform duration-300 after:content-[''] after:absolute after:bottom-0 after:right-0 after:w-full after:h-[3px] after:bg-[#385780] dark:after:bg-[#5A7A9D] after:transform after:origin-right after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 cursor-grab active:cursor-grabbing select-none"
-              drag
-              dragConstraints={{ left: -500, right: 500, top: -300, bottom: 300 }}
-              dragElastic={0.3}
-              dragTransition={{ 
-                bounceStiffness: 300, 
-                bounceDamping: 30,
-                power: 0.2
+        <AnimatePresence mode="wait">
+          {nameVisible && (
+            <motion.span
+               key={nameKey}
+               ref={nameRef}
+               className="text-[#385780] dark:text-[#5A7A9D] font-extrabold relative inline-block select-none"
+               drag
+              dragElastic={0.1}
+              dragMomentum={true}
+              dragTransition={{
+                power: 0.95,
+                timeConstant: 1200,
+                bounceStiffness: 80,
+                bounceDamping: 40,
+                min: -Infinity,
+                max: Infinity,
+                modifyTarget: (target) => {
+                  // Apply velocity-based momentum modification with ultra-smooth scaling
+                  const velocityMagnitude = Math.sqrt(dragVelocity.x ** 2 + dragVelocity.y ** 2)
+                  const velocityMultiplier = Math.min(velocityMagnitude / 400, 3)
+                  return target * (1 + velocityMultiplier * 0.6)
+                }
               }}
+              dragConstraints={false}
+              dragPropagation={false}
+              dragSnapToOrigin={false}
               onDragStart={handleDragStart}
               onDrag={handleDrag}
               onDragEnd={handleDragEnd}
-              animate={{ 
-                scale: isDragging ? 1.1 : 1,
-                rotate: isDragging ? Math.sin(Date.now() / 200) * 2 : 0
-              }}
-              transition={{ 
-                type: "spring", 
-                stiffness: 300, 
-                damping: 30,
-                mass: 1,
-                scale: { duration: 0.2 },
-                rotate: { duration: 0.1 }
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileDrag={{ 
-                scale: 1.15, 
-                rotate: 5,
-                zIndex: 1000,
+              whileHover={{ 
+                scale: 1.08,
+                rotateY: 5,
+                textShadow: "0 0 20px rgba(56, 87, 128, 0.3)",
                 transition: { 
-                  scale: { duration: 0.1 }, 
-                  rotate: { duration: 0.1 },
                   type: "spring",
                   stiffness: 400,
-                  damping: 25
+                  damping: 25,
+                  duration: 0.3
                 }
               }}
+              whileDrag={{
+                scale: 1.15,
+                zIndex: 1000,
+                cursor: "none",
+                rotateZ: dragVelocity.x * 0.01,
+                filter: "brightness(1.2)",
+                transition: { duration: 0 }
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ 
+                opacity: 1,
+                transition: { 
+                  duration: 0.1,
+                  delay: 0
+                }
+              }}
+              exit={{ 
+                opacity: 0, 
+                scale: 0.3, 
+                rotate: 720,
+                filter: "blur(10px)",
+                transition: { duration: 0.4, ease: "easeInOut" }
+              }}
+              style={{
+                transition: isDragging ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                pointerEvents: 'auto',
+                transformOrigin: 'center center'
+              }}
             >
-              Reu Uzziel
+              {"Reu Uzziel".split("").map((letter, index) => (
+                <motion.span
+                  key={`${nameKey}-${index}`}
+                  className="inline-block"
+                  initial={{ 
+                    opacity: 0, 
+                    y: 50,
+                    rotateX: -90,
+                    scale: 0.5
+                  }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0,
+                    rotateX: 0,
+                    scale: 1,
+                    transition: {
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 20,
+                      delay: index * 0.08,
+                      duration: 0.6
+                    }
+                  }}
+                  whileHover={{
+                    y: -5,
+                    scale: 1.1,
+                    color: "#4A90E2",
+                    transition: {
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 15
+                    }
+                  }}
+                  style={{
+                    display: letter === " " ? "inline" : "inline-block",
+                    marginRight: letter === " " ? "0.25em" : "0"
+                  }}
+                >
+                  {letter === " " ? "\u00A0" : letter}
+                </motion.span>
+              ))}
             </motion.span>
+          )}
+        </AnimatePresence>
+
+
           </h1>
           <h2 className="text-xl md:text-2xl text-[#385780] dark:text-[#5A7A9D] mb-6 whitespace-nowrap">
             <span className="font-bold">
@@ -296,7 +558,7 @@ const Hero = () => {
               /UX and a Web Designer
             </span>
           </h2>
-          <p className="text-gray-500 mb-6 text-base max-w-lg">
+          <p className="text-gray-500 mb-6 max-w-lg" style={{ fontSize: '18px' }}>
             I'm passionate about crafting intuitive digital experiences that blend form and function. Drawing from my computer science background and design experiences, I strive to create solutions that make a positive impact.<span className="hidden dark:inline"> EME LANG 🤣  </span>
           </p>
           <div className="flex flex-wrap gap-3">
@@ -396,7 +658,7 @@ const Hero = () => {
                     className="absolute left-1/2 -translate-x-1/2 bottom-[15%] z-20"
                   >
                     <div className="bg-white dark:bg-gray-900 border border-purple-400 px-3 py-1.5 rounded-lg shadow-lg text-purple-700 dark:text-purple-300 font-bold text-sm flex items-center gap-2 animate-bounce">
-                      PURE BREED ANNUNNAKI! <span className="text-lg">😂</span>
+                      WAZZUP! <span className="text-lg"></span>
                     </div>
                   </motion.div>
                 )}

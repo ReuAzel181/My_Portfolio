@@ -22,7 +22,7 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/fav-hollow.png" />
         <meta name="web3" content="no" />
       </head>
-      <body className={`${inter.className} 
+      <body className={`${poppins.className} 
         ${playfair.variable} 
         ${oswald.variable} 
         ${spaceGrotesk.variable} 
@@ -49,4 +49,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-} 
+}

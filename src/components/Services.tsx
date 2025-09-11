@@ -43,7 +43,7 @@ const Services = () => {
   })
 
   return (
-    <section id="services" className="section-padding bg-gradient-to-b from-black to-gray-900 relative overflow-hidden z-0">
+    <section id="services" className="section-padding bg-gradient-to-b from-black to-gray-900 relative overflow-hidden z-0 px-16">
       {/* Decorative accent */}
       <div className="absolute -top-24 -right-24 w-72 h-72 bg-gradient-to-tr from-secondary/30 to-transparent rounded-full blur-3xl z-0" />
       <div className="max-w-6xl mx-auto relative">
@@ -54,7 +54,7 @@ const Services = () => {
           transition={{ duration: 0.4 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl font-bold mb-4 text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+          <h2 className="font-bold mb-4 text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ fontSize: '48px' }}>
             What I Offer
           </h2>
           <p className="text-gray-400 max-w-xl mx-auto">
@@ -78,7 +78,7 @@ const Services = () => {
                     <Icon className="h-8 w-8 text-secondary" />
                   </span>
                 </div>
-                <h3 className="text-lg font-semibold mb-2 text-white">{service.title}</h3>
+                <h3 className="font-semibold mb-2 text-white" style={{ fontSize: '24px' }}>{service.title}</h3>
                 <p className="text-gray-400 text-sm">{service.description}</p>
               </motion.div>
             )
@@ -102,4 +102,4 @@ const Services = () => {
   )
 }
 
-export default Services 
+export default Services

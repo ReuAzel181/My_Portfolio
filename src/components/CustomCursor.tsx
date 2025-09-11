@@ -93,6 +93,14 @@ export default function CustomCursor() {
 
     const moveCursor = (e: MouseEvent) => {
       if (!isMounted || isLoading) return;
+      
+      // Check if cursor is disabled during drag operations
+      const cursorDisabled = document.documentElement.style.getPropertyValue('--cursor-disabled') === 'true'
+      if (cursorDisabled) {
+        setIsVisible(false)
+        return
+      }
+
       const x = e.clientX;
       const y = e.clientY;
 
@@ -112,11 +120,33 @@ export default function CustomCursor() {
       }
     }
 
-    const handleMouseDown = () => !isLoading && setIsClicking(true)
-    const handleMouseUp = () => !isLoading && setIsClicking(false)
+    const handleMouseDown = () => {
+      if (isLoading) return;
+      
+      // Check if cursor is disabled during drag operations
+      const cursorDisabled = document.documentElement.style.getPropertyValue('--cursor-disabled') === 'true'
+      if (cursorDisabled) return
+      
+      setIsClicking(true)
+    }
+
+    const handleMouseUp = () => {
+      if (isLoading) return;
+      
+      // Check if cursor is disabled during drag operations
+      const cursorDisabled = document.documentElement.style.getPropertyValue('--cursor-disabled') === 'true'
+      if (cursorDisabled) return
+      
+      setIsClicking(false)
+    }
 
     const handleLinkHover = (e: MouseEvent) => {
       if (isLoading) return;
+      
+      // Check if cursor is disabled during drag operations
+      const cursorDisabled = document.documentElement.style.getPropertyValue('--cursor-disabled') === 'true'
+      if (cursorDisabled) return
+      
       try {
         const target = e.target;
         
@@ -241,4 +271,4 @@ export default function CustomCursor() {
       </motion.div>
     </AnimatePresence>
   )
-} 
+}

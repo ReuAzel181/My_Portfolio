@@ -78,14 +78,14 @@ const digitalPlaygroundTools: DigitalPlaygroundTool[] = [
 
 const Skills = () => {
   return (
-    <section id="digital-playground" className="section-padding py-16 relative min-h-screen" style={{ background: 'linear-gradient(135deg, var(--bg-primary) 60%, var(--bg-secondary) 100%)' }}>
+    <section id="digital-playground" className="section-padding py-16 relative min-h-screen px-16" style={{ background: 'linear-gradient(135deg, var(--bg-primary) 60%, var(--bg-secondary) 100%)' }}>
       {/* Gradient overlay for extra depth */}
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true" style={{ background: 'radial-gradient(ellipse at top right, var(--card-bg) 0%, transparent 70%)' }} />
       <div className="max-w-6xl mx-auto relative z-10">
         <h2 className="text-3xl font-extrabold mb-3 text-center text-[#385780] dark:text-[#5A7A9D]">
           Digital Playground
         </h2>
-        <p className="text-base text-center mb-8 text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(90,122,157,0.3)]">
+        <p className="text-center mb-8 text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(90,122,157,0.3)]" style={{ fontSize: '18px' }}>
           A collection of my favorite creative and development tools I use to bring ideas to life.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

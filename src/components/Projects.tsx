@@ -150,7 +150,7 @@ const Projects = () => {
 
   if (loading) {
     return (
-      <section id="projects" className="section-padding bg-[var(--bg-primary)]">
+      <section id="projects" className="section-padding bg-[var(--bg-primary)] px-16">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">Loading projects...</h2>
         </div>
@@ -160,7 +160,7 @@ const Projects = () => {
 
   if (error) {
     return (
-      <section id="projects" className="section-padding bg-[var(--bg-primary)]">
+      <section id="projects" className="section-padding bg-[var(--bg-primary)] px-16">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">Error: {error}</h2>
         </div>
@@ -169,7 +169,7 @@ const Projects = () => {
   }
 
   return (
-    <section id="projects" className="section-padding bg-[var(--bg-primary)]">
+    <section id="projects" className="section-padding bg-[var(--bg-primary)] px-16">
       <div className="max-w-6xl mx-auto">
         <motion.div
           ref={ref}
@@ -178,7 +178,7 @@ const Projects = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-8"
         >
-          <h2 className="text-3xl font-bold mb-3 text-[#385780] dark:text-[#5A7A9D]">Featured Projects</h2>
+          <h2 className="font-bold mb-3 text-[#385780] dark:text-[#5A7A9D]" style={{ fontSize: '48px' }}>Featured Projects</h2>
           <p className="text-gray-600 max-w-xl mx-auto">
             Here are some of my recent projects that showcase my skills and experience.
           </p>
@@ -215,7 +215,7 @@ const Projects = () => {
                     />
                   </div>
                   <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2">{project.title}</h3>
+                    <h3 className="font-bold mb-2" style={{ fontSize: '24px' }}>{project.title}</h3>
                     <p className="text-gray-400 mb-4">{project.description}</p>
                     <div className="flex flex-wrap gap-2">
                       {project.tags.map((tag) => (
@@ -301,7 +301,7 @@ const Projects = () => {
                 </svg>
               </button>
               <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">{selectedProject.title}</h3>
+                <h3 className="font-bold mb-2" style={{ fontSize: '24px' }}>{selectedProject.title}</h3>
                 <p className="text-gray-400 text-sm mb-4">{selectedProject.description}</p>
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {selectedProject.tags.map((tag) => (
