@@ -13,6 +13,9 @@ const Hero = () => {
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [showFunCard, setShowFunCard] = useState(false)
   const [showUIGame, setShowUIGame] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [sparkles, setSparkles] = useState<Array<{id: number, x: number, y: number}>>([])
+  const [sparkleId, setSparkleId] = useState(0)
 
   // Direct download URL with export=download parameter
   const FILE_ID = '1yPI53anhVujRUf_mssiopLCOXrOyCX0-'
@@ -66,6 +69,38 @@ const Hero = () => {
     setShowFunCard(true)
     // Auto-hide after 3 seconds
     setTimeout(() => setShowFunCard(false), 3000)
+  }
+
+  // Create sparkles during drag
+  const createSparkle = (x: number, y: number) => {
+    const newSparkle = {
+      id: sparkleId,
+      x: x + Math.random() * 40 - 20,
+      y: y + Math.random() * 40 - 20
+    }
+    setSparkles(prev => [...prev, newSparkle])
+    setSparkleId(prev => prev + 1)
+    
+    // Remove sparkle after animation
+    setTimeout(() => {
+      setSparkles(prev => prev.filter(s => s.id !== newSparkle.id))
+    }, 1000)
+  }
+
+  // Handle drag events
+  const handleDragStart = () => {
+    setIsDragging(true)
+  }
+
+  const handleDrag = (event: any, info: any) => {
+    // Create sparkles during drag
+    if (Math.random() > 0.7) { // 30% chance per frame
+      createSparkle(info.point.x, info.point.y)
+    }
+  }
+
+  const handleDragEnd = () => {
+    setIsDragging(false)
   }
 
   return (
@@ -208,9 +243,47 @@ const Hero = () => {
         <div className="max-w-xl lg:pl-0 pr-4 md:pr-6">
           <h1 className="text-3xl md:text-5xl font-bold mb-4 whitespace-nowrap">
             <span className="text-[#385780]/40 dark:text-[#5A7A9D]/40">Hi, I'm</span>{" "}
-            <span className="text-[#385780] dark:text-[#5A7A9D] font-extrabold relative inline-block transform hover:scale-105 transition-transform duration-300 after:content-[''] after:absolute after:bottom-0 after:right-0 after:w-full after:h-[3px] after:bg-[#385780] dark:after:bg-[#5A7A9D] after:transform after:origin-right after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
+            <motion.span 
+              className="text-[#385780] dark:text-[#5A7A9D] font-extrabold relative inline-block transform hover:scale-105 transition-transform duration-300 after:content-[''] after:absolute after:bottom-0 after:right-0 after:w-full after:h-[3px] after:bg-[#385780] dark:after:bg-[#5A7A9D] after:transform after:origin-right after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 cursor-grab active:cursor-grabbing select-none"
+              drag
+              dragConstraints={{ left: -500, right: 500, top: -300, bottom: 300 }}
+              dragElastic={0.3}
+              dragTransition={{ 
+                bounceStiffness: 300, 
+                bounceDamping: 30,
+                power: 0.2
+              }}
+              onDragStart={handleDragStart}
+              onDrag={handleDrag}
+              onDragEnd={handleDragEnd}
+              animate={{ 
+                scale: isDragging ? 1.1 : 1,
+                rotate: isDragging ? Math.sin(Date.now() / 200) * 2 : 0
+              }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 300, 
+                damping: 30,
+                mass: 1,
+                scale: { duration: 0.2 },
+                rotate: { duration: 0.1 }
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileDrag={{ 
+                scale: 1.15, 
+                rotate: 5,
+                zIndex: 1000,
+                transition: { 
+                  scale: { duration: 0.1 }, 
+                  rotate: { duration: 0.1 },
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 25
+                }
+              }}
+            >
               Reu Uzziel
-            </span>
+            </motion.span>
           </h1>
           <h2 className="text-xl md:text-2xl text-[#385780] dark:text-[#5A7A9D] mb-6 whitespace-nowrap">
             <span className="font-bold">
@@ -334,6 +407,33 @@ const Hero = () => {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Sparkle Effects */}
+      <AnimatePresence>
+        {sparkles.map(sparkle => (
+          <motion.div
+            key={sparkle.id}
+            initial={{ opacity: 1, scale: 0, rotate: 0 }}
+            animate={{ 
+              opacity: [1, 1, 0], 
+              scale: [0, 1, 0.5], 
+              rotate: [0, 180, 360],
+              y: [0, -20, -40]
+            }}
+            exit={{ opacity: 0, scale: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="absolute pointer-events-none z-50"
+            style={{
+              left: sparkle.x,
+              top: sparkle.y,
+            }}
+          >
+            <div className="w-2 h-2 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 rounded-full shadow-lg">
+              <div className="w-full h-full bg-white/50 rounded-full animate-pulse" />
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
 
       {/* UI Game */}
       <UIGame isVisible={showUIGame} onClose={() => setShowUIGame(false)} />

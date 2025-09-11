@@ -109,17 +109,18 @@ export default function HorizontalScroller() {
   }, []);
 
   return (
-    <section
-      ref={containerRef}
-      className="relative w-full min-h-[350px] py-8 flex flex-col items-center justify-center overflow-visible pb-12"
-      style={{
-        background: 'linear-gradient(120deg, #18181b 60%, #232946 100%)',
-        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-        zIndex: 1,
-        overflow: 'hidden',
-        maxWidth: '100vw',
-      }}
-    >
+    <div>
+      <section
+        ref={containerRef}
+        className="relative w-full min-h-[350px] py-20 flex flex-col items-center justify-center overflow-visible"
+        style={{
+          background: 'linear-gradient(120deg, #18181b 60%, #232946 100%)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          zIndex: 1,
+          overflow: 'hidden',
+          maxWidth: '100vw',
+        }}
+      >
       {/* Section Title */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none">
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#385780] dark:text-[#5A7A9D] tracking-tight drop-shadow-[0_0_5px_rgba(255,255,255,0.1)] dark:drop-shadow-[0_0_5px_rgba(255,255,255,0.05)]">
@@ -182,6 +183,7 @@ export default function HorizontalScroller() {
       {/* Decorative blurred gradient */}
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[60vw] h-64 bg-gradient-to-r from-blue-400/30 via-purple-400/20 to-pink-400/30 rounded-full blur-3xl z-0" />
     </section>
+    </div>
   );
 }
 
@@ -397,4 +399,4 @@ function ByteBeanDeck() {
       </div>
     </div>
   );
-} 
+}

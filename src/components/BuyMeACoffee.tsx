@@ -4,29 +4,33 @@ import HiddenGame from './HiddenGame';
 // If framer-motion is available, import it:
 // import { motion, AnimatePresence } from 'framer-motion';
 
-// Modern coffee cup SVG icon
+// Improved coffee cup SVG icon - more cup-like appearance
 const CoffeeCupIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <rect x="4" y="8" width="14" height="8" rx="4" fill="#fff" stroke="#a0522d" strokeWidth="2"/>
-    <rect x="6" y="6" width="10" height="4" rx="2" fill="#fff8f0" stroke="#a0522d" strokeWidth="1.5"/>
-    <rect x="7" y="16" width="8" height="2" rx="1" fill="#a0522d"/>
-    <path d="M18 10c2 0 2 4 0 4" stroke="#a0522d" strokeWidth="2" fill="none"/>
+    {/* Cup body - more realistic cup shape */}
+    <path d="M5 9v8c0 2.2 1.8 4 4 4h6c2.2 0 4-1.8 4-4v-8" stroke="#8B4513" strokeWidth="2" fill="#FFF8DC"/>
+    {/* Coffee liquid */}
+    <ellipse cx="12" cy="10" rx="6.5" ry="1.5" fill="#6F4E37"/>
+    {/* Cup rim */}
+    <ellipse cx="12" cy="9" rx="7" ry="1.5" fill="#FFF8DC" stroke="#8B4513" strokeWidth="1.5"/>
+    {/* Cup handle */}
+    <path d="M19 11c1.5 0 2.5 1 2.5 2.5s-1 2.5-2.5 2.5" stroke="#8B4513" strokeWidth="2" fill="none"/>
+    {/* Cup base/saucer */}
+    <ellipse cx="12" cy="21.5" rx="8" ry="1" fill="#D2B48C" stroke="#8B4513" strokeWidth="1"/>
   </svg>
 );
 
-// Realistic coffee bean SVG (from SVG Repo, CC0)
+// Coffee bean component using the actual image
 const CoffeeBean = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 64 64" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden="true">
-    <ellipse cx="32" cy="32" rx="28" ry="16" fill="#6f4e37"/>
-    <path d="M32 10c8 16 8 28 0 44" stroke="#fff8f0" strokeWidth="3" strokeLinecap="round"/>
-    <ellipse cx="32" cy="32" rx="28" ry="16" fill="url(#beanGradient)" fillOpacity="0.3"/>
-    <defs>
-      <radialGradient id="beanGradient" cx="0.5" cy="0.5" r="0.5" fx="0.3" fy="0.3">
-        <stop offset="0%" stopColor="#fff" stopOpacity="0.5"/>
-        <stop offset="100%" stopColor="#6f4e37" stopOpacity="0"/>
-      </radialGradient>
-    </defs>
-  </svg>
+  <Image
+    src="/others/coffee-bean.png"
+    alt="Coffee bean"
+    width={16}
+    height={16}
+    className={`${className} select-none`}
+    draggable={false}
+    style={{ width: '16px', height: '16px' }}
+  />
 );
 
 export default function BuyMeACoffee() {

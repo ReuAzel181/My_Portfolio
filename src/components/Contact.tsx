@@ -128,23 +128,29 @@ const BuyMeACoffeeInline = () => {
     <>
       <div className="relative overflow-visible">
         {/* QR code card - Absolutely positioned overlay with proper z-index */}
-        <div
-          id="qr-section"
-          className={`absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 p-3 sm:p-4 bg-white border border-gray-200 rounded-lg shadow-xl flex flex-col items-center transition-all duration-300 z-50 ${showQR ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-2 pointer-events-none'}`}
-          style={{ transformOrigin: 'bottom center' }}
-        >
-          <span className="mb-2 text-gray-700 text-sm font-medium">Scan with GCash</span>
-          <Image
-            src="/others/qr.png"
-            alt="GCash QR Code"
-            width={280}
-            height={280}
-            style={{ width: 280, height: 'auto' }}
-            className="rounded-md"
-            priority
-          />
-        </div>
-        
+      <div
+      id="qr-section"
+      className={`absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 p-6 sm:p-8 bg-white border border-gray-200 rounded-xl shadow-2xl flex flex-col items-center transition-all duration-300 z-50 ${
+        showQR
+          ? 'scale-30 opacity-100 translate-y-0'
+          : 'scale-70 opacity-0 translate-y-2 pointer-events-none'
+      }`}
+      style={{ transformOrigin: 'bottom center', minWidth: '180px' }}
+    >
+      <span className="mb-2 text-gray-700 text-sm font-medium">
+        Scan with GCash
+      </span>
+      <Image
+        src="/others/qr.png"
+        alt="GCash QR Code"
+        width={300}  // Increased from 315 for better visibility
+        height={300} // Increased from 315 for better visibility
+        className="rounded-md"
+        priority
+      />
+    </div>
+      
+
         {/* Multiple floating coffee beans with evaporation animation */}
         {coffeeBeans.map(bean => (
           <div
@@ -210,12 +216,14 @@ const Contact = () => {
   ])
   const [draggedCard, setDraggedCard] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [showFillAllMessage, setShowFillAllMessage] = useState(false)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    clearErrors,
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
   })
@@ -234,6 +242,7 @@ const Contact = () => {
       setIsSubmitting(true)
       setSubmitError(null)
       setSubmitSuccess(false) // Reset success state before new submission
+      setShowFillAllMessage(false) // Clear the fill all message when submitting valid data
       
       console.log('Submitting form data:', data);
       
@@ -270,16 +279,20 @@ const Contact = () => {
   }
 
   // Drag handlers for contact cards
-  const handleDragStart = (e: React.DragEvent, cardId: string) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, cardId: string) => {
     setDraggedCard(cardId)
     setIsDragging(true)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', cardId)
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', cardId)
+    }
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move'
+    }
   }
 
   const handleDrop = (e: React.DragEvent, targetCardId: string) => {
@@ -392,7 +405,33 @@ const Contact = () => {
                 I'd love to hear from you! Whether you have a question, want to collaborate, or just want to say hi, feel free to reach out through any of these channels.
               </p>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit, () => setShowFillAllMessage(true))} className="space-y-4">
+                {/* Minimalist Error Display */}
+                {showFillAllMessage && (
+                  <div className="px-2 py-1 rounded text-xs text-red-600 dark:text-red-400 bg-red-50/60 dark:bg-red-900/30 border-l-2 border-red-500">
+                    <span>Please fill in all the details before sending 😊</span>
+                  </div>
+                )}
+                
+                {submitError && (
+                  <div className="px-2 py-1 rounded text-xs text-red-600 dark:text-red-400 bg-red-50/60 dark:bg-red-900/30 border-l-2 border-red-500">
+                    <span>{submitError}</span>
+                  </div>
+                )}
+
+                {submitSuccess && (
+                  <div className="p-3 rounded-lg bg-green-50/80 dark:bg-green-900/50 border border-green-200 dark:border-green-800">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-xs text-green-600 dark:text-green-200">
+                        Message sent successfully! I'll get back to you soon.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Name
@@ -400,15 +439,16 @@ const Contact = () => {
                   <input
                     type="text"
                     id="name"
-                    {...register('name')}
+                    {...register('name', { required: 'Name is required' })}
+                    onFocus={() => {
+                      clearErrors()
+                      setShowFillAllMessage(false)
+                    }}
                     className={`w-full px-3 py-2 rounded-lg bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border ${
                       errors.name ? 'border-red-500' : 'border-gray-200 dark:border-gray-800 hover:border-secondary dark:hover:border-secondary'
                     } focus:outline-none focus:ring-2 focus:ring-secondary text-gray-900 dark:text-gray-100 placeholder-gray-500`}
                     placeholder="Your name"
                   />
-                  {errors.name && (
-                    <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
-                  )}
                 </div>
 
                 <div>
@@ -418,15 +458,22 @@ const Contact = () => {
                   <input
                     type="email"
                     id="email"
-                    {...register('email')}
+                    {...register('email', { 
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Invalid email address'
+                      }
+                    })}
+                    onFocus={() => {
+                      clearErrors()
+                      setShowFillAllMessage(false)
+                    }}
                     className={`w-full px-3 py-2 rounded-lg bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border ${
                       errors.email ? 'border-red-500' : 'border-gray-200 dark:border-gray-800 hover:border-secondary dark:hover:border-secondary'
                     } focus:outline-none focus:ring-2 focus:ring-secondary text-gray-900 dark:text-gray-100 placeholder-gray-500`}
                     placeholder="your.email@example.com"
                   />
-                  {errors.email && (
-                    <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
-                  )}
                 </div>
 
                 <div>
@@ -435,31 +482,18 @@ const Contact = () => {
                   </label>
                   <textarea
                     id="message"
-                    {...register('message')}
+                    {...register('message', { required: 'Message is required' })}
+                    onFocus={() => {
+                      clearErrors()
+                      setShowFillAllMessage(false)
+                    }}
                     rows={3}
                     className={`w-full px-3 py-2 rounded-lg bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border ${
                       errors.message ? 'border-red-500' : 'border-gray-200 dark:border-gray-800 hover:border-secondary dark:hover:border-secondary'
                     } focus:outline-none focus:ring-2 focus:ring-secondary text-gray-900 dark:text-gray-100 placeholder-gray-500`}
                     placeholder="Your message..."
                   />
-                  {errors.message && (
-                    <p className="mt-1 text-xs text-red-500">{errors.message.message}</p>
-                  )}
                 </div>
-
-                {submitError && (
-                  <div className="p-3 rounded-lg bg-red-50/80 dark:bg-red-900/50 border border-red-200 dark:border-red-800">
-                    <p className="text-xs text-red-600 dark:text-red-200">{submitError}</p>
-                  </div>
-                )}
-
-                {submitSuccess && (
-                  <div className="p-3 rounded-lg bg-green-50/80 dark:bg-green-900/50 border border-green-200 dark:border-green-800">
-                    <p className="text-xs text-green-600 dark:text-green-200">
-                      Message sent successfully! I'll get back to you soon.
-                    </p>
-                  </div>
-                )}
 
                 <button
                   type="submit"
@@ -486,7 +520,7 @@ const Contact = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AnimatePresence>
                   {cardPositions.map((cardPos, index) => {
-                    const cardData = {
+                    const cardDataMap = {
                       email: {
                         title: 'Email',
                         value: contactEmail,
@@ -532,7 +566,11 @@ const Contact = () => {
                         gradient: 'from-emerald-400 to-emerald-600',
                         shadow: 'shadow-emerald-500/30'
                       }
-                    }[cardPos.id as keyof typeof cardData]
+                    };
+                    
+                    const cardData = cardDataMap[cardPos.id as keyof typeof cardDataMap];
+                    
+                    if (!cardData) return null;
 
                     return (
                       <motion.div 

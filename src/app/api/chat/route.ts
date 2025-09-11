@@ -214,7 +214,7 @@ function generateSmartResponse(userMessage: string, context: any): string {
     const sorryResponses = {
       tagalog: "Ay, okay lang yan! Walang problema. Hindi mo naman kasalanan yun. Ano pa bang gusto mong malaman tungkol sa portfolio ko? 😊",
       english: "Hey, no worries at all! There's absolutely nothing to apologize for. You're being perfectly fine! What else would you like to know about my work? 😊",
-      mixed: "No need to say sorry! Okay lang yan, walang problema. What else can I help you with? 😊"
+      mixed: "Wala yon, para ka namang others. What else can I help you with? 😊"
     };
     return sorryResponses[detectedLanguage];
   }
