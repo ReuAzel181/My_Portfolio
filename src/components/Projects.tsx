@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import ProjectCard from './ProjectCard'
 import { Tilt } from 'react-tilt'
+import { TITLE_SIZES, SPACING, COLORS } from '@/lib/designTokens'
 
 export interface Project {
   id: string;
@@ -178,13 +179,26 @@ const Projects = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-8"
         >
-          <h2 className="font-bold mb-3 text-[#385780] dark:text-[#5A7A9D]" style={{ fontSize: '48px' }}>Featured Projects</h2>
+          <h2 
+            className="font-bold mb-3" 
+            style={{ 
+              fontSize: TITLE_SIZES.SECTION,
+              color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
+            }}
+          >
+            Featured Projects
+          </h2>
           <p className="text-gray-600 max-w-xl mx-auto">
             Here are some of my recent projects that showcase my skills and experience.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4 gap-8">
+        <div 
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-4"
+          style={{
+            gap: 'var(--cards-gap, 32px)'
+          }}
+        >
           {projects.map((project, index) => (
             <motion.div
               key={project.id}

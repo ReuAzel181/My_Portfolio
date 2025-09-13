@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { useRef, useEffect, useState } from 'react';
+import { TITLE_SIZES } from '@/lib/designTokens';
 
 const images = [
   '/ui-projects/Asenso.png',
@@ -129,7 +130,7 @@ export default function HorizontalScroller() {
           <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/30 to-pink-400/20 blur-xl rounded-full scale-150" />
           
           {/* Main title */}
-          <h2 className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 tracking-tight leading-tight" style={{ fontSize: '48px' }}>
+          <h2 className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 tracking-tight leading-tight" style={{ fontSize: TITLE_SIZES.SECTION }}>
             Design & Graphics
           </h2>
           

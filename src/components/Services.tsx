@@ -8,6 +8,7 @@ import {
   LightBulbIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline'
+import { TITLE_SIZES, COLORS } from '@/lib/designTokens'
 
 const services = [
   {
@@ -54,7 +55,13 @@ const Services = () => {
           transition={{ duration: 0.4 }}
           className="text-center mb-12"
         >
-          <h2 className="font-bold mb-4 text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ fontSize: '48px' }}>
+          <h2 
+            className="font-bold mb-4 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
+            style={{ 
+              fontSize: TITLE_SIZES.SECTION,
+              color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
+            }}
+          >
             What I Offer
           </h2>
           <p className="text-gray-400 max-w-xl mx-auto">
@@ -62,7 +69,10 @@ const Services = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+          style={{ gap: 'var(--cards-gap, 32px)' }}
+        >
           {services.map((service, index) => {
             const Icon = service.icon
             return (

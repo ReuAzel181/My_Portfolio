@@ -6,6 +6,7 @@ import AudioVisualizer from './AudioVisualizer'
 import { useState, useRef } from 'react'
 import UIGame from './UIGame'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
+import { TITLE_SIZES, COLORS } from '@/lib/designTokens'
 
 
 const Hero = () => {
@@ -429,7 +430,7 @@ const Hero = () => {
         className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row justify-between items-center gap-12"
       >
         <div className="max-w-xl lg:pl-0 pr-4 md:pr-6">
-          <h1 className="font-bold mb-4 whitespace-nowrap" style={{ fontSize: '56px' }}>
+          <h1 className="font-bold mb-4 whitespace-nowrap" style={{ fontSize: TITLE_SIZES.HERO }}>
             <span className="text-[#385780]/40 dark:text-[#5A7A9D]/40">Hi, I'm</span>{" "}
         <AnimatePresence mode="wait">
           {nameVisible && (
@@ -475,7 +476,6 @@ const Hero = () => {
                 scale: 1.15,
                 zIndex: 1000,
                 cursor: "none",
-                rotateZ: dragVelocity.x * 0.01,
                 filter: "brightness(1.2)",
                 transition: { duration: 0 }
               }}
@@ -547,7 +547,10 @@ const Hero = () => {
 
 
           </h1>
-          <h2 className="text-xl md:text-2xl text-[#385780] dark:text-[#5A7A9D] mb-6 whitespace-nowrap">
+          <h2 
+            className="text-xl md:text-2xl mb-6 whitespace-nowrap"
+            style={{ color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG }}
+          >
             <span className="font-bold">
               <span 
                 onClick={() => setShowUIGame(true)} 

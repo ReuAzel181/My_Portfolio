@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { TITLE_SIZES, COLORS } from '@/lib/designTokens'
 
 interface Skill {
   name: string;
@@ -82,13 +83,22 @@ const Skills = () => {
       {/* Gradient overlay for extra depth */}
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true" style={{ background: 'radial-gradient(ellipse at top right, var(--card-bg) 0%, transparent 70%)' }} />
       <div className="max-w-6xl mx-auto relative z-10">
-        <h2 className="text-3xl font-extrabold mb-3 text-center text-[#385780] dark:text-[#5A7A9D]">
+        <h2 
+          className="font-extrabold mb-3 text-center" 
+          style={{ 
+            fontSize: TITLE_SIZES.SECTION,
+            color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
+          }}
+        >
           Digital Playground
         </h2>
         <p className="text-center mb-8 text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(90,122,157,0.3)]" style={{ fontSize: '18px' }}>
           A collection of my favorite creative and development tools I use to bring ideas to life.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div 
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          style={{ gap: 'var(--cards-gap, 32px)' }}
+        >
           {digitalPlaygroundTools.map((tool, idx) => (
             <div key={tool.name} className="flex flex-col items-center">
               <motion.div

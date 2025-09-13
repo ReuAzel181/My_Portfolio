@@ -48,6 +48,11 @@ a, button, [role="button"], .cursor-pointer {
   --dark-secondary: #18243A;    /* Softer dark secondary */
   --dark-tertiary: #22304A;     /* Softer dark tertiary */
   --mint-ripple: rgba(163, 230, 206, 0.2);
+  
+  /* Responsive Gap Values */
+  --cards-gap: 32px;
+  --grid-gap: 24px;
+  --flex-gap: 20px;
 
   /* Custom Fonts with fallbacks */
   --font-playfair: var(--font-playfair), 'Times New Roman', serif;
@@ -263,4 +268,13 @@ a, button, [role="button"], .cursor-pointer {
 
 .rotate-y-180 {
   transform: rotateY(180deg);
+}
+
+/* Responsive Gap Values for Mobile */
+@media (max-width: 768px) {
+  :root {
+    --cards-gap: 16px;
+    --grid-gap: 12px;
+    --flex-gap: 10px;
+  }
 }

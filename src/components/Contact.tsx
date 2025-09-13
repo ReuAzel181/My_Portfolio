@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import GameModal from './GameModal'
 import HiddenGame from './HiddenGame'
+import { TITLE_SIZES, COLORS } from '@/lib/designTokens'
 
 // Define the form validation schema
 const contactFormSchema = z.object({
@@ -378,7 +379,15 @@ const Contact = () => {
               className="flex flex-col justify-center bg-transparent z-10"
             >
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="font-bold text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ fontSize: '20px' }}>Let's Connect!</h2>
+                <h2 
+                  className="font-bold drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
+                  style={{ 
+                    fontSize: TITLE_SIZES.CONTACT,
+                    color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
+                  }}
+                >
+                  Let's Connect!
+                </h2>
                 {/* Animated Waving Hand SVG */}
                 <span className="inline-block cursor-pointer group">
                   <svg
