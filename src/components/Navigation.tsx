@@ -4,10 +4,60 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
-import ThemeToggle from './ThemeToggle'
+import { AnimatePresence } from 'framer-motion'
+import { SunIcon, MoonIcon } from '@heroicons/react/24/solid'
 import RippleButton from './RippleButton'
 import Music from './Music'
 
+/* -------------------- THEME TOGGLE -------------------- */
+const ThemeToggle = () => {
+  const [darkMode, setDarkMode] = useState(false)
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [darkMode])
+
+  return (
+    <motion.button
+        onClick={() => setDarkMode(!darkMode)}
+        className="relative flex items-center justify-center w-10 h-10 rounded-full bg-[#385780] text-white shadow-md hover:scale-105 transition-transform"
+        whileTap={{ scale: 0.9 }}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {darkMode ? (
+            <motion.div
+              key="moon"
+              initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+              animate={{ rotate: 0, opacity: 1, scale: 1 }}
+              exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="absolute"
+            >
+              <MoonIcon className="w-5 h-5" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="sun"
+              initial={{ rotate: 90, opacity: 0, scale: 0.6 }}
+              animate={{ rotate: 0, opacity: 1, scale: 1 }}
+              exit={{ rotate: -90, opacity: 0, scale: 0.6 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="absolute"
+            >
+              <SunIcon className="w-5 h-5" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
+
+  )
+}
+
+/* -------------------- NAVIGATION -------------------- */
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('')
@@ -30,24 +80,22 @@ const Navigation = () => {
   useEffect(() => {
     const handleScroll = () => {
       const sections = menuItems.map(item => item.href.substring(1))
-      
-      // Calculate scroll progress
+
       const windowHeight = document.documentElement.scrollHeight - window.innerHeight
       const scrolled = window.scrollY
       const progress = (scrolled / windowHeight) * 100
       setScrollProgress(progress)
-      
-      // Check if we're at the bottom of the page
-      const isAtBottom = Math.ceil(window.innerHeight + window.pageYOffset) >= document.documentElement.scrollHeight - 2
 
-      // If at bottom, always highlight Contact section
+      const isAtBottom =
+        Math.ceil(window.innerHeight + window.pageYOffset) >=
+        document.documentElement.scrollHeight - 2
+
       if (isAtBottom) {
         setActiveSection('contact')
         updateIndicator('contact')
         return
       }
 
-      // Find the current section in view
       let currentSection = ''
       for (const section of sections) {
         const element = document.getElementById(section)
@@ -60,8 +108,10 @@ const Navigation = () => {
         }
       }
 
-      // If no section is found but we're close to bottom, default to contact
-      if (!currentSection && window.innerHeight + window.pageYOffset > document.documentElement.scrollHeight - window.innerHeight) {
+      if (
+        !currentSection &&
+        window.innerHeight + window.pageYOffset > document.documentElement.scrollHeight - window.innerHeight
+      ) {
         currentSection = 'contact'
       }
 
@@ -69,7 +119,6 @@ const Navigation = () => {
       updateIndicator(currentSection)
     }
 
-    // Add scroll event listener with throttling
     let ticking = false
     const scrollListener = () => {
       if (!ticking) {
@@ -82,9 +131,8 @@ const Navigation = () => {
     }
 
     window.addEventListener('scroll', scrollListener)
-    // Initial check
     handleScroll()
-    
+
     return () => window.removeEventListener('scroll', scrollListener)
   }, [])
 
@@ -100,7 +148,6 @@ const Navigation = () => {
     }
   }
 
-  // Reset click counter when page refreshes
   useEffect(() => {
     setClickCount(0)
     setShowMusic(false)
@@ -109,14 +156,14 @@ const Navigation = () => {
   const handleLogoClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     const currentTime = Date.now()
     const timeDiff = currentTime - lastClickTime
-    
+
     if (timeDiff < 500) {
       const newCount = clickCount + 1
       setClickCount(newCount)
-      
+
       if (newCount >= 5) {
         setShowMusic(true)
         setClickCount(0)
@@ -124,7 +171,7 @@ const Navigation = () => {
     } else {
       setClickCount(1)
     }
-    
+
     setLastClickTime(currentTime)
   }
 
@@ -137,7 +184,7 @@ const Navigation = () => {
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: 'smooth'
+        behavior: 'smooth',
       })
 
       setTimeout(() => {
@@ -150,8 +197,11 @@ const Navigation = () => {
 
   return (
     <>
-      <nav className="fixed w-full z-50" style={{ backgroundColor: 'var(--nav-bg)', backdropFilter: 'blur(8px)' }}>
-        {/* Scroll Progress Bar - Moved to top */}
+      <nav
+        className="fixed w-full z-50"
+        style={{ backgroundColor: 'var(--nav-bg)', backdropFilter: 'blur(8px)' }}
+      >
+        {/* Scroll Progress Bar */}
         <motion.div
           className="absolute top-0 left-0 h-1 bg-[#385780] dark:bg-[#5A7A9D]"
           style={{
@@ -159,10 +209,10 @@ const Navigation = () => {
           }}
           transition={{
             duration: 0.1,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
-        
+
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between h-16">
             <motion.div
@@ -193,12 +243,12 @@ const Navigation = () => {
                     x: indicatorOffset,
                   }}
                   transition={{
-                    type: "spring",
+                    type: 'spring',
                     stiffness: 350,
-                    damping: 30
+                    damping: 30,
                   }}
                 />
-                {menuItems.map((item) => (
+                {menuItems.map(item => (
                   <RippleButton
                     key={item.name}
                     className={`rounded-md ${
@@ -257,7 +307,7 @@ const Navigation = () => {
           className="md:hidden overflow-hidden border-t border-gray-700"
         >
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {menuItems.map((item) => (
+            {menuItems.map(item => (
               <RippleButton
                 key={item.name}
                 className={`w-full rounded-md ${
@@ -283,4 +333,4 @@ const Navigation = () => {
   )
 }
 
-export default Navigation 
+export default Navigation

@@ -29,7 +29,7 @@ const byteBeanDeckImages = [
 
 const IMAGE_WIDTH = 280; // Increased card width for better visibility
 const IMAGE_HEIGHT = 180; // Increased card height for better proportions
-const GAP = 40; // Increased gap for better spacing
+const GAP = 20; // Increased gap for better spacing
 const ROW_LENGTH = images.length * 2;
 const TOTAL_WIDTH = ROW_LENGTH * IMAGE_WIDTH + (ROW_LENGTH - 1) * GAP;
 const SINGLE_ROW_WIDTH = images.length * IMAGE_WIDTH + (images.length - 1) * GAP;
@@ -120,6 +120,10 @@ export default function HorizontalScroller() {
           zIndex: 1,
           overflow: 'hidden',
           maxWidth: '100vw',
+          paddingTop: '40px',
+          paddingBottom: '0px',
+
+
         }}
       >
       {/* Enhanced Section Title with Better Spacing and Positioning */}
@@ -134,10 +138,6 @@ export default function HorizontalScroller() {
             Design & Graphics
           </h2>
           
-          {/* Enhanced text shadow for depth */}
-          <div className="absolute inset-0 font-black text-white/8 blur-sm" style={{ fontSize: TITLE_SIZES.SECTION }}>
-            Design & Graphics
-          </div>
         </div>
         
         {/* Enhanced Subtitle with better spacing */}
