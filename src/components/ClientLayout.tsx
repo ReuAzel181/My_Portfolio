@@ -6,7 +6,7 @@ import ServiceWorkerRegister from '@/components/ServiceWorkerRegister';
 import CustomCursor from '@/components/CustomCursor';
 import PageTransition from '@/components/PageTransition';
 import CookieConsent from '@/components/CookieConsent';
-import MobileWarning from '@/components/MobileWarning';
+
 import OfflineGame from '@/components/OfflineGame';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
@@ -18,18 +18,8 @@ export default function ClientLayout({
   useAnalytics();
   const [isOffline, setIsOffline] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
     setIsMounted(true);
-    
-    // Function to check if device is mobile
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-
-    // Set initial mobile status
-    checkMobile();
 
     // Set initial online status
     setIsOffline(!navigator.onLine);
@@ -40,12 +30,10 @@ export default function ClientLayout({
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    window.addEventListener('resize', checkMobile);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('resize', checkMobile);
     };
   }, []);
 
@@ -63,10 +51,7 @@ export default function ClientLayout({
     );
   }
 
-  // If mobile, show the mobile warning
-  if (isMobile) {
-    return <MobileWarning />;
-  }
+  // Mobile devices now show the normal responsive content
 
   // Otherwise, show the normal content
   return (
@@ -81,4 +66,4 @@ export default function ClientLayout({
       </Providers>
     </>
   );
-} 
+}

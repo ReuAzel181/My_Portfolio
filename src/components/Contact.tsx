@@ -366,7 +366,7 @@ const Contact = () => {
 
   return (
     <ErrorBoundary>
-      <section ref={ref} id="contact" className="section-padding bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900 relative overflow-hidden z-10 px-16">
+      <section ref={ref} id="contact" className="section-padding bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900 relative overflow-hidden z-10" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
         {/* Decorative accent */}
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-gradient-to-tr from-secondary/20 to-transparent dark:from-secondary/30 rounded-full blur-3xl z-0" />
         <div className="max-w-6xl mx-auto relative">
@@ -382,7 +382,7 @@ const Contact = () => {
                 <h2 
                   className="font-bold drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" 
                   style={{ 
-                    fontSize: TITLE_SIZES.CONTACT,
+                    fontSize: 'var(--font-size-contact)',
                     color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
                   }}
                 >

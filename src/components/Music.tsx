@@ -108,7 +108,7 @@ const Music = () => {
   if (!isVisible) return null;
 
   return (
-    <section id="music" className="relative py-24 overflow-x-hidden bg-[var(--bg-primary)]">
+    <section id="music" className="relative overflow-x-hidden bg-[var(--bg-primary)]" style={{ paddingTop: 'var(--section-padding-y)', paddingBottom: 'var(--section-padding-y)' }}>
       {/* Rest of the component remains the same */}
       <div className="absolute left-0 right-0 top-0 w-screen opacity-50 pointer-events-none select-none z-0">
         <svg viewBox="0 0 1920 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-32">
@@ -127,10 +127,10 @@ const Music = () => {
         className="max-w-7xl mx-auto relative z-10"
       >
         <div className="flex flex-col items-center">
-          <h2 className="text-5xl md:text-6xl font-extrabold mb-2 text-center heading-gradient drop-shadow-xl tracking-tight">
+          <h2 className="font-extrabold mb-2 text-center heading-gradient drop-shadow-xl tracking-tight" style={{ fontSize: 'var(--font-size-section)' }}>
             My Music
           </h2>
-          <div className="flex items-center gap-2 text-[var(--text-secondary)] font-medium" style={{ fontSize: '18px' }}>
+          <div className="flex items-center gap-2 text-[var(--text-secondary)] font-medium" style={{ fontSize: 'var(--font-size-card)' }}>
             <svg xmlns='http://www.w3.org/2000/svg' className='w-7 h-7 text-[var(--button-hover)]' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 19V6l12-2v13' /><circle cx='6' cy='18' r='3' /><circle cx='18' cy='16' r='3' /></svg>
             <span>Compilation of my original tracks & sound experiments</span>
           </div>

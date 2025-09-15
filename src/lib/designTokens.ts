@@ -32,6 +32,26 @@ export const TYPOGRAPHY = {
     // Extra small text
     EXTRA_SMALL: '12px'
   },
+
+  // Mobile Responsive Font Sizes
+  RESPONSIVE: {
+    HERO: {
+      DESKTOP: '56px',
+      MOBILE: '48px'
+    },
+    SECTION: {
+      DESKTOP: '48px',
+      MOBILE: '40px'
+    },
+    CONTACT: {
+      DESKTOP: '20px',
+      MOBILE: '18px'
+    },
+    CARD: {
+      DESKTOP: '24px',
+      MOBILE: '20px'
+    },
+  },
   
   // Font Weights
   WEIGHTS: {
@@ -99,32 +119,32 @@ export const COLORS = {
   // Contextual Colors - Enhanced system for different background contexts
   CONTEXTUAL: {
     TITLE: {
-      LIGHT_BG: '#385780',     // Brand color on white/light backgrounds
-      DARK_BG: '#ffffff',      // White on dark backgrounds
-      BRAND_BG: '#ffffff',     // White on brand color backgrounds
-      BLACK_BG: '#000000',     // Black for high contrast scenarios
-      GRADIENT_BG: '#ffffff'   // White on gradient backgrounds
+      LIGHT_BG: '#385780',     
+      DARK_BG: '#ffffff',      
+      BRAND_BG: '#ffffff',     
+      BLACK_BG: '#000000',     
+      GRADIENT_BG: '#ffffff'   
     },
     SUBTITLE: {
-      LIGHT_BG: '#6b7280',     // Gray-500 on light backgrounds
-      DARK_BG: '#d1d5db',      // Gray-300 on dark backgrounds
-      BRAND_BG: '#f3f4f6',     // Light gray on brand backgrounds
-      BLACK_BG: '#000000',     // Black for high contrast scenarios
-      GRADIENT_BG: '#f9fafb'   // Very light gray on gradients
+      LIGHT_BG: '#6b7280',     
+      DARK_BG: '#d1d5db',     
+      BRAND_BG: '#f3f4f6',     
+      BLACK_BG: '#000000',     
+      GRADIENT_BG: '#f9fafb'   
     },
     TEXT: {
-      LIGHT_BG: '#1f2937',     // Dark gray on light backgrounds
-      DARK_BG: '#f9fafb',      // Light gray on dark backgrounds
-      BRAND_BG: '#ffffff',     // White on brand backgrounds
-      BLACK_BG: '#000000',     // Black for high contrast scenarios
-      GRADIENT_BG: '#374151'   // Medium gray on gradients
+      LIGHT_BG: '#1f2937',     
+      DARK_BG: '#f9fafb',     
+      BRAND_BG: '#ffffff',     
+      BLACK_BG: '#000000',     
+      GRADIENT_BG: '#374151'   
     },
     ACCENT: {
-      LIGHT_BG: '#3b82f6',     // Blue-500 on light backgrounds
-      DARK_BG: '#60a5fa',      // Blue-400 on dark backgrounds
-      BRAND_BG: '#fbbf24',     // Amber-400 on brand backgrounds
-      BLACK_BG: '#3b82f6',     // Blue-500 for high contrast
-      GRADIENT_BG: '#8b5cf6'   // Purple-500 on gradients
+      LIGHT_BG: '#3b82f6',     
+      DARK_BG: '#60a5fa',     
+      BRAND_BG: '#fbbf24',     
+      BLACK_BG: '#3b82f6',     
+      GRADIENT_BG: '#8b5cf6'   
     }
   }
 } as const;
@@ -141,6 +161,22 @@ export const SPACING = {
     XL: '32px',
     XXL: '48px',
     XXXL: '64px'
+  },
+
+  // Mobile Responsive Padding
+  RESPONSIVE: {
+    SECTION_PADDING: {
+      DESKTOP: '64px',
+      MOBILE: '16px'
+    },
+    SECTION_PADDING_Y: {
+      DESKTOP: '80px',
+      MOBILE: '40px'
+    },
+    SECTION_PADDING_X: {
+      DESKTOP: '24px',
+      MOBILE: '16px'
+    }
   },
   
   // Margin values
@@ -192,20 +228,15 @@ export const SPACING = {
 
 // ===== FONT FAMILY TOKENS =====
 export const FONTS = {
-  // Primary font family (Poppins)
   PRIMARY: 'var(--font-poppins)',
-  
-  // Secondary fonts for variety
   SECONDARY: 'var(--font-space-grotesk)',
   SERIF: 'var(--font-dm-serif)',
   MONO: 'var(--font-source-code-pro)',
   
-  // Specific use case fonts
   HEADING: 'var(--font-poppins)',
   BODY: 'var(--font-poppins)',
   ACCENT: 'var(--font-space-grotesk)',
   
-  // Fallbacks
   FALLBACK: {
     SANS: 'system-ui, -apple-system, sans-serif',
     SERIF: 'Georgia, serif',
@@ -243,6 +274,39 @@ export const getResponsiveGap = (type: 'CARDS' | 'GRID' | 'FLEX') => ({
   desktop: SPACING.RESPONSIVE_GAP[type].DESKTOP,
   mobile: SPACING.RESPONSIVE_GAP[type].MOBILE,
   css: `gap: ${SPACING.RESPONSIVE_GAP[type].DESKTOP}; @media (max-width: 768px) { gap: ${SPACING.RESPONSIVE_GAP[type].MOBILE}; }`
+})
+
+// CSS Custom Properties for responsive typography
+export const RESPONSIVE_TYPOGRAPHY_CSS = `
+  :root {
+    --font-size-hero: ${TYPOGRAPHY.RESPONSIVE.HERO.DESKTOP};
+    --font-size-section: ${TYPOGRAPHY.RESPONSIVE.SECTION.DESKTOP};
+    --font-size-contact: ${TYPOGRAPHY.RESPONSIVE.CONTACT.DESKTOP};
+    --font-size-card: ${TYPOGRAPHY.RESPONSIVE.CARD.DESKTOP};
+  }
+  
+  @media (max-width: 768px) {
+    :root {
+      --font-size-hero: ${TYPOGRAPHY.RESPONSIVE.HERO.MOBILE};
+      --font-size-section: ${TYPOGRAPHY.RESPONSIVE.SECTION.MOBILE};
+      --font-size-contact: ${TYPOGRAPHY.RESPONSIVE.CONTACT.MOBILE};
+      --font-size-card: ${TYPOGRAPHY.RESPONSIVE.CARD.MOBILE};
+    }
+  }
+`;
+
+// Utility functions for responsive typography
+export const getResponsiveTypography = (type: 'HERO' | 'SECTION' | 'CONTACT' | 'CARD') => ({
+  desktop: TYPOGRAPHY.RESPONSIVE[type].DESKTOP,
+  mobile: TYPOGRAPHY.RESPONSIVE[type].MOBILE,
+  css: `font-size: ${TYPOGRAPHY.RESPONSIVE[type].DESKTOP}; @media (max-width: 768px) { font-size: ${TYPOGRAPHY.RESPONSIVE[type].MOBILE}; }`
+})
+
+// Utility functions for responsive padding
+export const getResponsivePadding = (type: 'SECTION_PADDING' | 'SECTION_PADDING_Y' | 'SECTION_PADDING_X') => ({
+  desktop: SPACING.RESPONSIVE[type].DESKTOP,
+  mobile: SPACING.RESPONSIVE[type].MOBILE,
+  css: `padding: ${SPACING.RESPONSIVE[type].DESKTOP}; @media (max-width: 768px) { padding: ${SPACING.RESPONSIVE[type].MOBILE}; }`
 })
 
 // Utility functions for contextual colors

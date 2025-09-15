@@ -27,9 +27,22 @@ const byteBeanDeckImages = [
   '/ui-projects/ByteBean/ByteBean 2.png',
 ];
 
-const IMAGE_WIDTH = 280; // Increased card width for better visibility
-const IMAGE_HEIGHT = 180; // Increased card height for better proportions
-const GAP = 20; // Increased gap for better spacing
+// Responsive dimensions
+const getImageDimensions = () => {
+  if (typeof window !== 'undefined') {
+    const isMobile = window.innerWidth < 768;
+    return {
+      width: isMobile ? 200 : 280,
+      height: isMobile ? 120 : 180,
+      gap: isMobile ? 12 : 20
+    };
+  }
+  return { width: 280, height: 180, gap: 20 };
+};
+
+const IMAGE_WIDTH = 280; // Default for SSR
+const IMAGE_HEIGHT = 180; // Default for SSR
+const GAP = 20; // Default for SSR
 const ROW_LENGTH = images.length * 2;
 const TOTAL_WIDTH = ROW_LENGTH * IMAGE_WIDTH + (ROW_LENGTH - 1) * GAP;
 const SINGLE_ROW_WIDTH = images.length * IMAGE_WIDTH + (images.length - 1) * GAP;
@@ -40,35 +53,59 @@ export default function HorizontalScroller() {
   const scrollTarget = useRef(0);
   const scrollCurrent = useRef(0);
   const animationFrame = useRef(0);
+  
+  // Responsive dimensions state
+  const [dimensions, setDimensions] = useState(getImageDimensions());
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Touch gesture state
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startScrollTarget, setStartScrollTarget] = useState(0);
+
+  // Handle responsive dimensions
+  useEffect(() => {
+    const handleResize = () => {
+      const newDimensions = getImageDimensions();
+      setDimensions(newDimensions);
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    handleResize(); // Initial call
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Center images by default (using single row width)
   useEffect(() => {
     if (!containerRef.current) return;
     const containerWidth = containerRef.current.offsetWidth;
-    const initialScroll = (SINGLE_ROW_WIDTH - containerWidth) / 2;
+    const singleRowWidth = images.length * dimensions.width + (images.length - 1) * dimensions.gap;
+    const initialScroll = (singleRowWidth - containerWidth) / 2;
     scrollTarget.current = initialScroll;
     scrollCurrent.current = initialScroll;
     updateRow(initialScroll);
-  }, []);
+  }, [dimensions]);
 
   // Smooth animation loop with infinite looping
   useEffect(() => {
     function animate() {
       scrollCurrent.current += (scrollTarget.current - scrollCurrent.current) * 0.12;
-      // Infinite loop logic
+      // Infinite loop logic with responsive dimensions
+      const singleRowWidth = images.length * dimensions.width + (images.length - 1) * dimensions.gap;
       if (scrollCurrent.current < 0) {
-        scrollCurrent.current += SINGLE_ROW_WIDTH;
-        scrollTarget.current += SINGLE_ROW_WIDTH;
-      } else if (scrollCurrent.current > SINGLE_ROW_WIDTH) {
-        scrollCurrent.current -= SINGLE_ROW_WIDTH;
-        scrollTarget.current -= SINGLE_ROW_WIDTH;
+        scrollCurrent.current += singleRowWidth;
+        scrollTarget.current += singleRowWidth;
+      } else if (scrollCurrent.current > singleRowWidth) {
+        scrollCurrent.current -= singleRowWidth;
+        scrollTarget.current -= singleRowWidth;
       }
       updateRow(scrollCurrent.current);
       animationFrame.current = requestAnimationFrame(animate);
     }
     animationFrame.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame.current);
-  }, []);
+  }, [dimensions]);
 
   // Global scroll listener (no preventDefault)
   useEffect(() => {
@@ -85,6 +122,24 @@ export default function HorizontalScroller() {
       window.removeEventListener('wheel', handleGlobalWheel);
     };
   }, []);
+
+  // Touch event handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].clientX);
+    setStartScrollTarget(scrollTarget.current);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const currentX = e.touches[0].clientX;
+    const deltaX = startX - currentX;
+    scrollTarget.current = startScrollTarget + deltaX * 2; // Multiply for sensitivity
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
 
   // Update row transform
   function updateRow(scroll: number) {
@@ -113,36 +168,42 @@ export default function HorizontalScroller() {
     <div>
       <section
         ref={containerRef}
-        className="relative w-full min-h-[600px] py-20 flex flex-col items-center justify-center overflow-visible"
+        className="relative w-full min-h-[400px] sm:min-h-[600px] flex flex-col items-center justify-center overflow-hidden touch-pan-y"
         style={{
           background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)',
           boxShadow: '0 20px 60px 0 rgba(31, 38, 135, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
           zIndex: 1,
-          overflow: 'hidden',
           maxWidth: '100vw',
-          paddingTop: '40px',
-          paddingBottom: '0px',
-
-
+          paddingTop: 'var(--section-padding-y)',
+          paddingBottom: 'var(--section-padding-y)',
         }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
       {/* Enhanced Section Title with Better Spacing and Positioning */}
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none">
+      <div className="absolute top-8 sm:top-20 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none px-4">
         {/* Main Title with Enhanced Visibility */}
-        <div className="relative mb-8">
+        <div className="relative mb-4 sm:mb-8">
           {/* Glowing background effect with better positioning */}
           <div className="absolute inset-0 bg-gradient-to-r from-blue-400/25 via-purple-400/35 to-pink-400/25 blur-2xl rounded-full scale-125" />
           
-          {/* Main title with improved typography */}
-          <h2 className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 tracking-tight leading-tight drop-shadow-2xl" style={{ fontSize: TITLE_SIZES.SECTION }}>
+          {/* Main title with responsive typography */}
+          <h2 
+            className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 tracking-tight leading-tight drop-shadow-2xl"
+            style={{ fontSize: 'var(--font-size-section)' }}
+          >
             Design & Graphics
           </h2>
           
         </div>
         
         {/* Enhanced Subtitle with better spacing */}
-        <div className="relative mb-4">
-          <p className="text-white/95 font-medium tracking-wide text-lg leading-relaxed drop-shadow-lg">
+        <div className="relative mb-2 sm:mb-4">
+          <p 
+            className="text-white/95 font-medium tracking-wide leading-relaxed drop-shadow-lg"
+            style={{ fontSize: 'var(--font-size-card)' }}
+          >
             A dynamic, immersive gallery
           </p>
         </div>
@@ -155,11 +216,11 @@ export default function HorizontalScroller() {
         className="flex absolute left-0 z-20"
         style={{ 
           pointerEvents: 'auto', 
-          width: TOTAL_WIDTH, 
+          width: (images.length * 2 * dimensions.width) + ((images.length * 2 - 1) * dimensions.gap), 
           maxWidth: '100vw', 
-          top: '280px', // Adjusted for exactly 40px gap from title
+          top: isMobile ? '220px' : '280px', // Responsive positioning
           transform: 'translateY(-50%)',
-          gap: `${GAP}px`
+          gap: `${dimensions.gap}px`
         }}
       >
         {[...(shuffledImages.length ? shuffledImages : images), ...(shuffledImages.length ? shuffledImages : images)].map((src, i) => {
@@ -168,25 +229,25 @@ export default function HorizontalScroller() {
           // Special deck shuffle for Youtube Thumbnail
           if (src === '/ui-projects/Youtube Thumbnail.png') {
             return (
-              <YoutubeThumbnailDeck key={src + i} />
+              <YoutubeThumbnailDeck key={src + i} dimensions={dimensions} />
             );
           }
           // Special deck shuffle for ByteBean
           if (src === '/ui-projects/ByteBean/ByteBean.png') {
             return (
-              <ByteBeanDeck key={src + i} />
+              <ByteBeanDeck key={src + i} dimensions={dimensions} />
             );
           }
           return (
             <div
               key={src + i}
               className="relative group flex flex-col items-center justify-end"
-              style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, marginRight: i < images.length * 2 - 1 ? `${GAP}px` : '0' }}
+              style={{ width: dimensions.width, height: dimensions.height, marginRight: i < images.length * 2 - 1 ? `${dimensions.gap}px` : '0' }}
             >
               {/* Enhanced name overlay with better styling and positioning */}
               <span
-                className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
-                style={{ whiteSpace: 'nowrap' }}
+                className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
+                style={{ fontSize: 'var(--font-size-card)', whiteSpace: 'nowrap' }}
               >
                 {name}
                 {/* Enhanced arrow pointing down */}
@@ -194,13 +255,13 @@ export default function HorizontalScroller() {
               </span>
               <div
                 className="w-full h-full flex items-center justify-center"
-                style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}
+                style={{ width: dimensions.width, height: dimensions.height }}
               >
                 <Image
                   src={src}
                   alt={`Project ${i % images.length + 1}`}
-                  width={IMAGE_WIDTH}
-                  height={IMAGE_HEIGHT}
+                  width={dimensions.width}
+                  height={dimensions.height}
                   className="select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm transition-all duration-400 group-hover:scale-105 group-hover:-rotate-3 group-hover:shadow-3xl group-hover:border-white/50 group-hover:bg-white/10"
                   draggable={false}
                   priority={i < 2}
@@ -220,7 +281,7 @@ export default function HorizontalScroller() {
   );
 }
 
-function YoutubeThumbnailDeck() {
+function YoutubeThumbnailDeck({ dimensions }: { dimensions: { width: number; height: number; gap: number } }) {
   const [deck, setDeck] = useState(youtubeDeckImages);
   const [isHovered, setIsHovered] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
@@ -265,7 +326,7 @@ function YoutubeThumbnailDeck() {
   return (
     <div
       className="relative group flex flex-col items-center justify-end"
-      style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}
+      style={{ width: dimensions.width, height: dimensions.height }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -278,7 +339,7 @@ function YoutubeThumbnailDeck() {
         {/* Enhanced arrow pointing down */}
         <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
       </span>
-      <div className="w-full h-full flex items-center justify-center relative" style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}>
+      <div className="w-full h-full flex items-center justify-center relative" style={{ width: dimensions.width, height: dimensions.height }}>
         {deck.map((src, idx) => {
           // By default, no tilt. On hover, animate tilt and shuffle.
           let cardClass = '';
@@ -315,8 +376,8 @@ function YoutubeThumbnailDeck() {
               key={src}
               src={src}
               alt={`Youtube Thumbnail ${idx + 1}`}
-              width={IMAGE_WIDTH}
-              height={IMAGE_HEIGHT}
+              width={dimensions.width}
+              height={dimensions.height}
               className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
               style={{ pointerEvents: 'none' }}
               draggable={false}
@@ -329,7 +390,7 @@ function YoutubeThumbnailDeck() {
   );
 }
 
-function ByteBeanDeck() {
+function ByteBeanDeck({ dimensions }: { dimensions: { width: number; height: number; gap: number } }) {
   const [deck, setDeck] = useState(byteBeanDeckImages);
   const [isHovered, setIsHovered] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
@@ -374,7 +435,7 @@ function ByteBeanDeck() {
   return (
     <div
       className="relative group flex flex-col items-center justify-end"
-      style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}
+      style={{ width: dimensions.width, height: dimensions.height }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -387,7 +448,7 @@ function ByteBeanDeck() {
         {/* Enhanced arrow pointing down */}
         <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
       </span>
-      <div className="w-full h-full flex items-center justify-center relative" style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}>
+      <div className="w-full h-full flex items-center justify-center relative" style={{ width: dimensions.width, height: dimensions.height }}>
         {deck.map((src, idx) => {
           // By default, no tilt. On hover, animate tilt and shuffle.
           let cardClass = '';
@@ -424,8 +485,8 @@ function ByteBeanDeck() {
               key={src}
               src={src}
               alt={`ByteBean ${idx + 1}`}
-              width={IMAGE_WIDTH}
-              height={IMAGE_HEIGHT}
+              width={dimensions.width}
+              height={dimensions.height}
               className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
               style={{ pointerEvents: 'none' }}
               draggable={false}

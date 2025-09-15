@@ -79,14 +79,14 @@ const digitalPlaygroundTools: DigitalPlaygroundTool[] = [
 
 const Skills = () => {
   return (
-    <section id="digital-playground" className="section-padding py-16 relative min-h-screen px-16" style={{ background: 'linear-gradient(135deg, var(--bg-primary) 60%, var(--bg-secondary) 100%)' }}>
+    <section id="digital-playground" className="section-padding relative min-h-screen" style={{ background: 'linear-gradient(135deg, var(--bg-primary) 60%, var(--bg-secondary) 100%)', paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
       {/* Gradient overlay for extra depth */}
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true" style={{ background: 'radial-gradient(ellipse at top right, var(--card-bg) 0%, transparent 70%)' }} />
       <div className="max-w-6xl mx-auto relative z-10">
         <h2 
           className="font-extrabold mb-3 text-center" 
           style={{ 
-            fontSize: TITLE_SIZES.SECTION,
+            fontSize: 'var(--font-size-section)',
             color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
           }}
         >
@@ -96,7 +96,7 @@ const Skills = () => {
           className="text-center mb-8 drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(90,122,157,0.3)]" 
           style={{ 
             color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG,
-            fontSize: TYPOGRAPHY.SIZES.BODY 
+            fontSize: 'var(--font-size-card)' 
           }}
         >
           A collection of my favorite creative and development tools I use to bring ideas to life.

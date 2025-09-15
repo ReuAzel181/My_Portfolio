@@ -6,7 +6,7 @@ import AudioVisualizer from './AudioVisualizer'
 import { useState, useRef } from 'react'
 import UIGame from './UIGame'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
-import { TITLE_SIZES, COLORS, TYPOGRAPHY } from '@/lib/designTokens'
+import { TITLE_SIZES, COLORS, TYPOGRAPHY, getResponsiveTypography } from '@/lib/designTokens'
 
 
 const Hero = () => {
@@ -427,14 +427,14 @@ const Hero = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row justify-between items-center gap-12"
+        className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row justify-between items-center gap-8 lg:gap-12 px-4 sm:px-6"
       >
-        <div className="max-w-xl lg:pl-0 pr-4 md:pr-6">
+        <div className="max-w-xl lg:pl-0 text-center lg:text-left order-2 lg:order-1">
           <h1 
-            className="font-bold mb-4 whitespace-nowrap" 
+            className="font-bold mb-4" 
             style={{ 
-              fontSize: TITLE_SIZES.HERO,
-              color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
+              color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG,
+              fontSize: 'var(--font-size-hero)'
             }}
           >
             <span className="text-[#385780]/40 dark:text-[#5A7A9D]/40">Hi, I'm</span>{" "}
@@ -554,7 +554,7 @@ const Hero = () => {
 
           </h1>
           <h2 
-            className="text-xl md:text-2xl mb-6 whitespace-nowrap"
+            className="text-lg sm:text-xl md:text-2xl mb-6"
             style={{ color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG }}
           >
             <span className="font-bold">
@@ -568,15 +568,14 @@ const Hero = () => {
             </span>
           </h2>
           <p 
-            className="mb-6 max-w-lg" 
+            className="mb-6 max-w-lg text-sm sm:text-base md:text-lg" 
             style={{ 
-              fontSize: TYPOGRAPHY.SIZES.SUBTITLE,
               color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG 
             }}
           >
             I'm passionate about crafting intuitive digital experiences that blend form and function. Drawing from my computer science background and design experiences, I strive to create solutions that make a positive impact.<span className="hidden dark:inline"> EME LANG 🤣  </span>
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center lg:justify-start">
             <a 
               href="https://github.com/ReuAzel181" 
               target="_blank" 
@@ -641,7 +640,7 @@ const Hero = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="relative w-full lg:w-[480px] h-[320px] lg:h-[480px] group"
+          className="relative w-full max-w-sm sm:max-w-md lg:max-w-none lg:w-[480px] h-[280px] sm:h-[320px] lg:h-[480px] group mx-auto lg:mx-0 order-1 lg:order-2"
         >
           {/* Box Frame */}
           <div className="absolute inset-0 -m-4 border-2 border-[#8B5CF6]/30 rounded-2xl transform -rotate-6 transition-transform duration-300 group-hover:rotate-0" />

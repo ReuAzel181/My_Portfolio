@@ -213,7 +213,7 @@ const Navigation = () => {
           }}
         />
 
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -306,7 +306,7 @@ const Navigation = () => {
           animate={{ height: isOpen ? 'auto' : 0 }}
           className="md:hidden overflow-hidden border-t border-gray-700"
         >
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <div className="px-4 pt-2 pb-3 space-y-1 sm:px-6">
             {menuItems.map(item => (
               <RippleButton
                 key={item.name}
