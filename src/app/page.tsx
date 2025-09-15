@@ -10,7 +10,7 @@ import Contact from '@/components/Contact'
 import AIAssistant from '@/components/AIAssistant'
 import HorizontalScroller from '@/components/HorizontalScroller'
 import SectionTransition from '@/components/SectionTransition'
-import MobileTest from '@/components/MobileTest'
+
 
 export default function Home() {
   // Temporarily disabled mobile redirect for testing responsiveness
