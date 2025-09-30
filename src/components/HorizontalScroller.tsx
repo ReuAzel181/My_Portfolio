@@ -27,9 +27,9 @@ const byteBeanDeckImages = [
   '/ui-projects/ByteBean/ByteBean 2.png',
 ];
 
-const IMAGE_WIDTH = 260; // Balanced card width
-const IMAGE_HEIGHT = 160; // Balanced card height
-const GAP = 32; // gap-8 in px
+const IMAGE_WIDTH = 280; // Increased card width for better visibility
+const IMAGE_HEIGHT = 180; // Increased card height for better proportions
+const GAP = 40; // Increased gap for better spacing
 const ROW_LENGTH = images.length * 2;
 const TOTAL_WIDTH = ROW_LENGTH * IMAGE_WIDTH + (ROW_LENGTH - 1) * GAP;
 const SINGLE_ROW_WIDTH = images.length * IMAGE_WIDTH + (images.length - 1) * GAP;
@@ -113,7 +113,7 @@ export default function HorizontalScroller() {
     <div>
       <section
         ref={containerRef}
-        className="relative w-full min-h-[500px] py-32 flex flex-col items-center justify-center overflow-visible"
+        className="relative w-full min-h-[600px] py-20 flex flex-col items-center justify-center overflow-visible"
         style={{
           background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)',
           boxShadow: '0 20px 60px 0 rgba(31, 38, 135, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
@@ -122,52 +122,44 @@ export default function HorizontalScroller() {
           maxWidth: '100vw',
         }}
       >
-      {/* Enhanced Section Title with Better Spacing */}
-      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none">
+      {/* Enhanced Section Title with Better Spacing and Positioning */}
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none">
         {/* Main Title with Enhanced Visibility */}
-        <div className="relative mb-6">
-          {/* Glowing background effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/30 to-pink-400/20 blur-xl rounded-full scale-150" />
+        <div className="relative mb-8">
+          {/* Glowing background effect with better positioning */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/25 via-purple-400/35 to-pink-400/25 blur-2xl rounded-full scale-125" />
           
-          {/* Main title */}
-          <h2 className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 tracking-tight leading-tight" style={{ fontSize: TITLE_SIZES.SECTION }}>
+          {/* Main title with improved typography */}
+          <h2 className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 tracking-tight leading-tight drop-shadow-2xl" style={{ fontSize: TITLE_SIZES.SECTION }}>
             Design & Graphics
           </h2>
           
-          {/* Subtle text shadow for depth */}
-          <div className="absolute inset-0 text-4xl md:text-6xl lg:text-7xl font-black text-white/5 blur-sm">
+          {/* Enhanced text shadow for depth */}
+          <div className="absolute inset-0 font-black text-white/8 blur-sm" style={{ fontSize: TITLE_SIZES.SECTION }}>
             Design & Graphics
           </div>
         </div>
         
-        {/* Enhanced Subtitle */}
-        <div className="relative">
-          <p className="text-white/90 font-medium tracking-wide mb-2" style={{ fontSize: '18px' }}>
+        {/* Enhanced Subtitle with better spacing */}
+        <div className="relative mb-4">
+          <p className="text-white/95 font-medium tracking-wide text-lg leading-relaxed drop-shadow-lg">
             A dynamic, immersive gallery
-          </p>
-          <p className="text-white/60 font-light italic" style={{ fontSize: '18px' }}>
-            Scroll to explore my creative journey
           </p>
         </div>
         
-        {/* Decorative elements */}
-        <div className="flex items-center justify-center gap-4 mt-6">
-          <div className="w-12 h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
-          <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
-          <div className="w-12 h-[2px] bg-gradient-to-r from-transparent via-pink-400 to-transparent" />
-        </div>
       </div>
 
-      {/* Enhanced Gallery Row with Better Positioning */}
+      {/* Enhanced Gallery Row with Better Positioning and Spacing */}
       <div
         ref={rowRef}
-        className="flex gap-8 absolute left-0 z-20"
+        className="flex absolute left-0 z-20"
         style={{ 
           pointerEvents: 'auto', 
           width: TOTAL_WIDTH, 
           maxWidth: '100vw', 
-          top: '280px', // Increased spacing from title
-          transform: 'translateY(-50%)'
+          top: '280px', // Adjusted for exactly 40px gap from title
+          transform: 'translateY(-50%)',
+          gap: `${GAP}px`
         }}
       >
         {[...(shuffledImages.length ? shuffledImages : images), ...(shuffledImages.length ? shuffledImages : images)].map((src, i) => {
@@ -189,16 +181,16 @@ export default function HorizontalScroller() {
             <div
               key={src + i}
               className="relative group flex flex-col items-center justify-end"
-              style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}
+              style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT, marginRight: i < images.length * 2 - 1 ? `${GAP}px` : '0' }}
             >
-              {/* Enhanced name overlay with better styling */}
+              {/* Enhanced name overlay with better styling and positioning */}
               <span
-                className="absolute -top-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-gradient-to-r from-gray-900/95 to-black/95 backdrop-blur-sm text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-3 transition-all duration-300 pointer-events-none select-none shadow-2xl z-30 border border-white/10"
+                className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
                 style={{ whiteSpace: 'nowrap' }}
               >
                 {name}
-                {/* Small arrow pointing down */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900/95" />
+                {/* Enhanced arrow pointing down */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
               </span>
               <div
                 className="w-full h-full flex items-center justify-center"
@@ -209,7 +201,7 @@ export default function HorizontalScroller() {
                   alt={`Project ${i % images.length + 1}`}
                   width={IMAGE_WIDTH}
                   height={IMAGE_HEIGHT}
-                  className="select-none object-contain rounded-xl border-2 border-white/20 shadow-2xl bg-gradient-to-br from-white/5 to-transparent backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-3xl group-hover:border-white/40"
+                  className="select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm transition-all duration-400 group-hover:scale-105 group-hover:-rotate-3 group-hover:shadow-3xl group-hover:border-white/50 group-hover:bg-white/10"
                   draggable={false}
                   priority={i < 2}
                 />
@@ -219,10 +211,10 @@ export default function HorizontalScroller() {
         })}
       </div>
       
-      {/* Enhanced decorative elements */}
-      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[80vw] h-80 bg-gradient-to-r from-blue-500/20 via-purple-500/30 to-pink-500/20 rounded-full blur-3xl z-0 animate-pulse" />
-      <div className="absolute -bottom-20 left-1/4 w-[40vw] h-40 bg-gradient-to-r from-cyan-400/15 via-blue-400/25 to-purple-400/15 rounded-full blur-2xl z-0" />
-      <div className="absolute -bottom-20 right-1/4 w-[40vw] h-40 bg-gradient-to-r from-purple-400/15 via-pink-400/25 to-red-400/15 rounded-full blur-2xl z-0" />
+      {/* Enhanced decorative elements with better positioning */}
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[85vw] h-96 bg-gradient-to-r from-blue-500/25 via-purple-500/35 to-pink-500/25 rounded-full blur-3xl z-0 animate-pulse" />
+      <div className="absolute -bottom-16 left-1/4 w-[45vw] h-48 bg-gradient-to-r from-cyan-400/20 via-blue-400/30 to-purple-400/20 rounded-full blur-2xl z-0" />
+      <div className="absolute -bottom-16 right-1/4 w-[45vw] h-48 bg-gradient-to-r from-purple-400/20 via-pink-400/30 to-red-400/20 rounded-full blur-2xl z-0" />
     </section>
     </div>
   );
@@ -277,12 +269,14 @@ function YoutubeThumbnailDeck() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Name overlay on hover */}
+      {/* Enhanced name overlay on hover */}
       <span
-        className="absolute -top-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-md bg-black/80 text-white text-sm font-semibold opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 transition-all duration-300 pointer-events-none select-none shadow-lg z-30"
+        className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
         style={{ whiteSpace: 'nowrap' }}
       >
         Youtube Thumbnail
+        {/* Enhanced arrow pointing down */}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
       </span>
       <div className="w-full h-full flex items-center justify-center relative" style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}>
         {deck.map((src, idx) => {
@@ -290,17 +284,17 @@ function YoutubeThumbnailDeck() {
           let cardClass = '';
           if (isHovered) {
             if (idx === 0 && shufflePhase === 'animating') {
-              cardClass = 'z-40 scale-110 -rotate-6 translate-y-[-40px] translate-x-6 opacity-0 transition-all duration-700 ease-in-out';
+              cardClass = 'z-40 scale-105 -rotate-3 translate-y-[-40px] translate-x-6 opacity-0 transition-all duration-700 ease-in-out';
             } else if (idx === 0) {
-              cardClass = 'z-30 scale-110 -rotate-6 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
+              cardClass = 'z-30 scale-105 -rotate-3 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
             } else if (idx === 1 && shufflePhase === 'animating') {
               cardClass = 'z-20 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
             } else if (idx === 1) {
               cardClass = 'z-20 scale-100 rotate-0 translate-y-4 opacity-100 transition-all duration-700 ease-in-out';
             } else if (idx === 2 && shufflePhase === 'animating') {
-              cardClass = 'z-10 scale-95 rotate-3 translate-y-4 opacity-80 transition-all duration-700 ease-in-out';
+              cardClass = 'z-10 scale-95 rotate-2 translate-y-4 opacity-80 transition-all duration-700 ease-in-out';
             } else if (idx === 2) {
-              cardClass = 'z-10 scale-95 rotate-3 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
+              cardClass = 'z-10 scale-95 rotate-2 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
             } else {
               cardClass = 'opacity-0 pointer-events-none';
             }
@@ -323,7 +317,7 @@ function YoutubeThumbnailDeck() {
               alt={`Youtube Thumbnail ${idx + 1}`}
               width={IMAGE_WIDTH}
               height={IMAGE_HEIGHT}
-              className={`select-none object-contain rounded-xl border-2 border-white/10 shadow-xl bg-transparent absolute left-0 top-0 ${cardClass}`}
+              className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
               style={{ pointerEvents: 'none' }}
               draggable={false}
               priority={idx === 0}
@@ -384,12 +378,14 @@ function ByteBeanDeck() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Name overlay on hover */}
+      {/* Enhanced name overlay on hover */}
       <span
-        className="absolute -top-8 left-1/2 -translate-x-1/2 px-3 py-1 rounded-md bg-black/80 text-white text-sm font-semibold opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 transition-all duration-300 pointer-events-none select-none shadow-lg z-30"
+        className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
         style={{ whiteSpace: 'nowrap' }}
       >
         ByteBean
+        {/* Enhanced arrow pointing down */}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
       </span>
       <div className="w-full h-full flex items-center justify-center relative" style={{ width: IMAGE_WIDTH, height: IMAGE_HEIGHT }}>
         {deck.map((src, idx) => {
@@ -397,17 +393,17 @@ function ByteBeanDeck() {
           let cardClass = '';
           if (isHovered) {
             if (idx === 0 && shufflePhase === 'animating') {
-              cardClass = 'z-40 scale-110 -rotate-6 translate-y-[-40px] translate-x-6 opacity-0 transition-all duration-700 ease-in-out';
+              cardClass = 'z-40 scale-105 -rotate-3 translate-y-[-40px] translate-x-6 opacity-0 transition-all duration-700 ease-in-out';
             } else if (idx === 0) {
-              cardClass = 'z-30 scale-110 -rotate-6 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
+              cardClass = 'z-30 scale-105 -rotate-3 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
             } else if (idx === 1 && shufflePhase === 'animating') {
               cardClass = 'z-20 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
             } else if (idx === 1) {
               cardClass = 'z-20 scale-100 rotate-0 translate-y-4 opacity-100 transition-all duration-700 ease-in-out';
             } else if (idx === 2 && shufflePhase === 'animating') {
-              cardClass = 'z-10 scale-95 rotate-3 translate-y-4 opacity-80 transition-all duration-700 ease-in-out';
+              cardClass = 'z-10 scale-95 rotate-2 translate-y-4 opacity-80 transition-all duration-700 ease-in-out';
             } else if (idx === 2) {
-              cardClass = 'z-10 scale-95 rotate-3 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
+              cardClass = 'z-10 scale-95 rotate-2 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
             } else {
               cardClass = 'opacity-0 pointer-events-none';
             }
@@ -430,7 +426,7 @@ function ByteBeanDeck() {
               alt={`ByteBean ${idx + 1}`}
               width={IMAGE_WIDTH}
               height={IMAGE_HEIGHT}
-              className={`select-none object-contain rounded-xl border-2 border-white/10 shadow-xl bg-transparent absolute left-0 top-0 ${cardClass}`}
+              className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
               style={{ pointerEvents: 'none' }}
               draggable={false}
               priority={idx === 0}

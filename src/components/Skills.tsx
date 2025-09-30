@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { TITLE_SIZES, COLORS } from '@/lib/designTokens'
+import { TITLE_SIZES, COLORS, TYPOGRAPHY } from '@/lib/designTokens'
 
 interface Skill {
   name: string;
@@ -92,7 +92,13 @@ const Skills = () => {
         >
           Digital Playground
         </h2>
-        <p className="text-center mb-8 text-[#385780] dark:text-[#5A7A9D] drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(90,122,157,0.3)]" style={{ fontSize: '18px' }}>
+        <p 
+          className="text-center mb-8 drop-shadow-[0_0_10px_rgba(56,87,128,0.3)] dark:drop-shadow-[0_0_10px_rgba(90,122,157,0.3)]" 
+          style={{ 
+            color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG,
+            fontSize: TYPOGRAPHY.SIZES.BODY 
+          }}
+        >
           A collection of my favorite creative and development tools I use to bring ideas to life.
         </p>
         <div 

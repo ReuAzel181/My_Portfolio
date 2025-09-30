@@ -96,17 +96,35 @@ export const COLORS = {
     ACCENT: 'rgb(16, 185, 129)', // emerald-500
   },
   
-  // Contextual Colors
+  // Contextual Colors - Enhanced system for different background contexts
   CONTEXTUAL: {
     TITLE: {
-      ON_LIGHT: '#385780',  // Brand color on white/light backgrounds
-      ON_DARK: '#ffffff',   // White on dark backgrounds
-      ON_BRAND: '#ffffff'   // White on brand color backgrounds
+      LIGHT_BG: '#385780',     // Brand color on white/light backgrounds
+      DARK_BG: '#ffffff',      // White on dark backgrounds
+      BRAND_BG: '#ffffff',     // White on brand color backgrounds
+      BLACK_BG: '#000000',     // Black for high contrast scenarios
+      GRADIENT_BG: '#ffffff'   // White on gradient backgrounds
+    },
+    SUBTITLE: {
+      LIGHT_BG: '#6b7280',     // Gray-500 on light backgrounds
+      DARK_BG: '#d1d5db',      // Gray-300 on dark backgrounds
+      BRAND_BG: '#f3f4f6',     // Light gray on brand backgrounds
+      BLACK_BG: '#000000',     // Black for high contrast scenarios
+      GRADIENT_BG: '#f9fafb'   // Very light gray on gradients
     },
     TEXT: {
-      ON_LIGHT: '#1f2937',
-      ON_DARK: '#f9fafb',
-      ON_BRAND: '#ffffff'
+      LIGHT_BG: '#1f2937',     // Dark gray on light backgrounds
+      DARK_BG: '#f9fafb',      // Light gray on dark backgrounds
+      BRAND_BG: '#ffffff',     // White on brand backgrounds
+      BLACK_BG: '#000000',     // Black for high contrast scenarios
+      GRADIENT_BG: '#374151'   // Medium gray on gradients
+    },
+    ACCENT: {
+      LIGHT_BG: '#3b82f6',     // Blue-500 on light backgrounds
+      DARK_BG: '#60a5fa',      // Blue-400 on dark backgrounds
+      BRAND_BG: '#fbbf24',     // Amber-400 on brand backgrounds
+      BLACK_BG: '#3b82f6',     // Blue-500 for high contrast
+      GRADIENT_BG: '#8b5cf6'   // Purple-500 on gradients
     }
   }
 } as const;
@@ -228,8 +246,21 @@ export const getResponsiveGap = (type: 'CARDS' | 'GRID' | 'FLEX') => ({
 })
 
 // Utility functions for contextual colors
-export const getContextualColor = (element: 'TITLE' | 'TEXT', background: 'LIGHT' | 'DARK' | 'BRAND') => {
-  return COLORS.CONTEXTUAL[element][`ON_${background}`]
+export const getContextualColor = (
+  element: 'TITLE' | 'SUBTITLE' | 'TEXT' | 'ACCENT', 
+  background: 'LIGHT_BG' | 'DARK_BG' | 'BRAND_BG' | 'BLACK_BG' | 'GRADIENT_BG'
+) => {
+  return COLORS.CONTEXTUAL[element][background];
+}
+
+// Helper function to get title color based on background context
+export const getTitleColor = (background: 'LIGHT_BG' | 'DARK_BG' | 'BRAND_BG' | 'BLACK_BG' | 'GRADIENT_BG' = 'LIGHT_BG') => {
+  return COLORS.CONTEXTUAL.TITLE[background];
+}
+
+// Helper function to get subtitle color based on background context
+export const getSubtitleColor = (background: 'LIGHT_BG' | 'DARK_BG' | 'BRAND_BG' | 'BLACK_BG' | 'GRADIENT_BG' = 'LIGHT_BG') => {
+  return COLORS.CONTEXTUAL.SUBTITLE[background];
 }
 
 // CSS custom properties for responsive gaps

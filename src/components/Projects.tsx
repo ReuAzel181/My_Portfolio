@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import ProjectCard from './ProjectCard'
 import { Tilt } from 'react-tilt'
-import { TITLE_SIZES, SPACING, COLORS } from '@/lib/designTokens'
+import { TITLE_SIZES, SPACING, COLORS, TYPOGRAPHY } from '@/lib/designTokens'
 
 export interface Project {
   id: string;
@@ -188,7 +188,13 @@ const Projects = () => {
           >
             Featured Projects
           </h2>
-          <p className="text-gray-600 max-w-xl mx-auto">
+          <p 
+            className="max-w-xl mx-auto" 
+            style={{ 
+              color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG,
+              fontSize: TYPOGRAPHY.SIZES.BODY 
+            }}
+          >
             Here are some of my recent projects that showcase my skills and experience.
           </p>
         </motion.div>

@@ -6,7 +6,7 @@ import AudioVisualizer from './AudioVisualizer'
 import { useState, useRef } from 'react'
 import UIGame from './UIGame'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
-import { TITLE_SIZES, COLORS } from '@/lib/designTokens'
+import { TITLE_SIZES, COLORS, TYPOGRAPHY } from '@/lib/designTokens'
 
 
 const Hero = () => {
@@ -430,7 +430,13 @@ const Hero = () => {
         className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row justify-between items-center gap-12"
       >
         <div className="max-w-xl lg:pl-0 pr-4 md:pr-6">
-          <h1 className="font-bold mb-4 whitespace-nowrap" style={{ fontSize: TITLE_SIZES.HERO }}>
+          <h1 
+            className="font-bold mb-4 whitespace-nowrap" 
+            style={{ 
+              fontSize: TITLE_SIZES.HERO,
+              color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
+            }}
+          >
             <span className="text-[#385780]/40 dark:text-[#5A7A9D]/40">Hi, I'm</span>{" "}
         <AnimatePresence mode="wait">
           {nameVisible && (
@@ -561,7 +567,13 @@ const Hero = () => {
               /UX and a Web Designer
             </span>
           </h2>
-          <p className="text-gray-500 mb-6 max-w-lg" style={{ fontSize: '18px' }}>
+          <p 
+            className="mb-6 max-w-lg" 
+            style={{ 
+              fontSize: TYPOGRAPHY.SIZES.SUBTITLE,
+              color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG 
+            }}
+          >
             I'm passionate about crafting intuitive digital experiences that blend form and function. Drawing from my computer science background and design experiences, I strive to create solutions that make a positive impact.<span className="hidden dark:inline"> EME LANG 🤣  </span>
           </p>
           <div className="flex flex-wrap gap-3">

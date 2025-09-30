@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import GameModal from './GameModal'
 import HiddenGame from './HiddenGame'
-import { TITLE_SIZES, COLORS } from '@/lib/designTokens'
+import { TITLE_SIZES, COLORS, TYPOGRAPHY } from '@/lib/designTokens'
 
 // Define the form validation schema
 const contactFormSchema = z.object({
@@ -280,7 +280,7 @@ const Contact = () => {
   }
 
   // Drag handlers for contact cards
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, cardId: string) => {
+  const handleDragStart = (e: any, cardId: string) => {
     setDraggedCard(cardId)
     setIsDragging(true)
     if (e.dataTransfer) {
@@ -289,14 +289,14 @@ const Contact = () => {
     }
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: any) => {
     e.preventDefault()
     if (e.dataTransfer) {
       e.dataTransfer.dropEffect = 'move'
     }
   }
 
-  const handleDrop = (e: React.DragEvent, targetCardId: string) => {
+  const handleDrop = (e: any, targetCardId: string) => {
     e.preventDefault()
     const draggedCardId = e.dataTransfer.getData('text/plain')
     
@@ -410,7 +410,13 @@ const Contact = () => {
                   </svg>
                 </span>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 max-w-md mb-6">
+              <p 
+                className="max-w-md mb-6" 
+                style={{ 
+                  color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG,
+                  fontSize: TYPOGRAPHY.SIZES.BODY 
+                }}
+              >
                 I'd love to hear from you! Whether you have a question, want to collaborate, or just want to say hi, feel free to reach out through any of these channels.
               </p>
 
