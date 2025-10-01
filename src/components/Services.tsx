@@ -56,14 +56,14 @@ const Services = () => {
           className="text-center mb-8 sm:mb-12"
         >
           <h2 
-            className="font-bold mb-4 sm:mb-6 text-white"
+            className="font-extrabold mb-4 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 drop-shadow-2xl tracking-tight"
             style={{ fontSize: 'var(--font-size-section)' }}
           >
             What I Offer
           </h2>
           <p 
             className="max-w-xl mx-auto text-white px-4 sm:px-0"
-            style={{ fontSize: 'var(--font-size-card)' }}
+            style={{ fontSize: '16px' }}
           >
             I enjoy combining design and technical skills to create solutions that work well and look good. Here's how I can help with your project:
           </p>
@@ -84,7 +84,7 @@ const Services = () => {
                   y: -8,
                   transition: { duration: 0.3, type: "spring", stiffness: 300 }
                 }}
-                className="bg-gray-900/60 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-gray-800 hover:border-secondary shadow-lg hover:shadow-secondary/20 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+                className="bg-gray-900/60 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-gray-800 hover:border-secondary shadow-lg hover:shadow-secondary/20 hover:shadow-xl transition-all duration-300 group cursor-pointer text-center sm:text-left"
                 style={{
                   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)'
                 }}
@@ -95,14 +95,14 @@ const Services = () => {
                   </span>
                 </div>
                 <h3 
-                  className="font-semibold mb-2 text-white"
+                  className="font-semibold mb-2 text-blue-500 text-center sm:text-left"
                   style={{ fontSize: 'var(--font-size-card)' }}
                 >
                   {service.title}
                 </h3>
                 <p 
-                  className="leading-relaxed text-white"
-                  style={{ fontSize: 'var(--font-size-card)' }}
+                  className="leading-relaxed text-white text-center sm:text-left"
+                  style={{ fontSize: 'var(--font-size-body)' }}
                 >
                   {service.description}
                 </p>
@@ -133,7 +133,7 @@ const Services = () => {
           </h4>
           <p 
             className="leading-relaxed text-white"
-            style={{ fontSize: 'var(--font-size-card)' }}
+            style={{ fontSize: 'var(--font-size-body)' }}
           >
             I approach each project with care and attention to detail. I believe in clear communication and working together to achieve the best results. Let's work on something great together!
           </p>

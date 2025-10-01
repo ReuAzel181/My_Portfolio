@@ -4,42 +4,41 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
-import ProjectCard from './ProjectCard'
 import { Tilt } from 'react-tilt'
-import { TITLE_SIZES, SPACING, COLORS, TYPOGRAPHY } from '@/lib/designTokens'
+import { COLORS } from '@/lib/designTokens'
 
 export interface Project {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  tags: string[];
-  liveUrl?: string;
-  githubUrl?: string;
-  longDescription: string;
-  technologies: string[];
-  carouselImages?: string[];
+  id: string
+  title: string
+  description: string
+  image: string
+  tags: string[]
+  liveUrl?: string
+  githubUrl?: string
+  longDescription: string
+  technologies: string[]
+  carouselImages?: string[]
 }
 
 const TAG_COLORS: { [key: string]: string } = {
-  'AI': 'bg-mint-200 text-mint-900',
-  'Chatbot': 'bg-mint-300 text-mint-900',
+  AI: 'bg-mint-200 text-mint-900',
+  Chatbot: 'bg-mint-300 text-mint-900',
   'Hugging Face': 'bg-mint-400 text-mint-900',
   'Next.js': 'bg-mint-500 text-mint-900',
   'UI/UX': 'bg-purple-200 text-purple-900',
-  'Development': 'bg-blue-200 text-blue-900',
-  'Web': 'bg-indigo-200 text-indigo-900',
-  'Direction': 'bg-pink-200 text-pink-900',
-  'Strategy': 'bg-green-200 text-green-900',
-  'Creative': 'bg-yellow-200 text-yellow-900',
-  'Laravel': 'bg-orange-200 text-orange-900',
-  'PHP': 'bg-blue-300 text-blue-900',
-  'Livewire': 'bg-pink-300 text-pink-900',
+  Development: 'bg-blue-200 text-blue-900',
+  Web: 'bg-indigo-200 text-indigo-900',
+  Direction: 'bg-pink-200 text-pink-900',
+  Strategy: 'bg-green-200 text-green-900',
+  Creative: 'bg-yellow-200 text-yellow-900',
+  Laravel: 'bg-orange-200 text-orange-900',
+  PHP: 'bg-blue-300 text-blue-900',
+  Livewire: 'bg-pink-300 text-pink-900',
   'Tailwind CSS': 'bg-teal-200 text-teal-900',
-  'IoT': 'bg-cyan-200 text-cyan-900',
-  'Analytics': 'bg-violet-200 text-violet-900',
-  'Streaming': 'bg-rose-200 text-rose-900',
-};
+  IoT: 'bg-cyan-200 text-cyan-900',
+  Analytics: 'bg-violet-200 text-violet-900',
+  Streaming: 'bg-rose-200 text-rose-900',
+}
 
 const SAMPLE_PROJECTS: Project[] = [
   {
@@ -49,8 +48,9 @@ const SAMPLE_PROJECTS: Project[] = [
     image: '/projects/Project1.png',
     tags: ['AI', 'Chatbot', 'Next.js'],
     githubUrl: 'https://github.com/example/project',
-    longDescription: 'A sophisticated chatbot that uses natural language processing to provide intelligent responses.',
-    technologies: ['Next.js', 'OpenAI', 'TailwindCSS', 'TypeScript']
+    longDescription:
+      'A sophisticated chatbot that uses natural language processing to provide intelligent responses.',
+    technologies: ['Next.js', 'OpenAI', 'TailwindCSS', 'TypeScript'],
   },
   {
     id: '2',
@@ -59,9 +59,14 @@ const SAMPLE_PROJECTS: Project[] = [
     image: '/projects/Project2.png',
     tags: ['UI/UX', 'Development', 'Web'],
     githubUrl: 'https://github.com/example/project',
-    longDescription: 'A comprehensive veterinary care platform with appointment scheduling and patient management.',
+    longDescription:
+      'A comprehensive veterinary care platform with appointment scheduling and patient management.',
     technologies: ['React', 'Framer Motion', 'TailwindCSS', 'Figma'],
-    carouselImages: ['/projects/project2/image 9.png', '/projects/project2/image 10.png', '/projects/project2/image 11.png']
+    carouselImages: [
+      '/projects/project2/image 9.png',
+      '/projects/project2/image 10.png',
+      '/projects/project2/image 11.png',
+    ],
   },
   {
     id: '3',
@@ -70,8 +75,9 @@ const SAMPLE_PROJECTS: Project[] = [
     image: '/projects/Project3.png',
     tags: ['Web', 'Development', 'AI'],
     githubUrl: 'https://github.com/example/project',
-    longDescription: 'An intelligent note-taking platform with AI-powered organization and search capabilities.',
-    technologies: ['Next.js', 'OpenAI', 'MongoDB', 'TailwindCSS']
+    longDescription:
+      'An intelligent note-taking platform with AI-powered organization and search capabilities.',
+    technologies: ['Next.js', 'OpenAI', 'MongoDB', 'TailwindCSS'],
   },
   {
     id: '4',
@@ -81,57 +87,42 @@ const SAMPLE_PROJECTS: Project[] = [
     tags: ['Web', 'Development', 'News'],
     liveUrl: 'https://veritas-bulletin.vercel.app/',
     githubUrl: 'https://github.com/ReuAzel181/News-Site',
-    longDescription: 'A fully responsive news website featuring categorized news sections, search functionality, and user-friendly design. Built to deliver the latest news efficiently and intuitively.',
-    technologies: ['React', 'Next.js', 'TailwindCSS', 'API Integration', 'Node.js']
-  }
-];
+    longDescription:
+      'A fully responsive news website featuring categorized news sections, search functionality, and user-friendly design.',
+    technologies: [
+      'React',
+      'Next.js',
+      'TailwindCSS',
+      'API Integration',
+      'Node.js',
+    ],
+  },
+]
 
 const Projects = () => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  })
-
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 })
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [[carouselPage, direction], setCarouselPage] = useState([0, 0]);
+  const [carouselPage, setCarouselPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setProjects(SAMPLE_PROJECTS)
-    setLoading(false)
+    try {
+      setProjects(SAMPLE_PROJECTS)
+      setLoading(false)
+    } catch (err) {
+      setError('Failed to load projects')
+      setLoading(false)
+    }
   }, [])
 
-  const setPage = (newPage: number) => {
-    setCarouselPage(([currentPage, _]) => {
-      if (newPage === currentPage) return [currentPage, _];
-      const newDirection = newPage > currentPage ? 1 : -1;
-      return [newPage, newDirection];
-    });
-  };
-
-  useEffect(() => {
-    if (!selectedProject || !selectedProject.carouselImages || selectedProject.carouselImages.length <= 1) return;
-
-    const timeout = setTimeout(() => {
-      if (selectedProject.carouselImages) {
-        const newPage = (carouselPage + 1) % selectedProject.carouselImages.length;
-        setCarouselPage([newPage, 1]);
-      }
-    }, 4000);
-
-    return () => clearTimeout(timeout);
-  }, [carouselPage, selectedProject]);
-
   const handleOpenModal = (project: Project) => {
-    setSelectedProject(project);
-    setCarouselPage([0, 0]);
-  };
+    setSelectedProject(project)
+    setCarouselPage(0)
+  }
 
-  const handleCloseModal = () => {
-    setSelectedProject(null);
-  };
+  const handleCloseModal = () => setSelectedProject(null)
 
   const defaultTiltOptions = {
     reverse: true,
@@ -142,111 +133,114 @@ const Projects = () => {
     transition: true,
     axis: null,
     reset: true,
-    easing: "cubic-bezier(0.25, 0.1, 0.25, 1)",
+    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
     glare: false,
-    "max-glare": 0,
-  };
-
-  if (loading) {
-    return (
-      <section id="projects" className="section-padding bg-[var(--bg-primary)]" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">Loading projects...</h2>
-        </div>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section id="projects" className="section-padding bg-[var(--bg-primary)]" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">Error: {error}</h2>
-        </div>
-      </section>
-    )
+    'max-glare': 0,
   }
 
   return (
-    <section id="projects" className="section-padding bg-[var(--bg-primary)]" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          ref={ref}
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-8"
-        >
-          <h2 
-            className="font-bold mb-3" 
-            style={{ 
-              fontSize: 'var(--font-size-section)',
-              color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG 
-            }}
-          >
-            Featured Projects
+    <section id="projects" className="bg-[var(--bg-primary)] px-16 py-16">
+      <div className="max-w-7xl mx-auto">
+        {loading ? (
+          <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">
+            Loading projects...
           </h2>
-          <p 
-            className="max-w-xl mx-auto" 
-            style={{ 
-              color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG,
-              fontSize: 'var(--font-size-card)' 
-            }}
-          >
-            Here are some of my recent projects that showcase my skills and experience.
-          </p>
-        </motion.div>
-
-        {/* ✅ Responsive project grid */}
-        <div className="flex flex-wrap -mx-4 justify-center">
-          {projects.map((project, index) => (
+        ) : error ? (
+          <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">
+            Error: {error}
+          </h2>
+        ) : (
+          <>
             <motion.div
-              key={project.id}
+              ref={ref}
               initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ 
-                duration: 0.8, 
-                delay: index * 0.2,
-                ease: [0.25, 0.1, 0.25, 1]
-              }}
-              className="w-full sm:w-1/2 lg:w-1/4 px-4"
+              transition={{ duration: 0.8 }}
+              className="text-center mb-8"
             >
-              <Tilt 
-                options={defaultTiltOptions} 
-                className="h-full transition-transform duration-500 ease-out will-change-transform"
+              <h2
+                className="font-bold mb-3"
+                style={{
+                  fontSize: 'var(--font-size-section)',
+                  color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG,
+                }}
               >
-                <div 
-                  onClick={() => handleOpenModal(project)} 
-                  className="cursor-pointer h-full transform-gpu transition-all duration-500 ease-out hover:shadow-lg rounded-xl overflow-hidden hover:-translate-y-1 bg-[var(--bg-secondary)] border border-gray-800/20"
-                >
-                  <div className="relative aspect-[4/3] w-full">
-                    <Image
-                      src={project.image}
-                      alt={project.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="font-bold mb-2" style={{ fontSize: '24px' }}>{project.title}</h3>
-                    <p className="text-gray-400 mb-4">{project.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {project.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className={`px-3 py-1 text-sm rounded-full font-medium ${TAG_COLORS[tag] || 'bg-gray-800 text-gray-200'}`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </Tilt>
+                Featured Projects
+              </h2>
+              <p
+                className="max-w-xl mx-auto"
+                style={{
+                  color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG,
+                  fontSize: 'var(--font-size-card)',
+                }}
+              >
+                Here are some of my recent projects that showcase my skills and
+                experience.
+              </p>
             </motion.div>
-          ))}
-        </div>
+
+            {/* ✅ Project grid */}
+            <div className="flex justify-center gap-4 overflow-visible">
+              {projects.map((project, index) => (
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  transition={{
+                    duration: 0.8,
+                    delay: index * 0.2,
+                    ease: [0.25, 0.1, 0.25, 1],
+                  }}
+                  className="w-full sm:w-1/2 lg:w-1/4"
+                >
+                  <Tilt
+                    options={defaultTiltOptions}
+                    className="h-full transition-transform duration-500 ease-out will-change-transform"
+                  >
+                    <div
+                      onClick={() => handleOpenModal(project)}
+                      className="cursor-pointer h-full transform-gpu transition-all duration-500 ease-out hover:shadow-lg rounded-xl overflow-hidden hover:-translate-y-1 bg-[var(--bg-secondary)] border border-gray-800/20"
+                    >
+                      <div className="relative aspect-[4/3] w-full">
+                        <Image
+                          src={project.image}
+                          alt={project.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                      </div>
+                      <div className="p-6">
+                        <h3
+                          className="font-bold mb-2"
+                          style={{ fontSize: '24px' }}
+                        >
+                          {project.title}
+                        </h3>
+                        <p className="text-gray-400 mb-4">
+                          {project.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {project.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className={`px-3 py-1 text-sm rounded-full font-medium ${
+                                TAG_COLORS[tag] ||
+                                'bg-gray-800 text-gray-200'
+                              }`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </Tilt>
+                </motion.div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal */}
@@ -259,7 +253,7 @@ const Projects = () => {
             onClick={handleCloseModal}
             className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm"
           >
-            {/* ... Modal content unchanged ... */}
+            {/* Modal content here */}
           </motion.div>
         )}
       </AnimatePresence>

@@ -293,7 +293,7 @@ const Hero = () => {
 
 
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center section-padding relative overflow-hidden px-16">
+    <section id="home" className="min-h-screen flex items-center justify-center section-padding relative overflow-hidden" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
       {/* Centered download animation */}
       <AnimatePresence mode="wait">
         {(isDownloading || downloadError) && (
@@ -429,7 +429,7 @@ const Hero = () => {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row justify-between items-center gap-8 lg:gap-12 px-4 sm:px-6"
       >
-        <div className="max-w-xl lg:pl-0 text-center lg:text-left order-2 lg:order-1">
+        <div className="max-w-xl lg:pl-0 text-center lg:text-left">
           <h1 
             className="font-bold mb-4" 
             style={{ 
@@ -575,6 +575,55 @@ const Hero = () => {
           >
             I'm passionate about crafting intuitive digital experiences that blend form and function. Drawing from my computer science background and design experiences, I strive to create solutions that make a positive impact.<span className="hidden dark:inline"> EME LANG 🤣  </span>
           </p>
+          
+          {/* Mobile Hero Image - positioned between description and buttons */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="lg:hidden relative w-full max-w-sm h-[280px] sm:h-[320px] group mx-auto mb-6"
+          >
+            {/* Box Frame */}
+            <div className="absolute inset-0 -m-4 border-2 border-[#8B5CF6]/30 rounded-2xl transform -rotate-6 transition-transform duration-300 group-hover:rotate-0" />
+            <div className="absolute inset-0 -m-2 border-2 border-[#8B5CF6]/50 rounded-xl transform rotate-3 transition-transform duration-300 group-hover:rotate-0" />
+            
+            {/* Main Image Container */}
+            <div className="relative h-full rounded-lg">
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#8B5CF6]/20 to-[#8B5CF6]/10 mix-blend-overlay rounded-lg" />
+              {/* Image Wrapper for positioning */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[85%] h-[110%] cursor-pointer z-10">
+                <Image
+                  src={profileImage}
+                  alt="Reu Uzziel"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-contain object-bottom transition-transform duration-300 group-hover:scale-105"
+                  priority
+                  onClick={handleProfileClick}
+                />
+                {/* Fun Card Overlay */}
+                <AnimatePresence>
+                  {showFunCard && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{ duration: 0.3 }}
+                      className="absolute left-1/2 -translate-x-1/2 bottom-[15%] z-20"
+                    >
+                      <div className="bg-white dark:bg-gray-900 border border-purple-400 px-3 py-1.5 rounded-lg shadow-lg text-purple-700 dark:text-purple-300 font-bold text-sm flex items-center gap-2 animate-bounce">
+                        WAZZUP! <span className="text-lg"></span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              {/* Pass-through Effect */}
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#8B5CF6]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
+            </div>
+          </motion.div>
+
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center lg:justify-start">
             <a 
               href="https://github.com/ReuAzel181" 
@@ -640,7 +689,7 @@ const Hero = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="relative w-full max-w-sm sm:max-w-md lg:max-w-none lg:w-[480px] h-[280px] sm:h-[320px] lg:h-[480px] group mx-auto lg:mx-0 order-1 lg:order-2"
+          className="hidden lg:block relative w-full max-w-none lg:w-[480px] lg:h-[480px] group mx-auto lg:mx-0"
         >
           {/* Box Frame */}
           <div className="absolute inset-0 -m-4 border-2 border-[#8B5CF6]/30 rounded-2xl transform -rotate-6 transition-transform duration-300 group-hover:rotate-0" />

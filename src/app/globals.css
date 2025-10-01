@@ -281,6 +281,24 @@ a, button, [role="button"], .cursor-pointer {
   transform: rotateY(180deg);
 }
 
+/* Desktop Default Values */
+:root {
+  --cards-gap: 32px;
+  --grid-gap: 24px;
+  --flex-gap: 20px;
+  
+  /* Responsive Typography for Desktop */
+  --font-size-hero: 56px;
+  --font-size-section: 48px;
+  --font-size-contact: 20px;
+  --font-size-card: 24px;
+  --font-size-body: 16px;
+  
+  /* Responsive Section Padding for Desktop */
+  --section-padding-y: 80px;
+  --section-padding-x: 24px;
+}
+
 /* Responsive Gap Values for Mobile */
 @media (max-width: 768px) {
   :root {
@@ -293,6 +311,7 @@ a, button, [role="button"], .cursor-pointer {
     --font-size-section: 40px;
     --font-size-contact: 18px;
     --font-size-card: 20px;
+    --font-size-body: 16px;
     
     /* Responsive Section Padding for Mobile */
     --section-padding-y: 40px;

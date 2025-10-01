@@ -32,12 +32,12 @@ const getImageDimensions = () => {
   if (typeof window !== 'undefined') {
     const isMobile = window.innerWidth < 768;
     return {
-      width: isMobile ? 200 : 280,
-      height: isMobile ? 120 : 180,
-      gap: isMobile ? 12 : 20
+      width: isMobile ? 200 : 260,
+      height: isMobile ? 120 : 170,
+      gap: 16,
     };
   }
-  return { width: 280, height: 180, gap: 20 };
+  return { width: 260, height: 170, gap: 16 };
 };
 
 const IMAGE_WIDTH = 280; // Default for SSR
@@ -87,20 +87,28 @@ export default function HorizontalScroller() {
     updateRow(initialScroll);
   }, [dimensions]);
 
-  // Smooth animation loop with infinite looping
+  // Smooth animation loop with bounds (no duplication, single row)
   useEffect(() => {
     function animate() {
-      scrollCurrent.current += (scrollTarget.current - scrollCurrent.current) * 0.12;
-      // Infinite loop logic with responsive dimensions
+      const containerWidth = containerRef.current?.offsetWidth || 0;
       const singleRowWidth = images.length * dimensions.width + (images.length - 1) * dimensions.gap;
-      if (scrollCurrent.current < 0) {
-        scrollCurrent.current += singleRowWidth;
-        scrollTarget.current += singleRowWidth;
-      } else if (scrollCurrent.current > singleRowWidth) {
-        scrollCurrent.current -= singleRowWidth;
-        scrollTarget.current -= singleRowWidth;
+      const maxScroll = Math.max(singleRowWidth - containerWidth, 0);
+
+      scrollCurrent.current += (scrollTarget.current - scrollCurrent.current) * 0.12;
+
+      // seamless looping logic
+      const loopWidth = singleRowWidth; // length of one set
+      if (scrollCurrent.current >= loopWidth) {
+        scrollCurrent.current -= loopWidth;
+        scrollTarget.current -= loopWidth;
       }
+      if (scrollCurrent.current < 0) {
+        scrollCurrent.current += loopWidth;
+        scrollTarget.current += loopWidth;
+      }
+
       updateRow(scrollCurrent.current);
+
       animationFrame.current = requestAnimationFrame(animate);
     }
     animationFrame.current = requestAnimationFrame(animate);
@@ -114,7 +122,13 @@ export default function HorizontalScroller() {
       const rect = containerRef.current.getBoundingClientRect();
       const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
       if (isInViewport) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const singleRowWidth = images.length * dimensions.width + (images.length - 1) * dimensions.gap;
+        const maxScroll = Math.max(singleRowWidth - containerWidth, 0);
         scrollTarget.current += e.deltaY * 1.2;
+        // clamp immediately to avoid overshoot visual glitches
+        if (scrollTarget.current < 0) scrollTarget.current = 0;
+        if (scrollTarget.current > maxScroll) scrollTarget.current = maxScroll;
       }
     };
     window.addEventListener('wheel', handleGlobalWheel, { passive: true });
@@ -216,14 +230,14 @@ export default function HorizontalScroller() {
         className="flex absolute left-0 z-20"
         style={{ 
           pointerEvents: 'auto', 
-          width: (images.length * 2 * dimensions.width) + ((images.length * 2 - 1) * dimensions.gap), 
+          width: ((images.length * 2) * dimensions.width) + ((images.length * 2 - 1) * dimensions.gap),
           maxWidth: '100vw', 
-          top: isMobile ? '220px' : '280px', // Responsive positioning
+          top: isMobile ? '320px' : '380px', // Lowered to avoid subtitle overlap
           transform: 'translateY(-50%)',
           gap: `${dimensions.gap}px`
         }}
       >
-        {[...(shuffledImages.length ? shuffledImages : images), ...(shuffledImages.length ? shuffledImages : images)].map((src, i) => {
+        {[...((shuffledImages.length ? shuffledImages : images)), ...((shuffledImages.length ? shuffledImages : images))].map((src, i) => {
           // Extract image name without extension and path
           const name = src.split('/').pop()?.replace(/\.[^/.]+$/, '') ?? '';
           // Special deck shuffle for Youtube Thumbnail
@@ -242,7 +256,7 @@ export default function HorizontalScroller() {
             <div
               key={src + i}
               className="relative group flex flex-col items-center justify-end"
-              style={{ width: dimensions.width, height: dimensions.height, marginRight: i < images.length * 2 - 1 ? `${dimensions.gap}px` : '0' }}
+              style={{ width: dimensions.width, height: dimensions.height, marginRight: i < images.length - 1 ? `${dimensions.gap}px` : '0' }}
             >
               {/* Enhanced name overlay with better styling and positioning */}
               <span

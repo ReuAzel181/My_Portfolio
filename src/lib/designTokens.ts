@@ -51,6 +51,10 @@ export const TYPOGRAPHY = {
       DESKTOP: '24px',
       MOBILE: '20px'
     },
+    BODY: {
+      DESKTOP: '16px',
+      MOBILE: '16px'
+    },
   },
   
   // Font Weights
@@ -176,6 +180,10 @@ export const SPACING = {
     SECTION_PADDING_X: {
       DESKTOP: '24px',
       MOBILE: '16px'
+    },
+    HERO_PADDING: {
+      DESKTOP: '64px',
+      MOBILE: '16px'
     }
   },
   
@@ -283,6 +291,7 @@ export const RESPONSIVE_TYPOGRAPHY_CSS = `
     --font-size-section: ${TYPOGRAPHY.RESPONSIVE.SECTION.DESKTOP};
     --font-size-contact: ${TYPOGRAPHY.RESPONSIVE.CONTACT.DESKTOP};
     --font-size-card: ${TYPOGRAPHY.RESPONSIVE.CARD.DESKTOP};
+    --font-size-body: ${TYPOGRAPHY.RESPONSIVE.BODY.DESKTOP};
   }
   
   @media (max-width: 768px) {
@@ -291,19 +300,20 @@ export const RESPONSIVE_TYPOGRAPHY_CSS = `
       --font-size-section: ${TYPOGRAPHY.RESPONSIVE.SECTION.MOBILE};
       --font-size-contact: ${TYPOGRAPHY.RESPONSIVE.CONTACT.MOBILE};
       --font-size-card: ${TYPOGRAPHY.RESPONSIVE.CARD.MOBILE};
+      --font-size-body: ${TYPOGRAPHY.RESPONSIVE.BODY.MOBILE};
     }
   }
 `;
 
 // Utility functions for responsive typography
-export const getResponsiveTypography = (type: 'HERO' | 'SECTION' | 'CONTACT' | 'CARD') => ({
+export const getResponsiveTypography = (type: 'HERO' | 'SECTION' | 'CONTACT' | 'CARD' | 'BODY') => ({
   desktop: TYPOGRAPHY.RESPONSIVE[type].DESKTOP,
   mobile: TYPOGRAPHY.RESPONSIVE[type].MOBILE,
   css: `font-size: ${TYPOGRAPHY.RESPONSIVE[type].DESKTOP}; @media (max-width: 768px) { font-size: ${TYPOGRAPHY.RESPONSIVE[type].MOBILE}; }`
 })
 
 // Utility functions for responsive padding
-export const getResponsivePadding = (type: 'SECTION_PADDING' | 'SECTION_PADDING_Y' | 'SECTION_PADDING_X') => ({
+export const getResponsivePadding = (type: 'SECTION_PADDING' | 'SECTION_PADDING_Y' | 'SECTION_PADDING_X' | 'HERO_PADDING') => ({
   desktop: SPACING.RESPONSIVE[type].DESKTOP,
   mobile: SPACING.RESPONSIVE[type].MOBILE,
   css: `padding: ${SPACING.RESPONSIVE[type].DESKTOP}; @media (max-width: 768px) { padding: ${SPACING.RESPONSIVE[type].MOBILE}; }`
