@@ -1,514 +1,485 @@
 import Image from 'next/image';
-import { useRef, useEffect, useState } from 'react';
-import { TITLE_SIZES } from '@/lib/designTokens';
+  import { useRef, useEffect, useState } from 'react';
+  import { TITLE_SIZES } from '@/lib/designTokens';
 
-const images = [
-  '/ui-projects/Asenso.png',
-  '/ui-projects/ByteBean/ByteBean.png',
-  '/ui-projects/Fidget.png',
-  '/ui-projects/Poster.png',
-  '/ui-projects/Youtube Thumbnail.png',
-  '/ui-projects/AI - Secretary.png',
-  '/ui-projects/News Site.png',
-  '/ui-projects/QuizGame.png',
-  '/ui-projects/Translator.png',
-  '/ui-projects/Wine Recommender.png',
-];
+  const images = [
+    '/ui-projects/Asenso.png',
+    '/ui-projects/ByteBean/ByteBean.png',
+    '/ui-projects/Fidget.png',
+    '/ui-projects/Poster.png',
+    '/ui-projects/Youtube Thumbnail.png',
+    '/ui-projects/AI - Secretary.png',
+    '/ui-projects/News Site.png',
+    '/ui-projects/QuizGame.png',
+    '/ui-projects/Translator.png',
+    '/ui-projects/Wine Recommender.png',
+  ];
 
-const youtubeDeckImages = [
-  '/ui-projects/Youtube Thumbnail/Youtube Thumbnail.png',
-  '/ui-projects/Youtube Thumbnail/Youtube Thumbnail 1.png',
-  '/ui-projects/Youtube Thumbnail/Youtube Thumbnail 2.png',
-];
+  const youtubeDeckImages = [
+    '/ui-projects/Youtube Thumbnail/Youtube Thumbnail.png',
+    '/ui-projects/Youtube Thumbnail/Youtube Thumbnail 1.png',
+    '/ui-projects/Youtube Thumbnail/Youtube Thumbnail 2.png',
+  ];
 
-const byteBeanDeckImages = [
-  '/ui-projects/ByteBean/ByteBean.png',
-  '/ui-projects/ByteBean/ByteBean 1.png',
-  '/ui-projects/ByteBean/ByteBean 2.png',
-];
+  const byteBeanDeckImages = [
+    '/ui-projects/ByteBean/ByteBean.png',
+    '/ui-projects/ByteBean/ByteBean 1.png',
+    '/ui-projects/ByteBean/ByteBean 2.png',
+  ];
 
-// Responsive dimensions
-const getImageDimensions = () => {
-  if (typeof window !== 'undefined') {
-    const isMobile = window.innerWidth < 768;
-    return {
-      width: isMobile ? 200 : 260,
-      height: isMobile ? 120 : 170,
-      gap: 16,
-    };
-  }
-  return { width: 260, height: 170, gap: 16 };
-};
+  // Responsive dimensions
+  const getImageDimensions = () => {
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 768;
+      return {
+        width: isMobile ? 200 : 260,
+        height: isMobile ? 120 : 170,
+        gap: 12,
+      };
+    }
+    return { width: 260, height: 170, gap: 12 };
+  };
 
-const IMAGE_WIDTH = 280; // Default for SSR
-const IMAGE_HEIGHT = 180; // Default for SSR
-const GAP = 20; // Default for SSR
-const ROW_LENGTH = images.length * 2;
-const TOTAL_WIDTH = ROW_LENGTH * IMAGE_WIDTH + (ROW_LENGTH - 1) * GAP;
-const SINGLE_ROW_WIDTH = images.length * IMAGE_WIDTH + (images.length - 1) * GAP;
+  const IMAGE_WIDTH = 280; // Default for SSR
+  const IMAGE_HEIGHT = 180; // Default for SSR
+  const GAP = 20; // Default for SSR
+  const ROW_LENGTH = images.length * 2;
+  const TOTAL_WIDTH = ROW_LENGTH * IMAGE_WIDTH + (ROW_LENGTH - 1) * GAP;
+  const SINGLE_ROW_WIDTH = images.length * IMAGE_WIDTH + (images.length - 1) * GAP;
 
-export default function HorizontalScroller() {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const scrollTarget = useRef(0);
-  const scrollCurrent = useRef(0);
-  const animationFrame = useRef(0);
-  
-  // Responsive dimensions state
-  const [dimensions, setDimensions] = useState(getImageDimensions());
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // Touch gesture state
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [startScrollTarget, setStartScrollTarget] = useState(0);
-
-  // Handle responsive dimensions
-  useEffect(() => {
-    const handleResize = () => {
-      const newDimensions = getImageDimensions();
-      setDimensions(newDimensions);
-      setIsMobile(window.innerWidth < 768);
-    };
+  export default function HorizontalScroller() {
+    const rowRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const scrollTarget = useRef(0);
+    const scrollCurrent = useRef(0);
+    const animationFrame = useRef(0);
     
-    handleResize(); // Initial call
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    // Responsive dimensions state
+    const [dimensions, setDimensions] = useState(getImageDimensions());
+    const [isMobile, setIsMobile] = useState(false);
+    
+    // Touch gesture state
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [startScrollTarget, setStartScrollTarget] = useState(0);
 
-  // Center images by default (using single row width)
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const containerWidth = containerRef.current.offsetWidth;
-    const singleRowWidth = images.length * dimensions.width + (images.length - 1) * dimensions.gap;
-    const initialScroll = (singleRowWidth - containerWidth) / 2;
-    scrollTarget.current = initialScroll;
-    scrollCurrent.current = initialScroll;
-    updateRow(initialScroll);
-  }, [dimensions]);
-
-  // Smooth animation loop with bounds (no duplication, single row)
-  useEffect(() => {
-    function animate() {
-      const containerWidth = containerRef.current?.offsetWidth || 0;
-      const singleRowWidth = images.length * dimensions.width + (images.length - 1) * dimensions.gap;
-      const maxScroll = Math.max(singleRowWidth - containerWidth, 0);
-
-      scrollCurrent.current += (scrollTarget.current - scrollCurrent.current) * 0.12;
-
-      // seamless looping logic
-      const loopWidth = singleRowWidth; // length of one set
-      if (scrollCurrent.current >= loopWidth) {
-        scrollCurrent.current -= loopWidth;
-        scrollTarget.current -= loopWidth;
-      }
-      if (scrollCurrent.current < 0) {
-        scrollCurrent.current += loopWidth;
-        scrollTarget.current += loopWidth;
-      }
-
-      updateRow(scrollCurrent.current);
-
-      animationFrame.current = requestAnimationFrame(animate);
-    }
-    animationFrame.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame.current);
-  }, [dimensions]);
-
-  // Global scroll listener (no preventDefault)
-  useEffect(() => {
-    const handleGlobalWheel = (e: WheelEvent) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
-      if (isInViewport) {
-        const containerWidth = containerRef.current.offsetWidth;
-        const singleRowWidth = images.length * dimensions.width + (images.length - 1) * dimensions.gap;
-        const maxScroll = Math.max(singleRowWidth - containerWidth, 0);
-        scrollTarget.current += e.deltaY * 1.2;
-        // clamp immediately to avoid overshoot visual glitches
-        if (scrollTarget.current < 0) scrollTarget.current = 0;
-        if (scrollTarget.current > maxScroll) scrollTarget.current = maxScroll;
-      }
-    };
-    window.addEventListener('wheel', handleGlobalWheel, { passive: true });
-    return () => {
-      window.removeEventListener('wheel', handleGlobalWheel);
-    };
-  }, []);
-
-  // Touch event handlers for mobile
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
-    setStartX(e.touches[0].clientX);
-    setStartScrollTarget(scrollTarget.current);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const currentX = e.touches[0].clientX;
-    const deltaX = startX - currentX;
-    scrollTarget.current = startScrollTarget + deltaX * 2; // Multiply for sensitivity
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-  };
-
-  // Update row transform
-  function updateRow(scroll: number) {
-    if (rowRef.current) {
-      rowRef.current.style.transform = `translateX(${-scroll}px)`;
-    }
-  }
-
-  // Shuffle images array for random order
-  function shuffleArray<T>(array: T[]): T[] {
-    const arr = [...array];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
-  // Store shuffled images in state
-  const [shuffledImages, setShuffledImages] = useState<string[]>([]);
-  useEffect(() => {
-    setShuffledImages(shuffleArray(images));
-  }, []);
-
-  return (
-    <div>
-      <section
-        ref={containerRef}
-        className="relative w-full min-h-[400px] sm:min-h-[600px] flex flex-col items-center justify-center overflow-hidden touch-pan-y"
-        style={{
-          background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)',
-          boxShadow: '0 20px 60px 0 rgba(31, 38, 135, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-          zIndex: 1,
-          maxWidth: '100vw',
-          paddingTop: 'var(--section-padding-y)',
-          paddingBottom: 'var(--section-padding-y)',
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-      {/* Enhanced Section Title with Better Spacing and Positioning */}
-      <div className="absolute top-8 sm:top-20 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none px-4">
-        {/* Main Title with Enhanced Visibility */}
-        <div className="relative mb-4 sm:mb-8">
-          {/* Glowing background effect with better positioning */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/25 via-purple-400/35 to-pink-400/25 blur-2xl rounded-full scale-125" />
-          
-          {/* Main title with responsive typography */}
-          <h2 
-            className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 tracking-tight leading-tight drop-shadow-2xl"
-            style={{ fontSize: 'var(--font-size-section)' }}
-          >
-            Design & Graphics
-          </h2>
-          
-        </div>
-        
-        {/* Enhanced Subtitle with better spacing */}
-        <div className="relative mb-2 sm:mb-4">
-          <p 
-            className="text-white/95 font-medium tracking-wide leading-relaxed drop-shadow-lg"
-            style={{ fontSize: 'var(--font-size-card)' }}
-          >
-            A dynamic, immersive gallery
-          </p>
-        </div>
-        
-      </div>
-
-      {/* Enhanced Gallery Row with Better Positioning and Spacing */}
-      <div
-        ref={rowRef}
-        className="flex absolute left-0 z-20"
-        style={{ 
-          pointerEvents: 'auto', 
-          width: ((images.length * 2) * dimensions.width) + ((images.length * 2 - 1) * dimensions.gap),
-          maxWidth: '100vw', 
-          top: isMobile ? '320px' : '380px', // Lowered to avoid subtitle overlap
-          transform: 'translateY(-50%)',
-          gap: `${dimensions.gap}px`
-        }}
-      >
-        {[...((shuffledImages.length ? shuffledImages : images)), ...((shuffledImages.length ? shuffledImages : images))].map((src, i) => {
-          // Extract image name without extension and path
-          const name = src.split('/').pop()?.replace(/\.[^/.]+$/, '') ?? '';
-          // Special deck shuffle for Youtube Thumbnail
-          if (src === '/ui-projects/Youtube Thumbnail.png') {
-            return (
-              <YoutubeThumbnailDeck key={src + i} dimensions={dimensions} />
-            );
-          }
-          // Special deck shuffle for ByteBean
-          if (src === '/ui-projects/ByteBean/ByteBean.png') {
-            return (
-              <ByteBeanDeck key={src + i} dimensions={dimensions} />
-            );
-          }
-          return (
-            <div
-              key={src + i}
-              className="relative group flex flex-col items-center justify-end"
-              style={{ width: dimensions.width, height: dimensions.height, marginRight: i < images.length - 1 ? `${dimensions.gap}px` : '0' }}
-            >
-              {/* Enhanced name overlay with better styling and positioning */}
-              <span
-                className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
-                style={{ fontSize: 'var(--font-size-card)', whiteSpace: 'nowrap' }}
-              >
-                {name}
-                {/* Enhanced arrow pointing down */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
-              </span>
-              <div
-                className="w-full h-full flex items-center justify-center"
-                style={{ width: dimensions.width, height: dimensions.height }}
-              >
-                <Image
-                  src={src}
-                  alt={`Project ${i % images.length + 1}`}
-                  width={dimensions.width}
-                  height={dimensions.height}
-                  className="select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm transition-all duration-400 group-hover:scale-105 group-hover:-rotate-3 group-hover:shadow-3xl group-hover:border-white/50 group-hover:bg-white/10"
-                  draggable={false}
-                  priority={i < 2}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    // Handle responsive dimensions
+    useEffect(() => {
+      const handleResize = () => {
+        const newDimensions = getImageDimensions();
+        setDimensions(newDimensions);
+        setIsMobile(window.innerWidth < 768);
+      };
       
-      {/* Enhanced decorative elements with better positioning */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[85vw] h-96 bg-gradient-to-r from-blue-500/25 via-purple-500/35 to-pink-500/25 rounded-full blur-3xl z-0 animate-pulse" />
-      <div className="absolute -bottom-16 left-1/4 w-[45vw] h-48 bg-gradient-to-r from-cyan-400/20 via-blue-400/30 to-purple-400/20 rounded-full blur-2xl z-0" />
-      <div className="absolute -bottom-16 right-1/4 w-[45vw] h-48 bg-gradient-to-r from-purple-400/20 via-pink-400/30 to-red-400/20 rounded-full blur-2xl z-0" />
-    </section>
-    </div>
-  );
-}
+      handleResize(); // Initial call
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
-function YoutubeThumbnailDeck({ dimensions }: { dimensions: { width: number; height: number; gap: number } }) {
-  const [deck, setDeck] = useState(youtubeDeckImages);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isShuffling, setIsShuffling] = useState(false);
-  const [shufflePhase, setShufflePhase] = useState<'idle' | 'animating' | 'reordering'>('idle');
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // Initialize scroll position (infinite scroller starts at 0)
+    useEffect(() => {
+      scrollTarget.current = 0;
+      scrollCurrent.current = 0;
+      updateRow(0);
+    }, [dimensions]);
 
-  useEffect(() => {
-    if (!isHovered) {
-      setShufflePhase('idle');
-      setIsShuffling(false);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      return;
-    }
-    if (!isShuffling) {
-      setIsShuffling(true);
-      setShufflePhase('idle');
-    }
-    if (isShuffling && shufflePhase === 'idle') {
-      timeoutRef.current = setTimeout(() => {
-        setShufflePhase('animating');
-      }, 1500);
-    }
-    if (isShuffling && shufflePhase === 'animating') {
-      timeoutRef.current = setTimeout(() => {
-        setShufflePhase('reordering');
-      }, 700); // match animation duration
-    }
-    if (isShuffling && shufflePhase === 'reordering') {
-      setDeck((prev) => {
-        const next = [...prev];
-        const top = next.shift();
-        if (top) next.push(top);
-        return next;
-      });
-      setShufflePhase('idle');
-    }
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    // Smooth animation loop without bounds (infinite)
+    useEffect(() => {
+      function animate() {
+        scrollCurrent.current += (scrollTarget.current - scrollCurrent.current) * 0.12;
+        updateRow(scrollCurrent.current);
+        animationFrame.current = requestAnimationFrame(animate);
+      }
+      animationFrame.current = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(animationFrame.current);
+    }, [dimensions]);
+
+    // Global scroll listener (no preventDefault, no clamping for infinite)
+    useEffect(() => {
+      const handleGlobalWheel = (e: WheelEvent) => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isInViewport) {
+          scrollTarget.current += e.deltaY * 1.2;
+        }
+      };
+      window.addEventListener('wheel', handleGlobalWheel, { passive: true });
+      return () => {
+        window.removeEventListener('wheel', handleGlobalWheel);
+      };
+    }, []);
+
+    // Touch event handlers for mobile
+    const handleTouchStart = (e: React.TouchEvent) => {
+      setIsDragging(true);
+      setStartX(e.touches[0].clientX);
+      setStartScrollTarget(scrollTarget.current);
     };
-  }, [isHovered, isShuffling, shufflePhase]);
 
-  return (
-    <div
-      className="relative group flex flex-col items-center justify-end"
-      style={{ width: dimensions.width, height: dimensions.height }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Enhanced name overlay on hover */}
-      <span
-        className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
-        style={{ whiteSpace: 'nowrap' }}
-      >
-        Youtube Thumbnail
-        {/* Enhanced arrow pointing down */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
-      </span>
-      <div className="w-full h-full flex items-center justify-center relative" style={{ width: dimensions.width, height: dimensions.height }}>
-        {deck.map((src, idx) => {
-          // By default, no tilt. On hover, animate tilt and shuffle.
-          let cardClass = '';
-          if (isHovered) {
-            if (idx === 0 && shufflePhase === 'animating') {
-              cardClass = 'z-40 scale-105 -rotate-3 translate-y-[-40px] translate-x-6 opacity-0 transition-all duration-700 ease-in-out';
-            } else if (idx === 0) {
-              cardClass = 'z-30 scale-105 -rotate-3 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
-            } else if (idx === 1 && shufflePhase === 'animating') {
-              cardClass = 'z-20 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
-            } else if (idx === 1) {
-              cardClass = 'z-20 scale-100 rotate-0 translate-y-4 opacity-100 transition-all duration-700 ease-in-out';
-            } else if (idx === 2 && shufflePhase === 'animating') {
-              cardClass = 'z-10 scale-95 rotate-2 translate-y-4 opacity-80 transition-all duration-700 ease-in-out';
-            } else if (idx === 2) {
-              cardClass = 'z-10 scale-95 rotate-2 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
-            } else {
-              cardClass = 'opacity-0 pointer-events-none';
-            }
-          } else {
-            // Not hovered: all cards upright, stacked, no tilt
-            if (idx === 0) {
-              cardClass = 'z-30 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
-            } else if (idx === 1) {
-              cardClass = 'z-20 scale-95 rotate-0 translate-y-4 opacity-90 transition-all duration-700 ease-in-out';
-            } else if (idx === 2) {
-              cardClass = 'z-10 scale-90 rotate-0 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
-            } else {
-              cardClass = 'opacity-0 pointer-events-none';
-            }
-          }
-          return (
-            <Image
-              key={src}
-              src={src}
-              alt={`Youtube Thumbnail ${idx + 1}`}
-              width={dimensions.width}
-              height={dimensions.height}
-              className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
-              style={{ pointerEvents: 'none' }}
-              draggable={false}
-              priority={idx === 0}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ByteBeanDeck({ dimensions }: { dimensions: { width: number; height: number; gap: number } }) {
-  const [deck, setDeck] = useState(byteBeanDeckImages);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isShuffling, setIsShuffling] = useState(false);
-  const [shufflePhase, setShufflePhase] = useState<'idle' | 'animating' | 'reordering'>('idle');
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (!isHovered) {
-      setShufflePhase('idle');
-      setIsShuffling(false);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      return;
-    }
-    if (!isShuffling) {
-      setIsShuffling(true);
-      setShufflePhase('idle');
-    }
-    if (isShuffling && shufflePhase === 'idle') {
-      timeoutRef.current = setTimeout(() => {
-        setShufflePhase('animating');
-      }, 1500);
-    }
-    if (isShuffling && shufflePhase === 'animating') {
-      timeoutRef.current = setTimeout(() => {
-        setShufflePhase('reordering');
-      }, 700); // match animation duration
-    }
-    if (isShuffling && shufflePhase === 'reordering') {
-      setDeck((prev) => {
-        const next = [...prev];
-        const top = next.shift();
-        if (top) next.push(top);
-        return next;
-      });
-      setShufflePhase('idle');
-    }
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    const handleTouchMove = (e: React.TouchEvent) => {
+      if (!isDragging) return;
+      const currentX = e.touches[0].clientX;
+      const deltaX = startX - currentX;
+      scrollTarget.current = startScrollTarget + deltaX * 2; // Multiply for sensitivity
     };
-  }, [isHovered, isShuffling, shufflePhase]);
 
-  return (
-    <div
-      className="relative group flex flex-col items-center justify-end"
-      style={{ width: dimensions.width, height: dimensions.height }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Enhanced name overlay on hover */}
-      <span
-        className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
-        style={{ whiteSpace: 'nowrap' }}
-      >
-        ByteBean
-        {/* Enhanced arrow pointing down */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
-      </span>
-      <div className="w-full h-full flex items-center justify-center relative" style={{ width: dimensions.width, height: dimensions.height }}>
-        {deck.map((src, idx) => {
-          // By default, no tilt. On hover, animate tilt and shuffle.
-          let cardClass = '';
-          if (isHovered) {
-            if (idx === 0 && shufflePhase === 'animating') {
-              cardClass = 'z-40 scale-105 -rotate-3 translate-y-[-40px] translate-x-6 opacity-0 transition-all duration-700 ease-in-out';
-            } else if (idx === 0) {
-              cardClass = 'z-30 scale-105 -rotate-3 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
-            } else if (idx === 1 && shufflePhase === 'animating') {
-              cardClass = 'z-20 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
-            } else if (idx === 1) {
-              cardClass = 'z-20 scale-100 rotate-0 translate-y-4 opacity-100 transition-all duration-700 ease-in-out';
-            } else if (idx === 2 && shufflePhase === 'animating') {
-              cardClass = 'z-10 scale-95 rotate-2 translate-y-4 opacity-80 transition-all duration-700 ease-in-out';
-            } else if (idx === 2) {
-              cardClass = 'z-10 scale-95 rotate-2 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
-            } else {
-              cardClass = 'opacity-0 pointer-events-none';
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+    };
+
+    // Update row transform
+    function updateRow(scroll: number) {
+      if (rowRef.current) {
+        const singleRowWidth = images.length * dimensions.width + (images.length - 1) * dimensions.gap;
+        const normalized = ((scroll % singleRowWidth) + singleRowWidth) % singleRowWidth;
+        rowRef.current.style.transform = `translateX(${-normalized}px)`;
+      }
+    }
+
+    // Shuffle images array for random order
+    function shuffleArray<T>(array: T[]): T[] {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Store shuffled images in state
+    const [shuffledImages, setShuffledImages] = useState<string[]>([]);
+    useEffect(() => {
+      setShuffledImages(shuffleArray(images));
+    }, []);
+
+    return (
+      <div>
+        <section
+          ref={containerRef}
+          className="relative w-full min-h-[400px] sm:min-h-[600px] flex flex-col items-center justify-center overflow-hidden touch-pan-y"
+          style={{
+            background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)',
+            boxShadow: '0 20px 60px 0 rgba(31, 38, 135, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            zIndex: 1,
+            maxWidth: '100vw',
+            paddingTop: 'var(--section-padding-y)',
+            paddingBottom: 'var(--section-padding-y)',
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+        {/* Enhanced Section Title with Better Spacing and Positioning */}
+        <div className="absolute top-8 sm:top-20 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none px-4">
+          {/* Main Title with Enhanced Visibility */}
+          <div className="relative mb-4 sm:mb-8">
+            {/* Glowing background effect with better positioning */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/25 via-purple-400/35 to-pink-400/25 blur-2xl rounded-full scale-125" />
+            
+            {/* Main title with responsive typography */}
+            <h2 
+              className="relative font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 tracking-tight leading-tight drop-shadow-2xl"
+              style={{ fontSize: 'var(--font-size-section)' }}
+            >
+              Design & Graphics
+            </h2>
+            
+          </div>
+          
+          {/* Enhanced Subtitle with better spacing */}
+          <div className="relative mb-2 sm:mb-4">
+            <p 
+              className="text-white/95 font-medium tracking-wide leading-relaxed drop-shadow-lg"
+              style={{ fontSize: 'var(--font-size-card)' }}
+            >
+              A dynamic, immersive gallery
+            </p>
+          </div>
+          
+        </div>
+
+        {/* Enhanced Gallery Row with Better Positioning and Spacing */}
+        <div
+          ref={rowRef}
+          className={`flex relative ${isMobile ? 'mt-52' : 'mt-40'} z-20`}
+        >
+          {(() => {
+            const base = (shuffledImages.length ? shuffledImages : images);
+            const tiled = [...base, ...base, ...base];
+            return tiled.map((src, i) => {
+            // Extract image name without extension and path
+            const name = src.split('/').pop()?.replace(/\.[^/.]+$/, '') ?? '';
+            // Special deck shuffle for Youtube Thumbnail
+            if (src === '/ui-projects/Youtube Thumbnail.png') {
+              return (
+                <YoutubeThumbnailDeck key={src + i} dimensions={dimensions} />
+              );
             }
-          } else {
-            // Not hovered: all cards upright, stacked, no tilt
-            if (idx === 0) {
-              cardClass = 'z-30 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
-            } else if (idx === 1) {
-              cardClass = 'z-20 scale-95 rotate-0 translate-y-4 opacity-90 transition-all duration-700 ease-in-out';
-            } else if (idx === 2) {
-              cardClass = 'z-10 scale-90 rotate-0 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
-            } else {
-              cardClass = 'opacity-0 pointer-events-none';
+            // Special deck shuffle for ByteBean
+            if (src === '/ui-projects/ByteBean/ByteBean.png') {
+              return (
+                <ByteBeanDeck key={src + i} dimensions={dimensions} />
+              );
             }
-          }
-          return (
-            <Image
-              key={src}
-              src={src}
-              alt={`ByteBean ${idx + 1}`}
-              width={dimensions.width}
-              height={dimensions.height}
-              className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
-              style={{ pointerEvents: 'none' }}
-              draggable={false}
-              priority={idx === 0}
-            />
-          );
-        })}
+            return (
+              <div
+                key={src + i}
+                className="relative group flex flex-col items-center justify-end"
+                style={{ width: dimensions.width, height: dimensions.height, marginRight: `${dimensions.gap}px` }}
+              >
+                {/* Enhanced name overlay with better styling and positioning */}
+                <span
+                  className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
+                  style={{ fontSize: 'var(--font-size-card)', whiteSpace: 'nowrap' }}
+                >
+                  {name}
+                  {/* Enhanced arrow pointing down */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
+                </span>
+                <div
+                  className="w-full h-full flex items-center justify-center"
+                  style={{ width: dimensions.width, height: dimensions.height }}
+                >
+                  <Image
+                    src={src}
+                    alt={`Project ${i % images.length + 1}`}
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    className="select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm transition-all duration-400 group-hover:scale-105 group-hover:-rotate-3 group-hover:shadow-3xl group-hover:border-white/50 group-hover:bg-white/10"
+                    draggable={false}
+                    priority={i < 2}
+                  />
+                </div>
+              </div>
+            );
+            });
+          })()}
+        </div>
+        
+        {/* Enhanced decorative elements with better positioning */}
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[85vw] h-96 bg-gradient-to-r from-blue-500/25 via-purple-500/35 to-pink-500/25 rounded-full blur-3xl z-0 animate-pulse" />
+        <div className="absolute -bottom-16 left-1/4 w-[45vw] h-48 bg-gradient-to-r from-cyan-400/20 via-blue-400/30 to-purple-400/20 rounded-full blur-2xl z-0" />
+        <div className="absolute -bottom-16 right-1/4 w-[45vw] h-48 bg-gradient-to-r from-purple-400/20 via-pink-400/30 to-red-400/20 rounded-full blur-2xl z-0" />
+      </section>
       </div>
-    </div>
-  );
-}
+    );
+  }
+
+  function YoutubeThumbnailDeck({ dimensions }: { dimensions: { width: number; height: number; gap: number } }) {
+    const [deck, setDeck] = useState(youtubeDeckImages);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isShuffling, setIsShuffling] = useState(false);
+    const [shufflePhase, setShufflePhase] = useState<'idle' | 'animating' | 'reordering'>('idle');
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+      if (!isHovered) {
+        setShufflePhase('idle');
+        setIsShuffling(false);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        return;
+      }
+      if (!isShuffling) {
+        setIsShuffling(true);
+        setShufflePhase('idle');
+      }
+      if (isShuffling && shufflePhase === 'idle') {
+        timeoutRef.current = setTimeout(() => {
+          setShufflePhase('animating');
+        }, 1500);
+      }
+      if (isShuffling && shufflePhase === 'animating') {
+        timeoutRef.current = setTimeout(() => {
+          setShufflePhase('reordering');
+        }, 700); // match animation duration
+      }
+      if (isShuffling && shufflePhase === 'reordering') {
+        setDeck((prev) => {
+          const next = [...prev];
+          const top = next.shift();
+          if (top) next.push(top);
+          return next;
+        });
+        setShufflePhase('idle');
+      }
+      return () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      };
+    }, [isHovered, isShuffling, shufflePhase]);
+
+    return (
+      <div
+        className="relative group flex flex-col items-center justify-end"
+        style={{ width: dimensions.width, height: dimensions.height }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Enhanced name overlay on hover */}
+        <span
+          className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          Youtube Thumbnail
+          {/* Enhanced arrow pointing down */}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
+        </span>
+        <div className="w-full h-full flex items-center justify-center relative" style={{ width: dimensions.width, height: dimensions.height }}>
+          {deck.map((src, idx) => {
+            // By default, no tilt. On hover, animate tilt and shuffle.
+            let cardClass = '';
+            if (isHovered) {
+              if (idx === 0 && shufflePhase === 'animating') {
+                cardClass = 'z-40 scale-105 -rotate-3 translate-y-[-40px] translate-x-6 opacity-0 transition-all duration-700 ease-in-out';
+              } else if (idx === 0) {
+                cardClass = 'z-30 scale-105 -rotate-3 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
+              } else if (idx === 1 && shufflePhase === 'animating') {
+                cardClass = 'z-20 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
+              } else if (idx === 1) {
+                cardClass = 'z-20 scale-100 rotate-0 translate-y-4 opacity-100 transition-all duration-700 ease-in-out';
+              } else if (idx === 2 && shufflePhase === 'animating') {
+                cardClass = 'z-10 scale-95 rotate-2 translate-y-4 opacity-80 transition-all duration-700 ease-in-out';
+              } else if (idx === 2) {
+                cardClass = 'z-10 scale-95 rotate-2 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
+              } else {
+                cardClass = 'opacity-0 pointer-events-none';
+              }
+            } else {
+              // Not hovered: all cards upright, stacked, no tilt
+              if (idx === 0) {
+                cardClass = 'z-30 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
+              } else if (idx === 1) {
+                cardClass = 'z-20 scale-95 rotate-0 translate-y-4 opacity-90 transition-all duration-700 ease-in-out';
+              } else if (idx === 2) {
+                cardClass = 'z-10 scale-90 rotate-0 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
+              } else {
+                cardClass = 'opacity-0 pointer-events-none';
+              }
+            }
+            return (
+              <Image
+                key={src}
+                src={src}
+                alt={`Youtube Thumbnail ${idx + 1}`}
+                width={dimensions.width}
+                height={dimensions.height}
+                className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
+                style={{ pointerEvents: 'none' }}
+                draggable={false}
+                priority={idx === 0}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  function ByteBeanDeck({ dimensions }: { dimensions: { width: number; height: number; gap: number } }) {
+    const [deck, setDeck] = useState(byteBeanDeckImages);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isShuffling, setIsShuffling] = useState(false);
+    const [shufflePhase, setShufflePhase] = useState<'idle' | 'animating' | 'reordering'>('idle');
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+      if (!isHovered) {
+        setShufflePhase('idle');
+        setIsShuffling(false);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        return;
+      }
+      if (!isShuffling) {
+        setIsShuffling(true);
+        setShufflePhase('idle');
+      }
+      if (isShuffling && shufflePhase === 'idle') {
+        timeoutRef.current = setTimeout(() => {
+          setShufflePhase('animating');
+        }, 1500);
+      }
+      if (isShuffling && shufflePhase === 'animating') {
+        timeoutRef.current = setTimeout(() => {
+          setShufflePhase('reordering');
+        }, 700); // match animation duration
+      }
+      if (isShuffling && shufflePhase === 'reordering') {
+        setDeck((prev) => {
+          const next = [...prev];
+          const top = next.shift();
+          if (top) next.push(top);
+          return next;
+        });
+        setShufflePhase('idle');
+      }
+      return () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      };
+    }, [isHovered, isShuffling, shufflePhase]);
+
+    return (
+      <div
+        className="relative group flex flex-col items-center justify-end"
+        style={{ width: dimensions.width, height: dimensions.height }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Enhanced name overlay on hover */}
+        <span
+          className="absolute -top-16 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gradient-to-r from-gray-900/98 to-black/98 backdrop-blur-md text-white text-sm font-bold opacity-0 group-hover:opacity-100 group-hover:-translate-y-4 transition-all duration-400 pointer-events-none select-none shadow-2xl z-30 border border-white/20"
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          ByteBean
+          {/* Enhanced arrow pointing down */}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-gray-900/98" />
+        </span>
+        <div className="w-full h-full flex items-center justify-center relative" style={{ width: dimensions.width, height: dimensions.height }}>
+          {deck.map((src, idx) => {
+            // By default, no tilt. On hover, animate tilt and shuffle.
+            let cardClass = '';
+            if (isHovered) {
+              if (idx === 0 && shufflePhase === 'animating') {
+                cardClass = 'z-40 scale-105 -rotate-3 translate-y-[-40px] translate-x-6 opacity-0 transition-all duration-700 ease-in-out';
+              } else if (idx === 0) {
+                cardClass = 'z-30 scale-105 -rotate-3 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
+              } else if (idx === 1 && shufflePhase === 'animating') {
+                cardClass = 'z-20 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
+              } else if (idx === 1) {
+                cardClass = 'z-20 scale-100 rotate-0 translate-y-4 opacity-100 transition-all duration-700 ease-in-out';
+              } else if (idx === 2 && shufflePhase === 'animating') {
+                cardClass = 'z-10 scale-95 rotate-2 translate-y-4 opacity-80 transition-all duration-700 ease-in-out';
+              } else if (idx === 2) {
+                cardClass = 'z-10 scale-95 rotate-2 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
+              } else {
+                cardClass = 'opacity-0 pointer-events-none';
+              }
+            } else {
+              // Not hovered: all cards upright, stacked, no tilt
+              if (idx === 0) {
+                cardClass = 'z-30 scale-100 rotate-0 translate-y-0 opacity-100 transition-all duration-700 ease-in-out';
+              } else if (idx === 1) {
+                cardClass = 'z-20 scale-95 rotate-0 translate-y-4 opacity-90 transition-all duration-700 ease-in-out';
+              } else if (idx === 2) {
+                cardClass = 'z-10 scale-90 rotate-0 translate-y-8 opacity-80 transition-all duration-700 ease-in-out';
+              } else {
+                cardClass = 'opacity-0 pointer-events-none';
+              }
+            }
+            return (
+              <Image
+                key={src}
+                src={src}
+                alt={`ByteBean ${idx + 1}`}
+                width={dimensions.width}
+                height={dimensions.height}
+                className={`select-none object-contain rounde d-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
+                style={{ pointerEvents: 'none' }}
+                draggable={false}
+                priority={idx === 0}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }

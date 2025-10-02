@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { portfolioData } from '@/data/portfolio'
+import { useChatMode } from '@/hooks/useChatMode'
 
 // AI Icon Component
 const AIIcon = () => (
@@ -93,6 +94,174 @@ const knowledgeBase: KnowledgeBase = {
   experience: portfolioData.personal.bio
 }
 
+// Personal favorites dataset for hybrid responses
+const personalData = {
+  movie: 'Interstellar',
+  actor: 'Andrew Garfield, Tom Hanks',
+  song: 'Solo Mission by Waiian',
+  musician: 'Gorillaz, Maroon 5',
+  book: 'PSCY 101',
+  author: 'TPC',
+  tvShow: 'Suits (2011–2019)',
+  anime: 'Jujutsu Kaisen, Hunter x Hunter, Monster',
+  food: 'Ramen',
+  drink: 'Coffee (CMac), Carbonated (Royal)',
+  dessert: 'Graham Bar',
+  snack: 'Pier',
+  color: 'Mint Blue – Calming',
+  season: 'Rainy',
+  day: 'Sunday (Attending church)',
+  time: '11 PM when going to sleep',
+  hobby: 'Reading books, watching anime',
+  sportWatch: 'Chess, UFC',
+  sportPlay: 'Chess',
+  outdoor: 'Planting',
+  indoor: 'Fixing things',
+  relaxPlace: 'Bedroom',
+  city: 'Tagaytay',
+  subject: 'Science, Philosophy, Psychology',
+  teacher: 'Sir Cy (Philosophy Teacher)',
+  memory: 'Everything — the feeling of being a kid',
+  game: 'Chess, Mobile Legends, Sudoku',
+  apps: 'TikTok, Minecraft, YouTube',
+  quote: '“Ang comfort zone ay simenteryo ng ebolusyon.” – Gl',
+  scent: 'Aqua Bergamot',
+  animals: 'Fish, Mantis, Beetle, Spider',
+  flowers: 'Sunflower, Orchids',
+  brands: 'Infinity, Hiraya, Senioritos, Highmnds',
+  relaxAfter: 'Sleeping',
+  holiday: 'New Year',
+  toy: 'Teks',
+  aboutSelf: 'Always craves learning',
+  skill: 'Designing',
+  draw: 'Concepts like characters',
+  creativityTool: 'Figma',
+  inspire: 'My mom',
+} as const
+
+// Detect intent key for personal mode (greetings + favorites/topics)
+function getPersonalIntentKey(message: string): string {
+  const m = message.toLowerCase()
+  const greetingKeywords = [
+    'hello','hi','hey','yo','sup','wazzup','whats up',"what's up",'kumusta','kamusta','good morning','good evening'
+  ]
+  if (greetingKeywords.some(k => m.includes(k))) return 'greeting'
+
+  const checks: Array<[string[], keyof typeof personalData]> = [
+    [["favorite movie","favourite movie","film"], 'movie'],
+    [["favorite actor","favourite actor","actress"], 'actor'],
+    [["favorite song","favourite song"], 'song'],
+    [["favorite musician","favourite musician","band"], 'musician'],
+    [["favorite book","favourite book","novel"], 'book'],
+    [["favorite author","favourite author"], 'author'],
+    [["favorite tv show","favourite tv show","series"], 'tvShow'],
+    [["favorite anime","favourite anime","cartoon"], 'anime'],
+    [["favorite food","favourite food"], 'food'],
+    [["favorite drink","favourite drink","beverage"], 'drink'],
+    [["favorite dessert","favourite dessert"], 'dessert'],
+    [["favorite snack","favourite snack"], 'snack'],
+    [["favorite color","favourite color","colour"], 'color'],
+    [["favorite season","favourite season"], 'season'],
+    [["favorite day","favourite day","day of the week"], 'day'],
+    [["favorite time","favourite time","time of day"], 'time'],
+    [["favorite hobby","favourite hobby","pastime"], 'hobby'],
+    [["favorite sport to watch","favourite sport to watch","watch sport"], 'sportWatch'],
+    [["favorite sport to play","favourite sport to play","play sport"], 'sportPlay'],
+    [["outdoor activity"], 'outdoor'],
+    [["indoor activity"], 'indoor'],
+    [["place to relax"], 'relaxPlace'],
+    [["favorite city","favourite city","visited city"], 'city'],
+    [["favorite subject","favourite subject"], 'subject'],
+    [["favorite teacher","favourite teacher"], 'teacher'],
+    [["favorite childhood memory","favourite childhood memory"], 'memory'],
+    [["favorite game","favourite game"], 'game'],
+    [["favorite app","favourite app"], 'apps'],
+    [["favorite quote","favourite quote"], 'quote'],
+    [["favorite smell","favourite smell","scent"], 'scent'],
+    [["favorite animal","favourite animal"], 'animals'],
+    [["favorite flower","favourite flower","plant"], 'flowers'],
+    [["favorite brand","favourite brand","store"], 'brands'],
+    [["relax after a long day"], 'relaxAfter'],
+    [["favorite holiday","favourite holiday","celebration"], 'holiday'],
+    [["childhood toy"], 'toy'],
+    [["favorite thing about yourself","favourite thing about yourself"], 'aboutSelf'],
+    [["favorite skill","favourite skill"], 'skill'],
+    [["favorite thing to draw","favourite thing to draw","design"], 'draw'],
+    [["app or tool for creativity","creative tool"], 'creativityTool'],
+    [["person who inspires","character who inspires","inspires you"], 'inspire'],
+  ]
+  for (const [phrases, key] of checks) {
+    if (phrases.some(p => m.includes(p))) return key
+  }
+  return 'misc'
+}
+
+// Varied personal responses with repetition awareness and casual vibe
+function generatePersonalResponse(message: string, repetitionCount: number): string | null {
+  const m = message.toLowerCase()
+  const intent = getPersonalIntentKey(m)
+
+  // Greetings: casual, friendly, sometimes humorous
+  if (intent === 'greeting') {
+    const base = [
+      "Wazzup! I’m Raizel. How’s your day going?",
+      "Hey hey! Kumusta? Want to chat about anything fun?",
+      "Yo! Hello there—I’m all ears. What’s on your mind?",
+      "Kumusta! Chill lang tayo—fire away your questions."
+    ]
+    const note = repetitionCount > 1 ? [
+      "You’ve greeted me a couple times—love the energy 🙂",
+      "Is this deja vu or are we vibing again?",
+      "Haha, greeting streak unlocked. Keep it going!"
+    ] : []
+    const pick = base[Math.floor(Math.random() * base.length)]
+    const suffix = note.length && Math.random() < 0.6 ? ` ${note[Math.floor(Math.random() * note.length)]}` : ''
+    return `${pick}${suffix}`
+  }
+
+  // Favorites and topics: varied templates
+  if (intent !== 'misc') {
+    const key = intent as keyof typeof personalData
+    const value = personalData[key]
+    if (!value) return null
+    const templates = [
+      `Personal take: ${value}.`,
+      `If you ask me—${value}.`,
+      `Low-key obsessed with ${value}.`,
+      `My go-to? ${value}.`
+    ]
+    const repeatedNotes = repetitionCount > 1 ? [
+      "You asked that earlier—consistency is a strength 😉",
+      "We’ve covered that—still the same answer, promise.",
+      "Haha, persistent! I like it. Same vibe though."
+    ] : []
+    const main = templates[Math.floor(Math.random() * templates.length)]
+    const tail = repeatedNotes.length && Math.random() < 0.7 ? ` ${repeatedNotes[Math.floor(Math.random() * repeatedNotes.length)]}` : ''
+    return `${main}${tail}`
+  }
+
+  // No specific match: let fallback handle
+  return null
+}
+
+// Casual fallback for personal mode, no website context
+function generatePersonalFallbackResponse(message: string, repetitionCount: number): string {
+  const casual = [
+    "Hmm, interesting. Tell me more—I’m here for the vibes.",
+    "I feel you. Wanna riff on that a bit?",
+    "That’s a cool thought. What sparked it?",
+    "Love that energy. Where do you wanna take this?"
+  ]
+  const repeated = repetitionCount > 1 ? [
+    "You’re circling back—are we testing my memory?",
+    "We’re looping a bit—wanna dive deeper or switch topics?",
+    "Haha, déjà vu! I’m still with you though."
+  ] : []
+  const base = casual[Math.floor(Math.random() * casual.length)]
+  const note = repeated.length && Math.random() < 0.6 ? ` ${repeated[Math.floor(Math.random() * repeated.length)]}` : ''
+  return `${base}${note}`
+}
+
 // Enhanced local response generation
 const generateLocalResponse = async (message: string, context: KnowledgeBase): Promise<string> => {
   const lowerMessage = message.toLowerCase()
@@ -148,6 +317,8 @@ export default function AIAssistant() {
   const [isThinking, setIsThinking] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { mode } = useChatMode()
+  const [personalIntentCounts, setPersonalIntentCounts] = useState<Record<string, number>>({})
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -178,6 +349,27 @@ export default function AIAssistant() {
     setIsThinking(true)
 
     try {
+      // Personal mode: fully local, casual, repetition-aware. No website context.
+      if (mode === 'personal') {
+        const intent = getPersonalIntentKey(inputValue)
+        const nextCount = (personalIntentCounts[intent] || 0) + 1
+        setPersonalIntentCounts(prev => ({ ...prev, [intent]: nextCount }))
+
+        const personal = generatePersonalResponse(inputValue, nextCount) 
+          ?? generatePersonalFallbackResponse(inputValue, nextCount)
+
+        const delayMs = 1000 + Math.floor(Math.random() * 2000)
+        await new Promise(res => setTimeout(res, delayMs))
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: personal,
+          isUser: false,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, aiMessage])
+        return
+      }
+
       // Call the API endpoint
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -203,19 +395,30 @@ export default function AIAssistant() {
         timestamp: new Date()
       }
 
+      // Random thinking delay between 1–3 seconds before responding
+      const delayMs = 1000 + Math.floor(Math.random() * 2000)
+      await new Promise(res => setTimeout(res, delayMs))
       setMessages(prev => [...prev, aiMessage])
     } catch (error) {
       console.error('Error sending message:', error)
       
       // Fallback to local response if API fails
       try {
-        const fallbackResponse = await generateLocalResponse(inputValue, knowledgeBase)
+        let fallbackResponse: string
+        if (mode === 'personal') {
+          const personal = generatePersonalResponse(inputValue)
+          fallbackResponse = personal ?? await generateLocalResponse(inputValue, knowledgeBase)
+        } else {
+          fallbackResponse = await generateLocalResponse(inputValue, knowledgeBase)
+        }
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           text: fallbackResponse,
           isUser: false,
           timestamp: new Date()
         }
+        const delayMs = 1000 + Math.floor(Math.random() * 2000)
+        await new Promise(res => setTimeout(res, delayMs))
         setMessages(prev => [...prev, aiMessage])
       } catch (fallbackError) {
         const errorMessage: Message = {
@@ -262,14 +465,18 @@ export default function AIAssistant() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
-              className="w-80 h-96 bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+              className={`w-80 h-96 backdrop-blur-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden border ${
+                mode === 'personal' ? 'bg-rose-50/95 border-rose-200/60' : 'bg-white/95 border-gray-200/50'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex justify-between items-center">
+              <div className={`${
+                'text-white p-4 flex justify-between items-center'
+              } ${mode === 'personal' ? 'bg-gradient-to-r from-rose-500 to-fuchsia-600' : 'bg-gradient-to-r from-blue-500 to-purple-600'}`}>
                 <div className="flex items-center space-x-2">
                   <AIIcon />
-                  <span className="font-medium">Raizel</span>
+                  <span className="font-medium">{mode === 'personal' ? 'Raizel • Personal' : 'Raizel'}</span>
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
@@ -298,7 +505,7 @@ export default function AIAssistant() {
                       className={`max-w-[80%] p-3 rounded-2xl text-sm ${
                         message.isUser
                           ? 'bg-blue-500 text-white rounded-br-md'
-                          : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                          : mode === 'personal' ? 'bg-rose-100 text-rose-900 rounded-bl-md' : 'bg-gray-100 text-gray-800 rounded-bl-md'
                       }`}
                     >
                       {message.isUser ? message.text : formatMessageText(message.text, message.id)}
@@ -308,7 +515,7 @@ export default function AIAssistant() {
                 
                 {isThinking && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 p-3 rounded-2xl rounded-bl-md">
+                    <div className={`${mode === 'personal' ? 'bg-rose-100' : 'bg-gray-100'} p-3 rounded-2xl rounded-bl-md`}>
                       <ThinkingDots />
                     </div>
                   </div>
@@ -349,12 +556,17 @@ export default function AIAssistant() {
         {/* AI Chat Button */}
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2 group"
+          className={`text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2 group ring-1 ${
+            mode === 'personal'
+              ? 'bg-gradient-to-r from-rose-500 to-fuchsia-600 ring-pink-300'
+              : 'bg-gradient-to-r from-blue-500 to-purple-600 ring-blue-300'
+          }`}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          aria-label={mode === 'personal' ? 'Open Personal Chat' : 'Open AI Chat'}
         >
           <AIIcon />
-          <span className="font-medium">Ask AI</span>
+          <span className="font-medium">{mode === 'personal' ? 'Personal Chat' : 'Ask AI'}</span>
         </motion.button>
       </div>
     </>

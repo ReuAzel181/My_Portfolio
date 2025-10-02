@@ -18,6 +18,11 @@ html, body {
   cursor: none !important;
 }
 
+/* Prevent horizontal scrolling on the root element */
+html {
+  overflow-x: hidden;
+}
+
 a, button, [role="button"], .cursor-pointer {
   cursor: none !important;
 }
@@ -70,7 +75,7 @@ a, button, [role="button"], .cursor-pointer {
   --font-size-hero: 56px;
   --font-size-section: 48px;
   --font-size-contact: 20px;
-  --font-size-card: 24px;
+  --font-size-card: 16px;
 
   /* Responsive Section Padding */
   --section-padding-y: 80px;
@@ -131,6 +136,7 @@ a, button, [role="button"], .cursor-pointer {
     color: var(--text-primary);
     transition: all 0.3s ease;
     overflow-x: hidden;
+    font-family: var(--font-poppins), system-ui, -apple-system, sans-serif !important;
   }
 }
 
@@ -291,7 +297,7 @@ a, button, [role="button"], .cursor-pointer {
   --font-size-hero: 56px;
   --font-size-section: 48px;
   --font-size-contact: 20px;
-  --font-size-card: 24px;
+  --font-size-card: 16px;
   --font-size-body: 16px;
   
   /* Responsive Section Padding for Desktop */
@@ -310,7 +316,7 @@ a, button, [role="button"], .cursor-pointer {
     --font-size-hero: 48px;
     --font-size-section: 40px;
     --font-size-contact: 18px;
-    --font-size-card: 20px;
+    --font-size-card: 16px;
     --font-size-body: 16px;
     
     /* Responsive Section Padding for Mobile */

@@ -139,7 +139,7 @@ const Projects = () => {
   }
 
   return (
-    <section id="projects" className="bg-[var(--bg-primary)] px-16 py-16">
+    <section id="projects" className="bg-[var(--bg-primary)] px-4 md:px-16 py-12 md:py-16">
       <div className="max-w-7xl mx-auto">
         {loading ? (
           <h2 className="text-4xl font-bold mb-8 text-center text-[#385780] dark:text-[#5A7A9D]">
@@ -179,8 +179,8 @@ const Projects = () => {
               </p>
             </motion.div>
 
-            {/* ✅ Project grid */}
-            <div className="flex justify-center gap-4 overflow-visible">
+            {/* ✅ Project grid: two per row on mobile, single row (4 cols) on desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 overflow-visible">
               {projects.map((project, index) => (
                 <motion.div
                   key={project.id}
@@ -191,7 +191,7 @@ const Projects = () => {
                     delay: index * 0.2,
                     ease: [0.25, 0.1, 0.25, 1],
                   }}
-                  className="w-full sm:w-1/2 lg:w-1/4"
+                  className="w-full"
                 >
                   <Tilt
                     options={defaultTiltOptions}
@@ -199,7 +199,7 @@ const Projects = () => {
                   >
                     <div
                       onClick={() => handleOpenModal(project)}
-                      className="cursor-pointer h-full transform-gpu transition-all duration-500 ease-out hover:shadow-lg rounded-xl overflow-hidden hover:-translate-y-1 bg-[var(--bg-secondary)] border border-gray-800/20"
+                      className="cursor-pointer h-full transform-gpu transition-all duration-500 ease-out hover:shadow-lg rounded-2xl md:rounded-2xl overflow-hidden hover:-translate-y-1 bg-[var(--bg-secondary)] border border-gray-800/20"
                     >
                       <div className="relative aspect-[4/3] w-full">
                         <Image
@@ -210,21 +210,21 @@ const Projects = () => {
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />
                       </div>
-                      <div className="p-6">
+                      <div className="p-4 md:p-6 space-y-2 md:space-y-3">
                         <h3
-                          className="font-bold mb-2"
-                          style={{ fontSize: '24px' }}
+                          className="font-bold"
+                          style={{ fontSize: '18px' }}
                         >
                           {project.title}
                         </h3>
-                        <p className="text-gray-400 mb-4">
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           {project.description}
                         </p>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5 md:gap-2">
                           {project.tags.map((tag) => (
                             <span
                               key={tag}
-                              className={`px-3 py-1 text-sm rounded-full font-medium ${
+                              className={`px-2 md:px-3 py-0.5 md:py-1 text-xs md:text-sm rounded-full font-medium ${
                                 TAG_COLORS[tag] ||
                                 'bg-gray-800 text-gray-200'
                               }`}

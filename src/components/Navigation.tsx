@@ -8,6 +8,7 @@ import { AnimatePresence } from 'framer-motion'
 import { SunIcon, MoonIcon } from '@heroicons/react/24/solid'
 import RippleButton from './RippleButton'
 import Music from './Music'
+import PersonalChatToggle from './PersonalChatToggle'
 
 /* -------------------- THEME TOGGLE -------------------- */
 const ThemeToggle = () => {
@@ -270,7 +271,7 @@ const Navigation = () => {
               <ThemeToggle />
             </div>
 
-            {/* Mobile menu button */}
+            {/* Mobile menu button and toggles */}
             <div className="flex items-center space-x-4 md:hidden">
               <ThemeToggle />
               <button
@@ -306,7 +307,12 @@ const Navigation = () => {
           animate={{ height: isOpen ? 'auto' : 0 }}
           className="md:hidden overflow-hidden border-t border-gray-700"
         >
-          <div className="px-4 pt-2 pb-3 space-y-1 sm:px-6">
+          <div className="px-4 pt-2 pb-3 space-y-3 sm:px-6">
+            {/* Chat mode toggle inside drawer */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700 dark:text-gray-300">Chat Mode</span>
+              <PersonalChatToggle />
+            </div>
             {menuItems.map(item => (
               <RippleButton
                 key={item.name}

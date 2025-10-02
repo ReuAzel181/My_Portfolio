@@ -624,12 +624,12 @@ const Hero = () => {
             </div>
           </motion.div>
 
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center lg:justify-start">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center lg:justify-start mt-2">
             <a 
               href="https://github.com/ReuAzel181" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="button-primary flex items-center gap-2"
+              className="button-primary flex items-center justify-center gap-2 w-full sm:w-auto text-center"
             >
               View My Work
               <svg 
@@ -644,7 +644,7 @@ const Hero = () => {
             </a>
             <motion.button 
               onClick={handleDownload}
-              className={`button-outline relative flex items-center gap-2 ${isDownloading ? 'pointer-events-none' : ''}`}
+              className={`button-outline relative flex items-center justify-center gap-2 w-full sm:w-auto text-center ${isDownloading ? 'pointer-events-none' : ''}`}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.2 }}
