@@ -26,6 +26,8 @@ export default function CustomCursor() {
   const [isOverLink, setIsOverLink] = useState(false)
   const [isDarkTheme, setIsDarkTheme] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [isIdle, setIsIdle] = useState(false)
+  const [idleState, setIdleState] = useState<number>(1)
 
   const { isLoading } = useLoading()
   const pathname = usePathname()
@@ -91,6 +93,18 @@ export default function CustomCursor() {
       return x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight;
     };
 
+    let idleTimer: number | null = null
+    const resetIdleTimer = () => {
+      if (idleTimer) {
+        window.clearTimeout(idleTimer)
+      }
+      setIsIdle(false)
+      idleTimer = window.setTimeout(() => {
+        setIsIdle(true)
+        setIdleState(Math.floor(Math.random() * 5) + 1)
+      }, 5000)
+    }
+
     const moveCursor = (e: MouseEvent) => {
       if (!isMounted || isLoading) return;
       
@@ -108,6 +122,7 @@ export default function CustomCursor() {
       const newPosition = { x: x - 15, y: y - 15 };
       positionRef.current = newPosition;
       setPosition(newPosition);
+      resetIdleTimer()
 
       // Only update visibility and scale based on viewport bounds
       if (!isInViewport(x, y)) {
@@ -128,6 +143,7 @@ export default function CustomCursor() {
       if (cursorDisabled) return
       
       setIsClicking(true)
+      resetIdleTimer()
     }
 
     const handleMouseUp = () => {
@@ -138,6 +154,7 @@ export default function CustomCursor() {
       if (cursorDisabled) return
       
       setIsClicking(false)
+      resetIdleTimer()
     }
 
     const handleLinkHover = (e: MouseEvent) => {
@@ -162,6 +179,7 @@ export default function CustomCursor() {
         const isPointer = target.classList.contains('cursor-pointer');
         
         setIsOverLink(isDirectLink || hasLinkParent || isButtonRole || isPointer);
+        resetIdleTimer()
       } catch (error) {
         console.error('Error in handleLinkHover:', error);
         setIsOverLink(false);
@@ -188,6 +206,7 @@ export default function CustomCursor() {
     window.addEventListener('mouseup', handleMouseUp)
     document.addEventListener('mouseleave', handleMouseLeave)
     document.addEventListener('mouseout', handleMouseOut)
+    resetIdleTimer()
 
     return () => {
       observer.disconnect()
@@ -197,6 +216,7 @@ export default function CustomCursor() {
       window.removeEventListener('mouseup', handleMouseUp)
       document.removeEventListener('mouseleave', handleMouseLeave)
       document.removeEventListener('mouseout', handleMouseOut)
+      if (idleTimer) window.clearTimeout(idleTimer)
       setIsMounted(false)
     }
   }, [isMounted, isLoading])
@@ -226,7 +246,7 @@ export default function CustomCursor() {
         }}
         style={{ transform: 'translateZ(0)' }}
       >
-        <div className="relative w-[30px] h-[30px] -rotate-[15deg]">
+        <div className={`relative w-[30px] h-[30px] -rotate-[15deg] ${isIdle ? 'cursor-idle-active cursor-idle-' + idleState : ''}`}>
           {/* Primary cursor for light theme */}
           <Image
             src="/Cursor - Primary.png"

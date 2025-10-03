@@ -35,6 +35,8 @@ a, button, [role="button"], .cursor-pointer {
 }
 
 :root {
+  /* Global font binding */
+  --font-body: var(--font-poppins);
   /* Light Theme Colors - Neo-Futuristic */
   --light-primary: #2D7FF9;      /* Main blue - vibrant */
   --light-primary-50: #F8FAFC;   /* Warmer, softer light background */
@@ -136,9 +138,26 @@ a, button, [role="button"], .cursor-pointer {
     color: var(--text-primary);
     transition: all 0.3s ease;
     overflow-x: hidden;
-    font-family: var(--font-poppins), system-ui, -apple-system, sans-serif !important;
+    font-family: var(--font-body), system-ui, -apple-system, sans-serif !important;
   }
 }
+
+/* Idle cursor animations */
+.cursor-idle-active { will-change: transform; }
+@keyframes cursorIdleRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.cursor-idle-1 { animation: cursorIdleRotate 3s linear infinite; }
+
+@keyframes cursorIdleSway { 0%{ transform: rotate(-5deg) translateX(-2px);} 50%{ transform: rotate(5deg) translateX(2px);} 100%{ transform: rotate(-5deg) translateX(-2px);} }
+.cursor-idle-2 { animation: cursorIdleSway 2.2s ease-in-out infinite; }
+
+@keyframes cursorIdleFloat { 0%{ transform: translateY(0);} 50%{ transform: translateY(-6px);} 100%{ transform: translateY(0);} }
+.cursor-idle-3 { animation: cursorIdleFloat 2s ease-in-out infinite; }
+
+@keyframes cursorIdleOrbit { 0%{ transform: translate(0,0) rotate(0deg);} 25%{ transform: translate(4px,0) rotate(90deg);} 50%{ transform: translate(4px,4px) rotate(180deg);} 75%{ transform: translate(0,4px) rotate(270deg);} 100%{ transform: translate(0,0) rotate(360deg);} }
+.cursor-idle-4 { animation: cursorIdleOrbit 3.2s ease-in-out infinite; }
+
+@keyframes cursorIdleWiggle { 0%,100%{ transform: rotate(0deg);} 20%{ transform: rotate(10deg);} 40%{ transform: rotate(-10deg);} 60%{ transform: rotate(6deg);} 80%{ transform: rotate(-6deg);} }
+.cursor-idle-5 { animation: cursorIdleWiggle 1.8s ease-in-out infinite; }
 
 @layer components {
   .heading-text {

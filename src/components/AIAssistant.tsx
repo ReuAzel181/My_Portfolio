@@ -319,6 +319,14 @@ export default function AIAssistant() {
   const inputRef = useRef<HTMLInputElement>(null)
   const { mode } = useChatMode()
   const [personalIntentCounts, setPersonalIntentCounts] = useState<Record<string, number>>({})
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const update = () => setIsMobile(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+  const isPersonalActive = mode === 'personal' && isMobile
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -349,8 +357,8 @@ export default function AIAssistant() {
     setIsThinking(true)
 
     try {
-      // Personal mode: fully local, casual, repetition-aware. No website context.
-      if (mode === 'personal') {
+      // Personal mode: only active on mobile; fully local, casual, repetition-aware, with webhook logging.
+      if (isPersonalActive) {
         const intent = getPersonalIntentKey(inputValue)
         const nextCount = (personalIntentCounts[intent] || 0) + 1
         setPersonalIntentCounts(prev => ({ ...prev, [intent]: nextCount }))
@@ -367,6 +375,14 @@ export default function AIAssistant() {
           timestamp: new Date()
         }
         setMessages(prev => [...prev, aiMessage])
+        // Fire-and-forget webhook logging via server-side route to avoid CORS and credential exposure
+        try {
+          fetch('/api/personal-webhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userMessage: inputValue, aiReply: personal })
+          }).catch(() => {})
+        } catch {}
         return
       }
 
@@ -466,17 +482,17 @@ export default function AIAssistant() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
               className={`w-80 h-96 backdrop-blur-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden border ${
-                mode === 'personal' ? 'bg-rose-50/95 border-rose-200/60' : 'bg-white/95 border-gray-200/50'
+                isPersonalActive ? 'bg-rose-50/95 border-rose-200/60' : 'bg-white/95 border-gray-200/50'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className={`${
                 'text-white p-4 flex justify-between items-center'
-              } ${mode === 'personal' ? 'bg-gradient-to-r from-rose-500 to-fuchsia-600' : 'bg-gradient-to-r from-blue-500 to-purple-600'}`}>
+              } ${isPersonalActive ? 'bg-gradient-to-r from-rose-500 to-fuchsia-600' : 'bg-gradient-to-r from-blue-500 to-purple-600'}`}>
                 <div className="flex items-center space-x-2">
                   <AIIcon />
-                  <span className="font-medium">{mode === 'personal' ? 'Raizel • Personal' : 'Raizel'}</span>
+                  <span className="font-medium">{isPersonalActive ? 'Raizel • Personal' : 'Raizel'}</span>
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
@@ -505,7 +521,7 @@ export default function AIAssistant() {
                       className={`max-w-[80%] p-3 rounded-2xl text-sm ${
                         message.isUser
                           ? 'bg-blue-500 text-white rounded-br-md'
-                          : mode === 'personal' ? 'bg-rose-100 text-rose-900 rounded-bl-md' : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                          : isPersonalActive ? 'bg-rose-100 text-rose-900 rounded-bl-md' : 'bg-gray-100 text-gray-800 rounded-bl-md'
                       }`}
                     >
                       {message.isUser ? message.text : formatMessageText(message.text, message.id)}
@@ -515,9 +531,9 @@ export default function AIAssistant() {
                 
                 {isThinking && (
                   <div className="flex justify-start">
-                    <div className={`${mode === 'personal' ? 'bg-rose-100' : 'bg-gray-100'} p-3 rounded-2xl rounded-bl-md`}>
-                      <ThinkingDots />
-                    </div>
+                  <div className={`${isPersonalActive ? 'bg-rose-100' : 'bg-gray-100'} p-3 rounded-2xl rounded-bl-md`}>
+                    <ThinkingDots />
+                  </div>
                   </div>
                 )}
                 
@@ -557,16 +573,16 @@ export default function AIAssistant() {
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
           className={`text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2 group ring-1 ${
-            mode === 'personal'
+            isPersonalActive
               ? 'bg-gradient-to-r from-rose-500 to-fuchsia-600 ring-pink-300'
               : 'bg-gradient-to-r from-blue-500 to-purple-600 ring-blue-300'
           }`}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          aria-label={mode === 'personal' ? 'Open Personal Chat' : 'Open AI Chat'}
+          aria-label={isPersonalActive ? 'Open Personal Chat' : 'Open AI Chat'}
         >
           <AIIcon />
-          <span className="font-medium">{mode === 'personal' ? 'Personal Chat' : 'Ask AI'}</span>
+          <span className="font-medium">{isPersonalActive ? 'Personal Chat' : 'Ask AI'}</span>
         </motion.button>
       </div>
     </>
