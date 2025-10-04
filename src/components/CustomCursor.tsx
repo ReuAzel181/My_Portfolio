@@ -102,7 +102,7 @@ export default function CustomCursor() {
       idleTimer = window.setTimeout(() => {
         setIsIdle(true)
         setIdleState(Math.floor(Math.random() * 5) + 1)
-      }, 5000)
+      }, 10000)
     }
 
     const moveCursor = (e: MouseEvent) => {
@@ -253,8 +253,7 @@ export default function CustomCursor() {
             alt="Cursor"
             width={30}
             height={30}
-            style={{ width: 30, height: 'auto' }}
-            priority
+            style={{ width: 'auto', height: 'auto' }}
             className={`
               absolute top-0 left-0
               transition-all duration-150
@@ -269,8 +268,7 @@ export default function CustomCursor() {
             alt="Cursor"
             width={30}
             height={30}
-            style={{ width: 30, height: 'auto' }}
-            priority
+            style={{ width: 'auto', height: 'auto' }}
             className={`
               absolute top-0 left-0
               transition-all duration-150

@@ -179,8 +179,8 @@ const Projects = () => {
               </p>
             </motion.div>
 
-            {/* ✅ Project grid: two per row on mobile, single row (4 cols) on desktop */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 overflow-visible">
+            {/* ✅ Project grid: single column on mobile, scaling to 2 and 4 columns */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 overflow-visible">
               {projects.map((project, index) => (
                 <motion.div
                   key={project.id}
@@ -253,7 +253,104 @@ const Projects = () => {
             onClick={handleCloseModal}
             className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm"
           >
-            {/* Modal content here */}
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.98, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.98, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+              className="relative w-full max-w-2xl bg-[var(--bg-secondary)] border border-gray-800/20 rounded-xl overflow-hidden shadow-xl"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between p-4 md:p-5 border-b border-gray-800/15">
+                <div>
+                  <h3 className="text-lg md:text-xl font-bold">{selectedProject.title}</h3>
+                  <p className="text-gray-400 text-sm mt-1">{selectedProject.description}</p>
+                </div>
+                <button
+                  onClick={handleCloseModal}
+                  aria-label="Close"
+                  className="rounded-lg p-2 hover:bg-gray-700/20 transition"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Media / Carousel */}
+              <div className="relative w-full bg-black/5">
+                {selectedProject.carouselImages && selectedProject.carouselImages.length > 0 ? (
+                  <div className="relative">
+                    <div className="relative aspect-[16/9] w-full">
+                      <Image
+                        src={selectedProject.carouselImages[carouselPage]}
+                        alt={`${selectedProject.title} image ${carouselPage + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
+                      />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2">
+                      {selectedProject.carouselImages.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCarouselPage(i)}
+                          className={`h-1.5 w-1.5 rounded-full ${i === carouselPage ? 'bg-white' : 'bg-white/40'}`}
+                          aria-label={`Go to image ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative aspect-[16/9] w-full">
+                    <Image
+                      src={selectedProject.image}
+                      alt={selectedProject.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Body */}
+              <div className="p-4 md:p-5 space-y-4">
+                <p className="text-gray-300 text-sm">
+                  {selectedProject.longDescription}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProject.technologies.map((tech) => (
+                    <span key={tech} className="px-3 py-1 text-xs rounded-full bg-gray-700/30 text-gray-200">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Links */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {selectedProject.liveUrl && (
+                    <a
+                      href={selectedProject.liveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-mint-500 text-black font-medium hover:bg-mint-400 transition"
+                    >
+                      Visit Live
+                    </a>
+                  )}
+                  {selectedProject.githubUrl && (
+                    <a
+                      href={selectedProject.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-gray-700 text-white font-medium hover:bg-gray-600 transition"
+                    >
+                      View Code
+                    </a>
+                  )}
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -32,12 +32,12 @@ import Image from 'next/image';
     if (typeof window !== 'undefined') {
       const isMobile = window.innerWidth < 768;
       return {
-        width: isMobile ? 200 : 260,
-        height: isMobile ? 120 : 170,
-        gap: 12,
+        width: isMobile ? 210 : 280,
+        height: isMobile ? 130 : 180,
+        gap: isMobile ? 16 : 24,
       };
     }
-    return { width: 260, height: 170, gap: 12 };
+    return { width: 280, height: 180, gap: 24 };
   };
 
   const IMAGE_WIDTH = 280; // Default for SSR
@@ -202,7 +202,7 @@ import Image from 'next/image';
         {/* Enhanced Gallery Row with Better Positioning and Spacing */}
         <div
           ref={rowRef}
-          className={`flex relative ${isMobile ? 'mt-52' : 'mt-40'} z-20`}
+          className={`flex relative ${isMobile ? 'mt-56' : 'mt-44'} z-20 px-4 sm:px-10`}
         >
           {(() => {
             const base = (shuffledImages.length ? shuffledImages : images);
@@ -246,10 +246,10 @@ import Image from 'next/image';
                     alt={`Project ${i % images.length + 1}`}
                     width={dimensions.width}
                     height={dimensions.height}
-                    className="select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm transition-all duration-400 group-hover:scale-105 group-hover:-rotate-3 group-hover:shadow-3xl group-hover:border-white/50 group-hover:bg-white/10"
-                    draggable={false}
-                    priority={i < 2}
-                  />
+                className="select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm transition-all duration-400 group-hover:scale-105 group-hover:-rotate-3 group-hover:shadow-3xl group-hover:border-white/50 group-hover:bg-white/10"
+                draggable={false}
+                // Remove priority to avoid preload warnings
+              />
                 </div>
               </div>
             );
@@ -366,7 +366,7 @@ import Image from 'next/image';
                 className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
                 style={{ pointerEvents: 'none' }}
                 draggable={false}
-                priority={idx === 0}
+                // Remove priority to avoid preload warnings
               />
             );
           })}
@@ -472,10 +472,10 @@ import Image from 'next/image';
                 alt={`ByteBean ${idx + 1}`}
                 width={dimensions.width}
                 height={dimensions.height}
-                className={`select-none object-contain rounde d-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
+                className={`select-none object-contain rounded-2xl border-2 border-white/25 shadow-2xl bg-gradient-to-br from-white/8 to-transparent backdrop-blur-sm absolute left-0 top-0 ${cardClass}`}
                 style={{ pointerEvents: 'none' }}
                 draggable={false}
-                priority={idx === 0}
+                // Remove priority to avoid preload warnings
               />
             );
           })}

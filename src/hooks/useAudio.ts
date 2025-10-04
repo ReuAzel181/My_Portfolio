@@ -17,6 +17,8 @@ export const useAudio = ({ src, title, artist, autoPlay = false, loop = true }: 
 
   useEffect(() => {
     const audio = new Audio(src);
+    // Prevent preloading to avoid network warnings/errors until user interaction
+    audio.preload = 'none';
     audio.loop = loop;
     audioRef.current = audio;
 
@@ -40,7 +42,7 @@ export const useAudio = ({ src, title, artist, autoPlay = false, loop = true }: 
     audio.addEventListener('ended', handleEnded);
 
     if (autoPlay) {
-      audio.play().then(() => setIsPlaying(true)).catch(console.error);
+      audio.play().then(() => setIsPlaying(true)).catch(() => {});
     }
 
     return () => {
@@ -57,7 +59,7 @@ export const useAudio = ({ src, title, artist, autoPlay = false, loop = true }: 
         await audioRef.current.play();
         setIsPlaying(true);
       } catch (error) {
-        console.error('Error playing audio:', error);
+        // Suppress play errors in console
       }
     }
   };
@@ -103,4 +105,4 @@ export const useAudio = ({ src, title, artist, autoPlay = false, loop = true }: 
     title,
     artist
   };
-}; 
+};

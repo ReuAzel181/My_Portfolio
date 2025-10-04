@@ -4,14 +4,15 @@ export const useAnalytics = () => {
   useEffect(() => {
     const trackPageView = async () => {
       try {
+        const DEBUG = false
         // Check if we've already tracked this session
         const hasTracked = sessionStorage.getItem('visit_tracked');
         if (hasTracked) {
-          console.log('Session already tracked, skipping');
+          if (DEBUG) console.log('Session already tracked, skipping');
           return;
         }
 
-        console.log('Starting analytics collection...');
+        if (DEBUG) console.log('Starting analytics collection...');
 
         // Get detailed system information
         const getSystemInfo = async () => {
@@ -100,7 +101,7 @@ export const useAnalytics = () => {
                 userName = 'Privacy Protected';
               }
             } catch (e) {
-              console.log('Could not get detailed system info:', e);
+              if (DEBUG) console.log('Could not get detailed system info:', e);
             }
 
             // Get enhanced hardware info
@@ -132,7 +133,7 @@ export const useAnalytics = () => {
               architecture: (navigator as any).cpuClass || (navigator as any).oscpu || 'Unknown'
             };
           } catch (error) {
-            console.error('Error getting system info:', error);
+            if (DEBUG) console.error('Error getting system info:', error);
             return null;
           }
         };
@@ -165,7 +166,7 @@ export const useAnalytics = () => {
           session: sessionInfo
         };
 
-        console.log('Sending analytics data:', analyticsData);
+        if (DEBUG) console.log('Sending analytics data:', analyticsData);
 
         // Send the data
         const response = await fetch('/api/analytics', {
@@ -178,19 +179,18 @@ export const useAnalytics = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
-          console.error('Analytics error response:', errorData);
+          if (DEBUG) console.error('Analytics error response:', errorData);
           throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
-
-        console.log('Analytics sent successfully');
+        if (DEBUG) console.log('Analytics sent successfully');
         sessionStorage.setItem('visit_tracked', 'true');
 
       } catch (error) {
-        console.error('Failed to collect or send analytics:', error);
+        if (DEBUG) console.error('Failed to collect or send analytics:', error);
       }
     };
 
     // Call trackPageView immediately
     trackPageView();
   }, []);
-}; 
+};

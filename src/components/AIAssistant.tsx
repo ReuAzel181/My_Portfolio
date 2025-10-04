@@ -113,6 +113,10 @@ const personalData = {
   day: 'Sunday (Attending church)',
   time: '11 PM when going to sleep',
   hobby: 'Reading books, watching anime',
+  freeTime: 'Reading, watching anime, fixing things, tinkering with design',
+  identity: 'I’m Raizel — your friendly personal assistant on this site',
+  age: 'Early 20s',
+  relationshipStatus: 'Private; keeping it friendly and focused here',
   sportWatch: 'Chess, UFC',
   sportPlay: 'Chess',
   outdoor: 'Planting',
@@ -142,10 +146,9 @@ const personalData = {
 // Detect intent key for personal mode (greetings + favorites/topics)
 function getPersonalIntentKey(message: string): string {
   const m = message.toLowerCase()
-  const greetingKeywords = [
-    'hello','hi','hey','yo','sup','wazzup','whats up',"what's up",'kumusta','kamusta','good morning','good evening'
-  ]
-  if (greetingKeywords.some(k => m.includes(k))) return 'greeting'
+  // Use word boundaries to avoid matching substrings like 'yo' inside 'you'
+  const greetingPattern = /\b(hello|hi|hey|yo|sup|wazzup|whats up|what's up|kumusta|kamusta|good morning|good evening)\b/
+  if (greetingPattern.test(m)) return 'greeting'
 
   const checks: Array<[string[], keyof typeof personalData]> = [
     [["favorite movie","favourite movie","film"], 'movie'],
@@ -177,11 +180,15 @@ function getPersonalIntentKey(message: string): string {
     [["favorite game","favourite game"], 'game'],
     [["favorite app","favourite app"], 'apps'],
     [["favorite quote","favourite quote"], 'quote'],
-    [["favorite smell","favourite smell","scent"], 'scent'],
+    [["favorite smell","favourite smell","scent","favorite scent","favourite scent","fav scent"], 'scent'],
     [["favorite animal","favourite animal"], 'animals'],
     [["favorite flower","favourite flower","plant"], 'flowers'],
     [["favorite brand","favourite brand","store"], 'brands'],
     [["relax after a long day"], 'relaxAfter'],
+    [["who are you","what are you","who is raizel"], 'identity'],
+    [["your age","how old are you","what is your age","age"], 'age'],
+    [["free time","in free time","when you are bored","when you are bored or in free time","bored"], 'freeTime'],
+    [["your hobby","your hobbies","hobbies","what is your hobbies"], 'hobby'],
     [["favorite holiday","favourite holiday","celebration"], 'holiday'],
     [["childhood toy"], 'toy'],
     [["favorite thing about yourself","favourite thing about yourself"], 'aboutSelf'],
@@ -189,6 +196,7 @@ function getPersonalIntentKey(message: string): string {
     [["favorite thing to draw","favourite thing to draw","design"], 'draw'],
     [["app or tool for creativity","creative tool"], 'creativityTool'],
     [["person who inspires","character who inspires","inspires you"], 'inspire'],
+    [["relationship","status","are you single","single","married","do you have a girlfriend","girlfriend","do you have a boyfriend","boyfriend"], 'relationshipStatus'],
   ]
   for (const [phrases, key] of checks) {
     if (phrases.some(p => m.includes(p))) return key
@@ -207,35 +215,99 @@ function generatePersonalResponse(message: string, repetitionCount: number): str
       "Wazzup! I’m Raizel. How’s your day going?",
       "Hey hey! Kumusta? Want to chat about anything fun?",
       "Yo! Hello there—I’m all ears. What’s on your mind?",
-      "Kumusta! Chill lang tayo—fire away your questions."
+      "Kumusta! Chill lang tayo—fire away your questions.",
+      "Hi! I’m Raizel—what are we curious about today?",
+      "Hello hello! Ready when you are. Any topic works.",
+      "Hey! What’s up? I’m here if you wanna chat.",
+      "Yo! Let’s dive into something interesting—your call."
     ]
     const note = repetitionCount > 1 ? [
       "You’ve greeted me a couple times—love the energy 🙂",
       "Is this deja vu or are we vibing again?",
       "Haha, greeting streak unlocked. Keep it going!"
     ] : []
-    const pick = base[Math.floor(Math.random() * base.length)]
+    const pick = base[(Math.floor(Math.random() * base.length) + repetitionCount) % base.length]
     const suffix = note.length && Math.random() < 0.6 ? ` ${note[Math.floor(Math.random() * note.length)]}` : ''
     return `${pick}${suffix}`
   }
 
-  // Favorites and topics: varied templates
+  // Identity / age / free-time / hobby / relationship: natural phrasing
+  if (['identity','age','freeTime','hobby','relationshipStatus'].includes(intent)) {
+    switch (intent) {
+      case 'identity': {
+        const variants = [
+          "I’m Raizel — the personal AI assistant for this portfolio.",
+          "I’m Raizel, your guide around projects, skills, and ideas here.",
+          "Call me Raizel; I help you explore and get answers fast."
+        ]
+        return variants[(Math.floor(Math.random() * variants.length) + repetitionCount) % variants.length]
+      }
+      case 'age': {
+        const variants = [
+          "I’m in my early 20s.",
+          "Early 20s — young, curious, still learning tons.",
+          "Around early 20s; curiosity keeps me moving."
+        ]
+        return variants[(Math.floor(Math.random() * variants.length) + repetitionCount) % variants.length]
+      }
+      case 'freeTime': {
+        const variants = [
+          "I read, watch anime, and tinker with design when free.",
+          "Free time looks like reading, anime, and fixing little things.",
+          "When bored: learn something, tweak designs, or watch anime."
+        ]
+        return variants[(Math.floor(Math.random() * variants.length) + repetitionCount) % variants.length]
+      }
+      case 'hobby': {
+        const variants = [
+          "Mostly reading and anime — with design tinkering on the side.",
+          "Reading, anime, and sometimes chess or small design tweaks.",
+          "Reading and anime are the staples; creative tinkering too."
+        ]
+        return variants[(Math.floor(Math.random() * variants.length) + repetitionCount) % variants.length]
+      }
+      case 'relationshipStatus': {
+        const variants = [
+          "I keep that private — here to chat and help.",
+          "I don’t share relationship status; let’s focus on the fun stuff.",
+          "That stays private; we can talk anime, projects, anything."
+        ]
+        return variants[(Math.floor(Math.random() * variants.length) + repetitionCount) % variants.length]
+      }
+    }
+  }
+
+  // Favorites and other topics: varied templates
   if (intent !== 'misc') {
     const key = intent as keyof typeof personalData
     const value = personalData[key]
     if (!value) return null
+    // Special-case: anime liking questions
+    if (key === 'anime' && (m.includes('like anime') || m.includes('do you like anime') || m.includes('love anime'))) {
+      const variants = [
+        `Yep — big fan of anime. Favorites: ${value}.`,
+        `Absolutely! I’m into anime. Top picks: ${value}.`,
+        `For sure — anime is a vibe. I like ${value}.`
+      ]
+      return variants[(Math.floor(Math.random() * variants.length) + repetitionCount) % variants.length]
+    }
     const templates = [
       `Personal take: ${value}.`,
       `If you ask me—${value}.`,
       `Low-key obsessed with ${value}.`,
-      `My go-to? ${value}.`
+      `My go-to? ${value}.`,
+      `I’d say ${value}.`,
+      `I lean toward ${value}.`,
+      `Hard to beat ${value}.`,
+      `Probably ${value}—it just hits right.`,
     ]
     const repeatedNotes = repetitionCount > 1 ? [
       "You asked that earlier—consistency is a strength 😉",
       "We’ve covered that—still the same answer, promise.",
-      "Haha, persistent! I like it. Same vibe though."
+      "Haha, persistent! I like it. Same vibe though.",
+      `Looping back—still ${value}.`,
     ] : []
-    const main = templates[Math.floor(Math.random() * templates.length)]
+    const main = templates[(Math.floor(Math.random() * templates.length) + repetitionCount) % templates.length]
     const tail = repeatedNotes.length && Math.random() < 0.7 ? ` ${repeatedNotes[Math.floor(Math.random() * repeatedNotes.length)]}` : ''
     return `${main}${tail}`
   }
@@ -250,14 +322,18 @@ function generatePersonalFallbackResponse(message: string, repetitionCount: numb
     "Hmm, interesting. Tell me more—I’m here for the vibes.",
     "I feel you. Wanna riff on that a bit?",
     "That’s a cool thought. What sparked it?",
-    "Love that energy. Where do you wanna take this?"
+    "Love that energy. Where do you wanna take this?",
+    "Solid question. Want me to share a take or just vibe?",
+    "Curious one. Care to add context or a direction?",
+    "We can explore that. What angle are you thinking?",
+    "I’m game—wanna go deep or keep it light?",
   ]
   const repeated = repetitionCount > 1 ? [
     "You’re circling back—are we testing my memory?",
     "We’re looping a bit—wanna dive deeper or switch topics?",
     "Haha, déjà vu! I’m still with you though."
   ] : []
-  const base = casual[Math.floor(Math.random() * casual.length)]
+  const base = casual[(Math.floor(Math.random() * casual.length) + repetitionCount) % casual.length]
   const note = repeated.length && Math.random() < 0.6 ? ` ${repeated[Math.floor(Math.random() * repeated.length)]}` : ''
   return `${base}${note}`
 }
@@ -422,7 +498,11 @@ export default function AIAssistant() {
       try {
         let fallbackResponse: string
         if (mode === 'personal') {
-          const personal = generatePersonalResponse(inputValue)
+          const intent = getPersonalIntentKey(inputValue)
+          const nextCount = (personalIntentCounts[intent] || 0) + 1
+          setPersonalIntentCounts(prev => ({ ...prev, [intent]: nextCount }))
+          const personal = generatePersonalResponse(inputValue, nextCount) 
+            ?? generatePersonalFallbackResponse(inputValue, nextCount)
           fallbackResponse = personal ?? await generateLocalResponse(inputValue, knowledgeBase)
         } else {
           fallbackResponse = await generateLocalResponse(inputValue, knowledgeBase)

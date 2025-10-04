@@ -6,19 +6,18 @@ import { useEffect } from 'react';
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    // DISABLE SERVICE WORKER TO CLEAR CACHE
-    console.log('🚨 SERVICE WORKER DISABLED FOR CACHE CLEARING');
+    // DISABLE SERVICE WORKER TO CLEAR CACHE (silenced)
     
     // Unregister any existing service workers
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
           registration.unregister().then(() => {
-            console.log('✅ Service Worker unregistered');
+            // unregistered
           });
         }
       });
     }
   }, []);
   return null;
-} 
+}
