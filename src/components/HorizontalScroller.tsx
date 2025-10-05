@@ -171,7 +171,7 @@ import Image from 'next/image';
           onTouchEnd={handleTouchEnd}
         >
         {/* Enhanced Section Title with Better Spacing and Positioning */}
-        <div className="absolute top-8 sm:top-20 left-1/2 -translate-x-1/2 z-30 text-center pointer-events-none select-none px-4">
+        <div className="absolute top-8 sm:top-20 inset-x-0 z-30 text-center pointer-events-none select-none px-4">
           {/* Main Title with Enhanced Visibility */}
           <div className="relative mb-4 sm:mb-8">
             {/* Glowing background effect with better positioning */}
@@ -190,7 +190,7 @@ import Image from 'next/image';
           {/* Enhanced Subtitle with better spacing */}
           <div className="relative mb-2 sm:mb-4">
             <p 
-              className="text-white/95 font-medium tracking-wide leading-relaxed drop-shadow-lg"
+              className="text-white/95 font-medium tracking-wide leading-relaxed drop-shadow-lg whitespace-nowrap"
               style={{ fontSize: 'var(--font-size-card)' }}
             >
               A dynamic, immersive gallery
@@ -202,7 +202,7 @@ import Image from 'next/image';
         {/* Enhanced Gallery Row with Better Positioning and Spacing */}
         <div
           ref={rowRef}
-          className={`flex relative ${isMobile ? 'mt-56' : 'mt-44'} z-20 px-4 sm:px-10`}
+          className={`flex relative ${isMobile ? 'mt-56' : 'mt-44'} z-20 px-4`}
         >
           {(() => {
             const base = (shuffledImages.length ? shuffledImages : images);

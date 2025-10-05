@@ -431,7 +431,7 @@ const Hero = () => {
       >
         <div className="max-w-xl lg:pl-0 text-center lg:text-left">
           <h1 
-            className="font-bold mb-4" 
+            className="font-bold mb-6" 
             style={{ 
               color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG,
               fontSize: 'var(--font-size-hero)'
@@ -506,7 +506,7 @@ const Hero = () => {
                 transformOrigin: 'center center'
               }}
             >
-              {"Reu   Uzziel".split("").map((letter, index) => (
+              {"Reu Uzziel".split("").map((letter, index) => (
                 <motion.span
                   key={`${nameKey}-${index}`}
                   className="inline-block"
@@ -541,7 +541,7 @@ const Hero = () => {
                   }}
                   style={{
                     display: letter === " " ? "inline" : "inline-block",
-                    marginRight: letter === " " ? "0.1em" : "0"
+                    marginRight: letter === " " ? "0" : "0"
                   }}
                 >
                   {letter === " " ? "\u00A0" : letter}
@@ -554,7 +554,7 @@ const Hero = () => {
 
           </h1>
           <h2 
-            className="text-lg sm:text-xl md:text-2xl mb-6"
+            className="text-lg sm:text-xl md:text-2xl mb-8"
             style={{ color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG }}
           >
             <span className="font-bold">
@@ -568,7 +568,7 @@ const Hero = () => {
             </span>
           </h2>
           <p 
-            className="mb-6 max-w-lg text-sm sm:text-base md:text-lg" 
+            className="mb-8 max-w-lg text-sm sm:text-base md:text-lg" 
             style={{ 
               color: COLORS.CONTEXTUAL.SUBTITLE.LIGHT_BG 
             }}
@@ -581,7 +581,7 @@ const Hero = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="lg:hidden relative w-full max-w-sm h-[280px] sm:h-[320px] group mx-auto mb-6"
+            className="lg:hidden relative w-full max-w-sm h-[280px] sm:h-[320px] group mx-auto mb-8"
           >
             {/* Box Frame */}
             <div className="absolute inset-0 -m-4 border-2 border-[#8B5CF6]/30 rounded-2xl transform -rotate-6 transition-transform duration-300 group-hover:rotate-0" />
@@ -624,7 +624,7 @@ const Hero = () => {
             </div>
           </motion.div>
 
-          <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center lg:justify-start mt-2">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center lg:justify-start mt-4">
             <a 
               href="https://github.com/ReuAzel181" 
               target="_blank" 
