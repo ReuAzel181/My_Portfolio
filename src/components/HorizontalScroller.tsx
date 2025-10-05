@@ -311,7 +311,7 @@ import Image from 'next/image';
     return (
       <div
         className="relative group flex flex-col items-center justify-end"
-        style={{ width: dimensions.width, height: dimensions.height }}
+        style={{ width: dimensions.width, height: dimensions.height, marginRight: `${dimensions.gap}px` }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -420,7 +420,7 @@ import Image from 'next/image';
     return (
       <div
         className="relative group flex flex-col items-center justify-end"
-        style={{ width: dimensions.width, height: dimensions.height }}
+        style={{ width: dimensions.width, height: dimensions.height, marginRight: `${dimensions.gap}px` }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

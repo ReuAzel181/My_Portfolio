@@ -10,8 +10,17 @@ export function useChatMode() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem('chatMode') as ChatMode | null
-      if (saved === 'assistant' || saved === 'personal') {
-        setModeState(saved)
+      const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false
+      if (saved === 'assistant') {
+        setModeState('assistant')
+      } else if (saved === 'personal') {
+        // On mobile, default to normal assistant mode; personal is hidden/not default
+        if (isMobile) {
+          setModeState('assistant')
+          try { localStorage.setItem('chatMode', 'assistant') } catch {}
+        } else {
+          setModeState('personal')
+        }
       }
     } catch {}
   }, [])

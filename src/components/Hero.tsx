@@ -437,7 +437,7 @@ const Hero = () => {
               fontSize: 'var(--font-size-hero)'
             }}
           >
-            <span className="text-[#385780]/40 dark:text-[#5A7A9D]/40">Hi, I'm</span>{" "}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-500">Hi, I'm</span>{" "}
         <AnimatePresence mode="wait">
           {nameVisible && (
             <motion.span
@@ -506,7 +506,7 @@ const Hero = () => {
                 transformOrigin: 'center center'
               }}
             >
-              {"Reu Uzziel".split("").map((letter, index) => (
+              {"Reu   Uzziel".split("").map((letter, index) => (
                 <motion.span
                   key={`${nameKey}-${index}`}
                   className="inline-block"
@@ -541,7 +541,7 @@ const Hero = () => {
                   }}
                   style={{
                     display: letter === " " ? "inline" : "inline-block",
-                    marginRight: letter === " " ? "0.25em" : "0"
+                    marginRight: letter === " " ? "0.1em" : "0"
                   }}
                 >
                   {letter === " " ? "\u00A0" : letter}
