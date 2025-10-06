@@ -40,12 +40,7 @@ import Image from 'next/image';
     return { width: 280, height: 180, gap: 24 };
   };
 
-  const IMAGE_WIDTH = 280; // Default for SSR
-  const IMAGE_HEIGHT = 180; // Default for SSR
-  const GAP = 20; // Default for SSR
-  const ROW_LENGTH = images.length * 2;
-  const TOTAL_WIDTH = ROW_LENGTH * IMAGE_WIDTH + (ROW_LENGTH - 1) * GAP;
-  const SINGLE_ROW_WIDTH = images.length * IMAGE_WIDTH + (images.length - 1) * GAP;
+  // Removed unused legacy constants to prevent confusion and dead code
 
   export default function HorizontalScroller() {
     const rowRef = useRef<HTMLDivElement>(null);
@@ -57,6 +52,7 @@ import Image from 'next/image';
     // Responsive dimensions state
     const [dimensions, setDimensions] = useState(getImageDimensions());
     const [isMobile, setIsMobile] = useState(false);
+    const [isActive, setIsActive] = useState(true); // pause animations when off-screen
     
     // Touch gesture state
     const [isDragging, setIsDragging] = useState(false);
@@ -83,8 +79,25 @@ import Image from 'next/image';
       updateRow(0);
     }, [dimensions]);
 
-    // Smooth animation loop without bounds (infinite)
+    // IntersectionObserver to toggle activity based on visibility
     useEffect(() => {
+      if (!containerRef.current || typeof window === 'undefined') return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          setIsActive(entries.some((e) => e.isIntersecting));
+        },
+        { root: null, threshold: 0 }
+      );
+      observer.observe(containerRef.current);
+      return () => observer.disconnect();
+    }, []);
+
+    // Smooth animation loop without bounds (infinite), runs only when active
+    useEffect(() => {
+      if (!isActive) {
+        cancelAnimationFrame(animationFrame.current);
+        return;
+      }
       function animate() {
         scrollCurrent.current += (scrollTarget.current - scrollCurrent.current) * 0.12;
         updateRow(scrollCurrent.current);
@@ -92,7 +105,7 @@ import Image from 'next/image';
       }
       animationFrame.current = requestAnimationFrame(animate);
       return () => cancelAnimationFrame(animationFrame.current);
-    }, [dimensions]);
+    }, [dimensions, isActive]);
 
     // Global scroll listener (no preventDefault, no clamping for infinite)
     useEffect(() => {
@@ -100,7 +113,8 @@ import Image from 'next/image';
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
         const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
-        if (isInViewport) {
+        // Respond only when scroller is active/visible to avoid unexpected side-effects
+        if (isInViewport && isActive) {
           scrollTarget.current += e.deltaY * 1.2;
         }
       };
@@ -108,7 +122,7 @@ import Image from 'next/image';
       return () => {
         window.removeEventListener('wheel', handleGlobalWheel);
       };
-    }, []);
+    }, [isActive]);
 
     // Touch event handlers for mobile
     const handleTouchStart = (e: React.TouchEvent) => {
@@ -153,9 +167,9 @@ import Image from 'next/image';
       setShuffledImages(shuffleArray(images));
     }, []);
 
-    return (
-      <div>
-        <section
+  return (
+    <div>
+      <section
           ref={containerRef}
           className="relative w-full min-h-[400px] sm:min-h-[600px] flex flex-col items-center justify-center overflow-hidden touch-pan-y"
           style={{
@@ -227,6 +241,7 @@ import Image from 'next/image';
                 key={src + i}
                 className="relative group flex flex-col items-center justify-end"
                 style={{ width: dimensions.width, height: dimensions.height, marginRight: `${dimensions.gap}px` }}
+                onTouchStart={() => vibrateShort()}
               >
                 {/* Enhanced name overlay with better styling and positioning */}
                 <span
@@ -264,6 +279,16 @@ import Image from 'next/image';
       </section>
       </div>
     );
+  }
+
+  // Lightweight mobile-only haptic feedback
+  function vibrateShort() {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      const navAny = navigator as Navigator & { vibrate?: (pattern: number | number[]) => boolean };
+      if (typeof navAny.vibrate === 'function') {
+        try { navAny.vibrate(15); } catch {}
+      }
+    }
   }
 
   function YoutubeThumbnailDeck({ dimensions }: { dimensions: { width: number; height: number; gap: number } }) {
@@ -314,6 +339,7 @@ import Image from 'next/image';
         style={{ width: dimensions.width, height: dimensions.height, marginRight: `${dimensions.gap}px` }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onTouchStart={() => vibrateShort()}
       >
         {/* Enhanced name overlay on hover */}
         <span
@@ -423,6 +449,7 @@ import Image from 'next/image';
         style={{ width: dimensions.width, height: dimensions.height, marginRight: `${dimensions.gap}px` }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onTouchStart={() => vibrateShort()}
       >
         {/* Enhanced name overlay on hover */}
         <span
