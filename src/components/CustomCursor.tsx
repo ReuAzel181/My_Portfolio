@@ -37,6 +37,11 @@ export default function CustomCursor() {
   const scaleRef = useRef(1)
   const lastValidPosition = useRef({ x: 0, y: 0 })
 
+  // Detect touch/coarse pointer devices
+  const isTouchDevice = typeof window !== 'undefined'
+    && ((window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+      || ((navigator.maxTouchPoints || 0) > 0))
+
   useEffect(() => {
     if (!isLoading) {
       // Move cursor to current mouse position after loading
@@ -49,6 +54,11 @@ export default function CustomCursor() {
   }, [isLoading])
 
   useEffect(() => {
+    // Skip all setup on touch devices to reduce load
+    if ((window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || ((navigator.maxTouchPoints || 0) > 0)) {
+      return
+    }
+
     setIsMounted(true)
     // Check initial theme
     setIsDarkTheme(document.documentElement.classList.contains('dark-theme'))
@@ -226,6 +236,9 @@ export default function CustomCursor() {
 
   // Don't render while loading
   if (isLoading) return null;
+
+  // Disable custom cursor entirely on touch devices
+  if (isTouchDevice) return null;
 
   return (
     <AnimatePresence>

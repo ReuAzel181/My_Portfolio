@@ -13,9 +13,11 @@
   scrollbar-width: none;  /* Firefox */
 }
 
-/* Custom cursor styles */
-html, body {
-  cursor: none !important;
+/* Custom cursor styles (desktop only) */
+@media (pointer: fine) {
+  html, body {
+    cursor: none !important;
+  }
 }
 
 /* Prevent horizontal scrolling on the root element */
@@ -23,8 +25,10 @@ html {
   overflow-x: hidden;
 }
 
-a, button, [role="button"], .cursor-pointer {
-  cursor: none !important;
+@media (pointer: fine) {
+  a, button, [role="button"], .cursor-pointer {
+    cursor: none !important;
+  }
 }
 
 .custom-cursor-overlay {

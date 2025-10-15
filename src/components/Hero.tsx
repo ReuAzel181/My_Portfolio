@@ -293,7 +293,7 @@ const Hero = () => {
 
 
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center section-padding relative overflow-hidden" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
+    <section id="home" className="min-h-screen flex items-center justify-center section-padding relative overflow-hidden md:pt-0 pt-16" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
       {/* Centered download animation */}
       <AnimatePresence mode="wait">
         {(isDownloading || downloadError) && (
@@ -443,7 +443,7 @@ const Hero = () => {
             <motion.span
                key={nameKey}
                ref={nameRef}
-               className="text-[#385780] dark:text-[#5A7A9D] font-extrabold relative inline-block select-none"
+               className="text-[#385780] dark:text-[#5A7A9D] font-black md:font-extrabold relative inline-block select-none"
                drag
               dragElastic={0.1}
               dragMomentum={true}

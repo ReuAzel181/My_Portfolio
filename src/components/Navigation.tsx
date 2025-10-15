@@ -199,7 +199,7 @@ const Navigation = () => {
   return (
     <>
       <nav
-        className="fixed w-full z-50"
+        className="fixed top-0 left-0 right-0 w-full z-50"
         style={{ backgroundColor: 'var(--nav-bg)', backdropFilter: 'blur(8px)' }}
       >
         {/* Scroll Progress Bar */}
@@ -272,7 +272,7 @@ const Navigation = () => {
             </div>
 
             {/* Mobile menu button and toggles */}
-            <div className="flex items-center space-x-4 md:hidden">
+            <div className="flex items-center gap-3 md:hidden">
               <ThemeToggle />
               <button
                 onClick={() => setIsOpen(!isOpen)}
@@ -280,19 +280,22 @@ const Navigation = () => {
               >
                 <span className="sr-only">Open main menu</span>
                 <div className="relative w-6 h-6">
+                  {/* Top line */}
                   <span
-                    className={`absolute w-full h-0.5 bg-current transform transition duration-300 ease-in-out ${
-                      isOpen ? 'rotate-45 translate-y-2.5' : 'translate-y-1'
+                    className={`absolute left-0 right-0 h-0.5 bg-current transition duration-300 ease-in-out ${
+                      isOpen ? 'rotate-45 top-3' : 'top-1'
                     }`}
                   />
+                  {/* Middle line */}
                   <span
-                    className={`absolute w-full h-0.5 bg-current transform transition duration-300 ease-in-out ${
-                      isOpen ? 'opacity-0' : 'translate-y-3'
+                    className={`absolute left-0 right-0 h-0.5 bg-current transition duration-300 ease-in-out ${
+                      isOpen ? 'opacity-0 top-3' : 'top-3'
                     }`}
                   />
+                  {/* Bottom line */}
                   <span
-                    className={`absolute w-full h-0.5 bg-current transform transition duration-300 ease-in-out ${
-                      isOpen ? '-rotate-45 translate-y-2.5' : 'translate-y-5'
+                    className={`absolute left-0 right-0 h-0.5 bg-current transition duration-300 ease-in-out ${
+                      isOpen ? '-rotate-45 top-3' : 'top-5'
                     }`}
                   />
                 </div>
