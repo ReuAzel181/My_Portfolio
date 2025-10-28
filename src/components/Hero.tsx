@@ -293,7 +293,7 @@ const Hero = () => {
 
 
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center section-padding relative overflow-hidden md:pt-0 pt-16" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
+    <section id="home" className="min-h-[calc(100vh-4rem)] flex items-center justify-center section-padding relative overflow-hidden" style={{ paddingLeft: 'var(--section-padding-x)', paddingRight: 'var(--section-padding-x)' }}>
       {/* Centered download animation */}
       <AnimatePresence mode="wait">
         {(isDownloading || downloadError) && (
@@ -427,17 +427,18 @@ const Hero = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row justify-between items-center gap-8 lg:gap-12 px-4 sm:px-6"
+        className="max-w-6xl mx-auto w-full flex flex-col lg:flex-row justify-between items-center gap-4 lg:gap-8 px-3 sm:px-5"
       >
         <div className="max-w-xl lg:pl-0 text-center lg:text-left">
           <h1 
-            className="font-bold mb-6" 
+            // ... existing code ...
+            className="font-bold leading-tight mb-2 md:mb-4" 
             style={{ 
               color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG,
               fontSize: 'var(--font-size-hero)'
             }}
-          >
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-500">Hi, I'm</span>{" "}
+            >
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-500">Hi, I'm</span><span className="hidden sm:inline">&nbsp;</span>
         <AnimatePresence mode="wait">
           {nameVisible && (
             <motion.span
@@ -554,7 +555,7 @@ const Hero = () => {
 
           </h1>
           <h2 
-            className="text-lg sm:text-xl md:text-2xl mb-8"
+            className="text-lg sm:text-xl md:text-2xl mb-3"
             style={{ color: COLORS.CONTEXTUAL.TITLE.LIGHT_BG }}
           >
             <span className="font-bold">
