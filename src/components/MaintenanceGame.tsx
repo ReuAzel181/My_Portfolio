@@ -9,12 +9,19 @@ type Obstacle = {
   h: number;
   vx: number;
   vy: number;
+  round?: boolean; // rounded corners and 25% faster
 };
+// Level 5 mechanics types
+type Zone = { x: number; y: number; r: number };
+type Gate = { x: number; y: number; w: number; h: number };
+type Spawner = { x: number; y: number; cooldown: number };
 
 export default function MaintenanceGame() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const [lost, setLost] = useState(false);
+  const [started, setStarted] = useState(false);
+  const startedRef = useRef(false);
 
   // Player state
   const player = useRef({ x: 100, y: 100, r: 12 });
@@ -33,6 +40,10 @@ export default function MaintenanceGame() {
   // Food collectibles: pulse, lifetime-based scoring, despawn if not collected
   type Food = { x: number; y: number; r: number; vx: number; vy: number; life: number; maxLife: number; pulse: number };
   const foodsRef = useRef<Food[]>([]);
+  // Lucky box power-up (one-time shield)
+  type LuckyBox = { x: number; y: number; w: number; h: number; vx: number; vy: number };
+  const luckyRef = useRef<LuckyBox | null>(null);
+  const shieldRef = useRef<boolean>(false);
 
   // Canvas swipe effect when hitting walls
   const swipeRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -49,6 +60,17 @@ export default function MaintenanceGame() {
   const [best, setBest] = useState(0);
   const hudFrameRef = useRef<number>(0);
   const levelRef = useRef<number>(1);
+  const lastHundredRef = useRef<number>(0);
+  const pausedRef = useRef<boolean>(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const guideShownRef = useRef<boolean>(false);
+  const comboRef = useRef<number>(1);
+  const comboTimerRef = useRef<number>(0);
+  // Level 5 mechanic refs
+  const zonesRef = useRef<Zone[]>([]);
+  const gatesRef = useRef<Gate[]>([]);
+  const gateBoostRef = useRef<number>(0);
+  const spawnerRef = useRef<Spawner | null>(null);
 
   const resetGame = (canvas?: HTMLCanvasElement) => {
     setLost(false);
@@ -60,7 +82,7 @@ export default function MaintenanceGame() {
     wallHit.current = 0;
     defeat.current = { active: false, t: 0 };
     defeatSwipeRef.current = { x: 0, y: 0, blur: 0 };
-    // Spawn a few obstacles with random positions/velocities
+    // Spawn a few obstacles with random positions/velocities (moderate at level 1)
     const obs: Obstacle[] = [];
     const count = 6;
     for (let i = 0; i < count; i++) {
@@ -68,9 +90,15 @@ export default function MaintenanceGame() {
       const h = 20 + Math.random() * 40;
       const x = Math.random() * (width - w);
       const y = Math.random() * (height - h);
-      const vx = (Math.random() * 2 - 1) * (1.2 + Math.random());
-      const vy = (Math.random() * 2 - 1) * (1.2 + Math.random());
-      obs.push({ x, y, w, h, vx, vy });
+      let vx = (Math.random() * 2 - 1) * (0.9 + Math.random() * 0.6);
+      let vy = (Math.random() * 2 - 1) * (0.9 + Math.random() * 0.6);
+      // Some obstacles have rounded corners and are 25% faster
+      const round = Math.random() < 0.3;
+      if (round) {
+        vx *= 1.25;
+        vy *= 1.25;
+      }
+      obs.push({ x, y, w, h, vx, vy, round });
     }
     obstaclesRef.current = obs;
     // Spawn collectibles
@@ -103,6 +131,20 @@ export default function MaintenanceGame() {
     scoreRef.current = 0;
     levelRef.current = 1;
     setScore(0);
+    luckyRef.current = null;
+    shieldRef.current = false;
+    startedRef.current = false;
+    setStarted(false);
+    comboRef.current = 1;
+    comboTimerRef.current = 0;
+    lastHundredRef.current = 0;
+    pausedRef.current = false;
+    setGuideOpen(false);
+    guideShownRef.current = false;
+    zonesRef.current = [];
+    gatesRef.current = [];
+    gateBoostRef.current = 0;
+    spawnerRef.current = null;
   };
 
   const spawnFood = (width: number, height: number): Food => {
@@ -113,6 +155,19 @@ export default function MaintenanceGame() {
     const vy = (Math.random() * 2 - 1) * 0.4;
     const life = 600 + Math.floor(Math.random() * 600);
     return { x, y, r, vx, vy, life, maxLife: life, pulse: Math.random() * Math.PI * 2 };
+  };
+
+  // Spawn Level 5 mechanics entities (slow zones, speed gates, spawner core)
+  const spawnLevel5Entities = (width: number, height: number) => {
+    zonesRef.current = [
+      { x: width * 0.3, y: height * 0.35, r: 55 },
+      { x: width * 0.72, y: height * 0.65, r: 65 },
+    ];
+    gatesRef.current = [
+      { x: width * 0.15, y: height * 0.15, w: 90, h: 10 },
+      { x: width * 0.75, y: height * 0.25, w: 90, h: 10 },
+    ];
+    spawnerRef.current = { x: width * 0.5, y: height * 0.5, cooldown: 240 };
   };
 
   useEffect(() => {
@@ -147,6 +202,19 @@ export default function MaintenanceGame() {
     if (!ctx) return;
 
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const drawRoundedRect = (x: number, y: number, w: number, h: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    };
 
     const circleRectCollide = (cx: number, cy: number, r: number, rect: Obstacle) => {
       const nearestX = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
@@ -172,11 +240,23 @@ export default function MaintenanceGame() {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
 
-      // Move player towards target
-      if (target.current) {
-        const boost = powerRef.current.active ? 1.6 : 1;
-        player.current.x = lerp(player.current.x, target.current.x, 0.08 * boost);
-        player.current.y = lerp(player.current.y, target.current.y, 0.08 * boost);
+      // Move player towards target (only after start, no speed boost)
+      if (startedRef.current && !pausedRef.current && target.current) {
+        // Level 5 mechanics: slow zones and speed gates adjust movement rate
+        let moveRate = 0.08;
+        // Speed gate temporary boost
+        if (gateBoostRef.current > 0) moveRate *= 1.25;
+        // Slow zones reduce move rate
+        for (const z of zonesRef.current) {
+          const dx = player.current.x - z.x;
+          const dy = player.current.y - z.y;
+          if (dx * dx + dy * dy <= z.r * z.r) {
+            moveRate *= 0.65;
+            break;
+          }
+        }
+        player.current.x = lerp(player.current.x, target.current.x, moveRate);
+        player.current.y = lerp(player.current.y, target.current.y, moveRate);
         const dx = player.current.x - target.current.x;
         const dy = player.current.y - target.current.y;
         if (Math.hypot(dx, dy) < 0.8) target.current = null;
@@ -213,24 +293,28 @@ export default function MaintenanceGame() {
       canvas.style.transform = `translate(${tx}px, ${ty}px)`;
       canvas.style.filter = `blur(${defeatSwipeRef.current.blur.toFixed(2)}px)`;
 
-      // Update obstacles with boundary bounce
+      // Update obstacles with boundary bounce (only after start)
       const obs = obstaclesRef.current;
-      for (const o of obs) {
-        // Slow down slightly if defeated for a smoother freeze
-        const damp = defeat.current.active ? 0.96 : 1;
-        o.x += o.vx * damp;
-        o.y += o.vy * damp;
-        if (o.x <= 0 || o.x + o.w >= width) o.vx *= -1;
-        if (o.y <= 0 || o.y + o.h >= height) o.vy *= -1;
+      if (startedRef.current && !pausedRef.current) {
+        for (const o of obs) {
+          // Slow down slightly if defeated for a smoother freeze
+          const damp = defeat.current.active ? 0.96 : 1;
+          o.x += o.vx * damp;
+          o.y += o.vy * damp;
+          if (o.x <= 0 || o.x + o.w >= width) o.vx *= -1;
+          if (o.y <= 0 || o.y + o.h >= height) o.vy *= -1;
+        }
       }
 
-      // Update and draw orbs
+      // Update and draw blue orbs
       const orbs = orbsRef.current;
-      for (const orb of orbs) {
-        orb.x += orb.vx;
-        orb.y += orb.vy;
-        if (orb.x - orb.r <= 0 || orb.x + orb.r >= width) orb.vx *= -1;
-        if (orb.y - orb.r <= 0 || orb.y + orb.r >= height) orb.vy *= -1;
+      if (startedRef.current && !pausedRef.current) {
+        for (const orb of orbs) {
+          orb.x += orb.vx;
+          orb.y += orb.vy;
+          if (orb.x - orb.r <= 0 || orb.x + orb.r >= width) orb.vx *= -1;
+          if (orb.y - orb.r <= 0 || orb.y + orb.r >= height) orb.vy *= -1;
+        }
       }
       for (const orb of orbs) {
         ctx.fillStyle = "rgba(99,102,241,0.25)"; // indigo/25
@@ -242,17 +326,33 @@ export default function MaintenanceGame() {
         ctx.stroke();
       }
 
-      // Update foods (move, pulse, lifetime)
-      for (const f of foodsRef.current) {
-        f.x += f.vx;
-        f.y += f.vy;
-        if (f.x - f.r <= 0 || f.x + f.r >= width) f.vx *= -1;
-        if (f.y - f.r <= 0 || f.y + f.r >= height) f.vy *= -1;
-        f.life -= 1;
-        f.pulse += 0.08;
+      // Update foods (move, pulse, lifetime) only when started
+      if (startedRef.current && !pausedRef.current) {
+        for (const f of foodsRef.current) {
+          f.x += f.vx;
+          f.y += f.vy;
+          if (f.x - f.r <= 0 || f.x + f.r >= width) f.vx *= -1;
+          if (f.y - f.r <= 0 || f.y + f.r >= height) f.vy *= -1;
+          f.life -= 1;
+          f.pulse += 0.08;
+        }
+        // Magnet effect: while trail active, pull nearby foods slightly toward player
+        if (powerRef.current.active) {
+          for (const f of foodsRef.current) {
+            const dx = player.current.x - f.x;
+            const dy = player.current.y - f.y;
+            const dist2 = dx * dx + dy * dy;
+            if (dist2 < 160 * 160) {
+              const ax = dx * 0.0006;
+              const ay = dy * 0.0006;
+              f.vx += ax;
+              f.vy += ay;
+            }
+          }
+        }
+        // Remove expired foods
+        foodsRef.current = foodsRef.current.filter((f) => f.life > 0);
       }
-      // Remove expired foods
-      foodsRef.current = foodsRef.current.filter((f) => f.life > 0);
       // Draw foods (amber, fades with remaining life)
       for (const f of foodsRef.current) {
         const lifeRatio = Math.max(0, Math.min(1, f.life / f.maxLife));
@@ -268,11 +368,38 @@ export default function MaintenanceGame() {
 
       // Draw obstacles
       for (const o of obs) {
-        ctx.fillStyle = "rgba(96, 165, 250, 0.25)"; // blue-400/25
-        ctx.strokeStyle = "rgba(96, 165, 250, 0.6)";
+        ctx.lineWidth = 2;
+        if (o.round) {
+          ctx.fillStyle = "rgba(96,165,250,0.25)"; // blue-400/25
+          ctx.strokeStyle = "rgba(96,165,250,0.9)"; // brighter stroke
+          drawRoundedRect(o.x, o.y, o.w, o.h, 8);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(96,165,250,0.25)"; // blue-400/25
+          ctx.strokeStyle = "rgba(96,165,250,0.6)";
+          ctx.beginPath();
+          ctx.rect(o.x, o.y, o.w, o.h);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+
+      // Lucky box update/draw
+      if (startedRef.current && luckyRef.current) {
+        const lb = luckyRef.current;
+        lb.x += lb.vx;
+        lb.y += lb.vy;
+        if (lb.x <= 0 || lb.x + lb.w >= width) lb.vx *= -1;
+        if (lb.y <= 0 || lb.y + lb.h >= height) lb.vy *= -1;
+      }
+      if (luckyRef.current) {
+        const lb = luckyRef.current;
+        ctx.fillStyle = "rgba(16,185,129,0.25)"; // emerald/25
+        ctx.strokeStyle = "rgba(16,185,129,0.7)";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.rect(o.x, o.y, o.w, o.h);
+        ctx.rect(lb.x, lb.y, lb.w, lb.h);
         ctx.fill();
         ctx.stroke();
       }
@@ -288,11 +415,62 @@ export default function MaintenanceGame() {
       ctx.arc(player.current.x, player.current.y, drawR, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
+      // Visible aura when shield is active
+      if (shieldRef.current) {
+        ctx.strokeStyle = "rgba(16,185,129,0.8)"; // emerald
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(player.current.x, player.current.y, drawR + 6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
-      // Collision check
-      if (!defeat.current.active) {
+      // Collision check (shield absorbs one hit)
+      if (startedRef.current && !pausedRef.current && !defeat.current.active) {
+        // Lucky box pickup: entering grants one-time shield
+        if (luckyRef.current) {
+          const lb = luckyRef.current;
+          if (circleRectCollide(player.current.x, player.current.y, player.current.r, { x: lb.x, y: lb.y, w: lb.w, h: lb.h, vx: 0, vy: 0 })) {
+            shieldRef.current = true;
+            luckyRef.current = null;
+            // brief pickup particles
+            for (let i = 0; i < 16; i++) {
+              const ang = Math.random() * Math.PI * 2;
+              const spd = 0.6 + Math.random() * 1.0;
+              particlesRef.current.push({
+                x: player.current.x,
+                y: player.current.y,
+                vx: Math.cos(ang) * spd,
+                vy: Math.sin(ang) * spd,
+                life: 28 + Math.floor(Math.random() * 16),
+                r: 2 + Math.random() * 2,
+                alpha: 0.9,
+              });
+            }
+          }
+        }
         for (const o of obs) {
           if (circleRectCollide(player.current.x, player.current.y, player.current.r, o)) {
+            if (shieldRef.current) {
+              // consume shield instead of losing; add break particles
+              shieldRef.current = false;
+              for (let i = 0; i < 20; i++) {
+                const ang = Math.random() * Math.PI * 2;
+                const spd = 0.8 + Math.random() * 1.2;
+                particlesRef.current.push({
+                  x: player.current.x,
+                  y: player.current.y,
+                  vx: Math.cos(ang) * spd,
+                  vy: Math.sin(ang) * spd,
+                  life: 24 + Math.floor(Math.random() * 16),
+                  r: 2 + Math.random() * 2,
+                  alpha: 0.95,
+                });
+              }
+              // light swipe to indicate impact absorbed
+              defeatSwipeRef.current.x += Math.sign(player.current.x - (o.x + o.w / 2)) * 24;
+              defeatSwipeRef.current.y += -16;
+              continue;
+            }
             setLost(true);
             defeat.current = { active: true, t: 0 };
             // Kick in a visible swipe + blur on defeat
@@ -311,11 +489,11 @@ export default function MaintenanceGame() {
         const dy = ay - by;
         return dx * dx + dy * dy <= (ar + br) * (ar + br);
       };
-      if (!defeat.current.active) {
+      if (startedRef.current && !pausedRef.current && !defeat.current.active) {
         for (const orb of orbs) {
           if (circleCircle(player.current.x, player.current.y, player.current.r, orb.x, orb.y, orb.r)) {
-            powerRef.current = { active: true, timer: 180 }; // ~3s at 60fps
-            // trail burst particles
+            powerRef.current = { active: true, timer: 180 }; // ~3s trail effect
+            // trail pickup burst particles
             for (let i = 0; i < 18; i++) {
               const ang = Math.random() * Math.PI * 2;
               const spd = 0.6 + Math.random() * 1.4;
@@ -333,11 +511,9 @@ export default function MaintenanceGame() {
             const nr = orb.r;
             orb.x = nr + Math.random() * (width - 2 * nr);
             orb.y = nr + Math.random() * (height - 2 * nr);
-            // Score bonus
-            scoreRef.current += 50;
           }
         }
-        // Food collision: earlier pickup yields higher score
+        // Food collision: earlier pickup yields higher score + combo multiplier
         for (let i = foodsRef.current.length - 1; i >= 0; i--) {
           const f = foodsRef.current[i];
           if (circleCircle(player.current.x, player.current.y, player.current.r, f.x, f.y, f.r)) {
@@ -356,13 +532,29 @@ export default function MaintenanceGame() {
               });
             }
             const bonus = Math.max(10, Math.floor(100 * (f.life / f.maxLife)));
-            scoreRef.current += bonus;
+            scoreRef.current += bonus * Math.max(1, comboRef.current);
+            comboTimerRef.current = 120; // ~2s window
+            comboRef.current = Math.min(comboRef.current + 1, 5);
             foodsRef.current.splice(i, 1);
           }
         }
       }
       if (powerRef.current.active) {
         powerRef.current.timer -= 1;
+        // emit continuous trail particles while active
+        for (let i = 0; i < 2; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 0.3 + Math.random() * 0.8;
+          particlesRef.current.push({
+            x: player.current.x,
+            y: player.current.y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            life: 24 + Math.floor(Math.random() * 12),
+            r: 1.5 + Math.random() * 1.5,
+            alpha: 0.8,
+          });
+        }
         if (powerRef.current.timer <= 0) powerRef.current.active = false;
       }
 
@@ -401,32 +593,56 @@ export default function MaintenanceGame() {
         ctx.fillRect(0, 0, width, height);
       }
 
-      // Increment score over time (boost doubles rate)
-      if (!defeat.current.active) {
-        scoreRef.current += powerRef.current.active ? 2 : 1;
-        // Level up at thresholds: 100, 200, ...
-        const threshold = levelRef.current * 100;
-        if (scoreRef.current >= threshold) {
-          levelRef.current += 1;
-          // Increase obstacle count and speed
-          const addCount = 2;
+      // Progression rules (only after start)
+      if (startedRef.current && !pausedRef.current && !defeat.current.active) {
+        // Update computed level: every 1000 score is a level
+        levelRef.current = Math.floor(scoreRef.current / 1000) + 1;
+        // Decay combo timer
+        if (comboTimerRef.current > 0) {
+          comboTimerRef.current -= 1;
+          if (comboTimerRef.current <= 0) comboRef.current = 1;
+        }
+        // Add obstacles on each new 100 breakpoint: add (level) obstacles
+        const hundredBucket = Math.floor(scoreRef.current / 100);
+        if (hundredBucket > lastHundredRef.current) {
+          const addCount = Math.max(1, levelRef.current);
           for (let i = 0; i < addCount; i++) {
-            const w = 40 + Math.random() * 40;
-            const h = 20 + Math.random() * 40;
+            const w = 32 + Math.random() * 40;
+            const h = 16 + Math.random() * 40;
             const x = Math.random() * (width - w);
             const y = Math.random() * (height - h);
-            const vx = (Math.random() * 2 - 1) * (1.4 + Math.random());
-            const vy = (Math.random() * 2 - 1) * (1.4 + Math.random());
-            obstaclesRef.current.push({ x, y, w, h, vx, vy });
+            let vx = (Math.random() * 2 - 1) * (1.1 + Math.random());
+            let vy = (Math.random() * 2 - 1) * (1.1 + Math.random());
+            const round = Math.random() < 0.35;
+            if (round) {
+              vx *= 1.25;
+              vy *= 1.25;
+            }
+            obstaclesRef.current.push({ x, y, w, h, vx, vy, round });
           }
-          for (const o of obstaclesRef.current) {
-            o.vx *= 1.15;
-            o.vy *= 1.15;
-          }
+          lastHundredRef.current = hundredBucket;
         }
         // Lightly respawn foods over time
         if (foodsRef.current.length < 3 && Math.random() < 0.012) {
           foodsRef.current.push(spawnFood(width, height));
+        }
+        // Randomly spawn lucky box if none exists
+        if (!luckyRef.current && Math.random() < 0.004) {
+          const w = 36 + Math.random() * 36;
+          const h = 18 + Math.random() * 36;
+          const x = Math.random() * (width - w);
+          const y = Math.random() * (height - h);
+          const vx = (Math.random() * 2 - 1) * (1.2 + Math.random() * 0.8);
+          const vy = (Math.random() * 2 - 1) * (1.2 + Math.random() * 0.8);
+          luckyRef.current = { x, y, w, h, vx, vy };
+        }
+        // Level 5: show guide and enable new mechanics
+        if (levelRef.current >= 5 && !guideShownRef.current) {
+          pausedRef.current = true;
+          setGuideOpen(true);
+          guideShownRef.current = true;
+          // Spawn level 5 mechanics entities
+          spawnLevel5Entities(width, height);
         }
         hudFrameRef.current++;
         if (hudFrameRef.current % 10 === 0) setScore(Math.floor(scoreRef.current));
@@ -438,12 +654,17 @@ export default function MaintenanceGame() {
     // Start loop
     rafRef.current = requestAnimationFrame(tick);
 
-    // Click-to-move
+    // Click-to-play then click-to-move
     const onClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const x = (e.clientX - rect.left) * dpr;
       const y = (e.clientY - rect.top) * dpr;
+      if (!startedRef.current) {
+        startedRef.current = true;
+        setStarted(true);
+        return;
+      }
       target.current = { x, y };
       if (lost) {
         setLost(false);
@@ -488,9 +709,21 @@ export default function MaintenanceGame() {
       <div className="absolute top-3 left-4 z-10 flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/60 dark:bg-black/40 backdrop-blur-sm border border-indigo-200/40 dark:border-indigo-900/30 text-xs sm:text-sm">
         <span className="font-semibold text-gray-800 dark:text-gray-100">Score: {score}</span>
         <span className="text-gray-600 dark:text-gray-300">Best: {best}</span>
-        {powerRef.current.active && <span className="text-indigo-600 dark:text-indigo-300">Boost!</span>}
+        <span className="text-gray-700 dark:text-gray-200">Level: {levelRef.current}</span>
+        {powerRef.current.active && <span className="text-indigo-600 dark:text-indigo-300">Trail!</span>}
+        {comboRef.current > 1 && <span className="text-amber-600 dark:text-amber-300">Combo x{comboRef.current}</span>}
+        {shieldRef.current && <span className="text-emerald-600 dark:text-emerald-300">Shield</span>}
       </div>
       <canvas ref={canvasRef} className="w-full h-full" />
+
+      {!started && !lost && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-black/70 backdrop-blur-sm" onClick={() => { startedRef.current = true; setStarted(true); }}>
+          <div className="text-center">
+            <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Click to Play</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Click anywhere to start, then click to move.</p>
+          </div>
+        </div>
+      )}
 
       {lost && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 dark:bg-black/50 backdrop-blur-sm">
@@ -508,6 +741,28 @@ export default function MaintenanceGame() {
               className="px-4 py-2 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
             >
               Restart
+            </button>
+          </div>
+        </div>
+      )}
+
+      {guideOpen && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-black/80 backdrop-blur-sm">
+          <div className="mx-4 max-w-md rounded-xl border border-indigo-300/40 dark:border-indigo-800/40 bg-white/80 dark:bg-black/60 p-4 text-sm">
+            <p className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Level 5 Mechanics Guide</p>
+            <ul className="list-disc pl-5 text-gray-700 dark:text-gray-200 space-y-1">
+              <li>Slow Zones: purple circles slow movement when inside.</li>
+              <li>Speed Gates: pass through to gain a brief speed boost.</li>
+              <li>Spawner: a core periodically emits small rounded obstacles.</li>
+            </ul>
+            <button
+              onClick={() => {
+                pausedRef.current = false;
+                setGuideOpen(false);
+              }}
+              className="mt-3 px-3 py-1.5 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+            >
+              Got it
             </button>
           </div>
         </div>
