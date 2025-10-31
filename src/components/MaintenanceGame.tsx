@@ -1,6 +1,8 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react";
+import { createLevel5, updateLevel5 } from "./Level5Mechanics";
+import type { Level5State } from "./Level5Mechanics";
 
 type Obstacle = {
   x: number;
@@ -12,9 +14,25 @@ type Obstacle = {
   round?: boolean; // rounded corners and 25% faster
 };
 // Level 5 mechanics types
-type Zone = { x: number; y: number; r: number };
-type Gate = { x: number; y: number; w: number; h: number };
-type Spawner = { x: number; y: number; cooldown: number };
+type Diamond = { 
+  x: number; 
+  y: number; 
+  vx: number; 
+  vy: number; 
+  spawnTimer: number; 
+  levelsAlive: number; 
+  isMonster: boolean;
+  size: number;
+};
+type DiamondBox = { 
+  x: number; 
+  y: number; 
+  w: number; 
+  h: number; 
+  vx: number; 
+  vy: number; 
+  lifeTimer: number; 
+};
 
 export default function MaintenanceGame() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -90,10 +108,10 @@ export default function MaintenanceGame() {
   const [starCount, setStarCount] = useState<number>(5);
   const starCountRef = useRef<number>(5);
   // Level 5 mechanic refs
-  const zonesRef = useRef<Zone[]>([]);
-  const gatesRef = useRef<Gate[]>([]);
+  const diamondRef = useRef<Diamond | null>(null);
+  const diamondBoxesRef = useRef<DiamondBox[]>([]);
   const gateBoostRef = useRef<number>(0);
-  const spawnerRef = useRef<Spawner | null>(null);
+  const [showBypassButton, setShowBypassButton] = useState(false);
 
   const resetGame = (canvas?: HTMLCanvasElement) => {
     setLost(false);
@@ -168,10 +186,10 @@ export default function MaintenanceGame() {
     pausedRef.current = false;
     setGuideOpen(false);
     guideShownRef.current = false;
-    zonesRef.current = [];
-    gatesRef.current = [];
+    diamondRef.current = null;
+    diamondBoxesRef.current = [];
     gateBoostRef.current = 0;
-    spawnerRef.current = null;
+    setShowBypassButton(true);
   };
 
   const spawnFood = (width: number, height: number): Food => {
@@ -186,15 +204,19 @@ export default function MaintenanceGame() {
 
   // Spawn Level 5 mechanics entities (slow zones, speed gates, spawner core)
   const spawnLevel5Entities = (width: number, height: number) => {
-    zonesRef.current = [
-      { x: width * 0.3, y: height * 0.35, r: 55 },
-      { x: width * 0.72, y: height * 0.65, r: 65 },
-    ];
-    gatesRef.current = [
-      { x: width * 0.15, y: height * 0.15, w: 90, h: 10 },
-      { x: width * 0.75, y: height * 0.25, w: 90, h: 10 },
-    ];
-    spawnerRef.current = { x: width * 0.5, y: height * 0.5, cooldown: 240 };
+    // Create a diamond that roams the map
+    diamondRef.current = {
+      x: width * 0.5,
+      y: height * 0.5,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2,
+      spawnTimer: 120, // 2 seconds at 60fps
+      levelsAlive: 0,
+      isMonster: false,
+      size: 15,
+      spawnLevel: levelRef.current
+    };
+    diamondBoxesRef.current = [];
   };
 
   useEffect(() => {
@@ -243,7 +265,8 @@ export default function MaintenanceGame() {
       ctx.closePath();
     };
 
-    const circleRectCollide = (cx: number, cy: number, r: number, rect: Obstacle) => {
+    // Accept any rectangle-like object; fixes Gate type incompatibility
+    const circleRectCollide = (cx: number, cy: number, r: number, rect: { x: number; y: number; w: number; h: number }) => {
       const nearestX = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
       const nearestY = Math.max(rect.y, Math.min(cy, rect.y + rect.h));
       const dx = cx - nearestX;
@@ -273,19 +296,10 @@ export default function MaintenanceGame() {
 
       // Move player towards target (only after start, no speed boost)
       if (startedRef.current && !pausedRef.current && target.current) {
-        // Level 5 mechanics: slow zones and speed gates adjust movement rate
+        // Movement rate (no Level 5 zones/gates anymore)
         let moveRate = 0.08;
-        // Speed gate temporary boost
-        if (gateBoostRef.current > 0) moveRate *= 1.25;
-        // Slow zones reduce move rate
-        for (const z of zonesRef.current) {
-          const dx = player.current.x - z.x;
-          const dy = player.current.y - z.y;
-          if (dx * dx + dy * dy <= z.r * z.r) {
-            moveRate *= 0.65;
-            break;
-          }
-        }
+        // Speed gate temporary boost (only for pre-Level 5)
+        if (levelRef.current < 5 && gateBoostRef.current > 0) moveRate *= 1.25;
         player.current.x = lerp(player.current.x, target.current.x, moveRate);
         player.current.y = lerp(player.current.y, target.current.y, moveRate);
         const dx = player.current.x - target.current.x;
@@ -318,18 +332,91 @@ export default function MaintenanceGame() {
       canvas.style.transform = `translate(${tx}px, ${ty}px)`;
       canvas.style.filter = `blur(${defeatSwipeRef.current.blur.toFixed(2)}px)`;
 
-      // Update obstacles with boundary bounce (only after start)
-      const obs = obstaclesRef.current;
-      if (startedRef.current && !pausedRef.current) {
-        for (const o of obs) {
-          // Slow down slightly if defeated for a smoother freeze
-          const damp = defeat.current.active ? 0.96 : 1;
-          o.x += o.vx * damp;
-          o.y += o.vy * damp;
-          if (o.x <= 0 || o.x + o.w >= width) o.vx *= -1;
-          if (o.y <= 0 || o.y + o.h >= height) o.vy *= -1;
+        // Update obstacles
+        const obs = obstaclesRef.current;
+        if (startedRef.current && !pausedRef.current) {
+          if (levelRef.current >= 5) {
+            // Level 5: Update diamond and its spawned boxes
+            if (diamondRef.current) {
+              const diamond = diamondRef.current;
+              
+              // Move diamond
+              diamond.x += diamond.vx;
+              diamond.y += diamond.vy;
+              
+              // Bounce off walls
+              if (diamond.x <= diamond.size || diamond.x >= width - diamond.size) diamond.vx *= -1;
+              if (diamond.y <= diamond.size || diamond.y >= height - diamond.size) diamond.vy *= -1;
+              
+              // Clamp to bounds
+              diamond.x = Math.max(diamond.size, Math.min(width - diamond.size, diamond.x));
+              diamond.y = Math.max(diamond.size, Math.min(height - diamond.size, diamond.y));
+              
+              // Spawn boxes every 2 seconds
+              diamond.spawnTimer--;
+              if (diamond.spawnTimer <= 0) {
+                diamond.spawnTimer = 120; // Reset to 2 seconds
+                diamondBoxesRef.current.push({
+                  x: diamond.x - 10,
+                  y: diamond.y - 10,
+                  w: 20,
+                  h: 20,
+                  vx: (Math.random() - 0.5) * 3,
+                  vy: (Math.random() - 0.5) * 3,
+                  lifeTimer: 180 // 3 seconds
+                });
+              }
+              
+              // Monster behavior: follow player when near
+              if (diamond.isMonster) {
+                const dx = player.current.x - diamond.x;
+                const dy = player.current.y - diamond.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist < 150 && dist > 0) {
+                  const speed = 1.5;
+                  diamond.vx = lerp(diamond.vx, (dx / dist) * speed, 0.1);
+                  diamond.vy = lerp(diamond.vy, (dy / dist) * speed, 0.1);
+                }
+              }
+            }
+            
+            // Update diamond boxes
+            diamondBoxesRef.current = diamondBoxesRef.current.filter(box => {
+              box.x += box.vx;
+              box.y += box.vy;
+              
+              // Bounce off walls
+              if (box.x <= 0 || box.x + box.w >= width) box.vx *= -1;
+              if (box.y <= 0 || box.y + box.h >= height) box.vy *= -1;
+              
+              // Clamp to bounds
+              box.x = Math.max(0, Math.min(width - box.w, box.x));
+              box.y = Math.max(0, Math.min(height - box.h, box.y));
+              
+              box.lifeTimer--;
+              return box.lifeTimer > 0; // Remove expired boxes
+            });
+            
+            // Regular obstacles still move with boundary bounce
+            for (const o of obs) {
+              const damp = defeat.current.active ? 0.96 : 1;
+              o.x += o.vx * damp;
+              o.y += o.vy * damp;
+              if (o.x <= 0 || o.x + o.w >= width) o.vx *= -1;
+              if (o.y <= 0 || o.y + o.h >= height) o.vy *= -1;
+            }
+          } else {
+            // Pre-Level 5: boundary bounce
+            for (const o of obs) {
+              // Slow down slightly if defeated for a smoother freeze
+              const damp = defeat.current.active ? 0.96 : 1;
+              o.x += o.vx * damp;
+              o.y += o.vy * damp;
+              if (o.x <= 0 || o.x + o.w >= width) o.vx *= -1;
+              if (o.y <= 0 || o.y + o.h >= height) o.vy *= -1;
+            }
+          }
         }
-      }
 
       // Update and draw blue orbs
       const orbs = orbsRef.current;
@@ -430,7 +517,8 @@ export default function MaintenanceGame() {
       }
 
       // Draw obstacles
-      for (const o of obs) {
+      for (let i = 0; i < obs.length; i++) {
+        const o = obs[i];
         ctx.lineWidth = 2;
         if (o.round) {
           ctx.fillStyle = "rgba(96,165,250,0.25)"; // blue-400/25
@@ -590,7 +678,7 @@ export default function MaintenanceGame() {
         // Lucky box pickup: entering grants one-time shield
         if (luckyRef.current) {
           const lb = luckyRef.current;
-          if (circleRectCollide(player.current.x, player.current.y, player.current.r, { x: lb.x, y: lb.y, w: lb.w, h: lb.h, vx: 0, vy: 0 })) {
+          if (circleRectCollide(player.current.x, player.current.y, player.current.r, { x: lb.x, y: lb.y, w: lb.w, h: lb.h })) {
             shieldRef.current = true;
             shieldHitsRef.current = Math.max(shieldHitsRef.current, 1); // lucky box grants 1-hit shield
             luckyRef.current = null;
@@ -685,6 +773,62 @@ export default function MaintenanceGame() {
             break;
           }
         }
+        
+        // Diamond box collision (Level 5 only)
+        if (levelRef.current >= 5) {
+          for (const box of diamondBoxesRef.current) {
+            if (circleRectCollide(player.current.x, player.current.y, player.current.r, box)) {
+              if (shieldRef.current) {
+                // Same shield behavior as regular obstacles
+                if (shieldHitsRef.current > 1) {
+                  shieldHitsRef.current -= 1;
+                  shieldRef.current = true;
+                } else {
+                  shieldHitsRef.current = 0;
+                  shieldRef.current = false;
+                }
+                // Shield burst particles
+                for (let i = 0; i < 12; i++) {
+                  const ang = Math.random() * Math.PI * 2;
+                  const spd = 1.0 + Math.random() * 1.2;
+                  particlesRef.current.push({
+                    x: player.current.x,
+                    y: player.current.y,
+                    vx: Math.cos(ang) * spd,
+                    vy: Math.sin(ang) * spd,
+                    life: 20 + Math.floor(Math.random() * 15),
+                    r: 1.5 + Math.random() * 1.5,
+                    alpha: 0.9,
+                  });
+                }
+                target.current = { x: player.current.x, y: player.current.y };
+                invulRef.current = Math.max(invulRef.current, 30);
+                break;
+              }
+              if (invulRef.current > 0) {
+                // Light separation without defeat while invulnerable
+                const cx = box.x + box.w / 2;
+                const cy = box.y + box.h / 2;
+                let dx = player.current.x - cx;
+                let dy = player.current.y - cy;
+                const len = Math.hypot(dx, dy) || 1;
+                dx /= len;
+                dy /= len;
+                const kb = 12;
+                player.current.x = Math.min(Math.max(player.current.r, player.current.x + dx * kb), width - player.current.r);
+                player.current.y = Math.min(Math.max(player.current.r, player.current.y + dy * kb), height - player.current.r);
+                continue;
+              }
+              setLost(true);
+              defeat.current = { active: true, t: 0 };
+              const dir = Math.sign(player.current.x - width / 2) || -1;
+              defeatSwipeRef.current.x = 48 * dir;
+              defeatSwipeRef.current.y = -18;
+              defeatSwipeRef.current.blur = 2.5;
+              break;
+            }
+          }
+        }
       }
 
       // Collectibles collision: circle-circle
@@ -737,7 +881,9 @@ export default function MaintenanceGame() {
             }
             // pickup ring effect
             collectionRingsRef.current.push({ x: f.x, y: f.y, life: 24 });
-            const bonus = Math.max(10, Math.floor(100 * (f.life / f.maxLife)));
+            // Increase food points by 50% for more rewarding pickups
+            const base = Math.max(10, Math.floor(100 * (f.life / f.maxLife)));
+            const bonus = Math.floor(base * 1.7);
             scoreRef.current += bonus * Math.max(1, comboRef.current);
             comboTimerRef.current = 120; // ~2s window
             comboRef.current = Math.min(comboRef.current + 1, 5);
@@ -797,6 +943,25 @@ export default function MaintenanceGame() {
         // Add slight desaturation overlay
         ctx.fillStyle = "rgba(255,255,255,0.02)";
         ctx.fillRect(0, 0, width, height);
+        // Level 5 visual: subtle indigo lattice pattern
+        if (levelRef.current >= 5) {
+          ctx.save();
+          ctx.globalAlpha = 0.08;
+          ctx.strokeStyle = "#4c1d95"; // indigo-900
+          ctx.lineWidth = 1;
+          const step = 24;
+          for (let y = -step; y < height + step; y += step) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y + step / 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, y + step / 2);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
       }
 
       // Progression rules (only after start)
@@ -818,6 +983,14 @@ export default function MaintenanceGame() {
             const vy = (Math.random() * 2 - 1) * 0.8;
             starsRef.current.push({ x, y, r, vx, vy, life: 180 }); // 3s lifetime
           }
+          // Level 5: evolve roaming diamond into monster after surviving 3 levels
+          if (levelRef.current >= 5 && diamondRef.current) {
+            const spawnLvl = (diamondRef.current as any).spawnLevel ?? 5;
+            const survived = levelRef.current - spawnLvl;
+            if (survived >= 3) {
+              (diamondRef.current as any).isMonster = true;
+            }
+          }
           prevLevelRef.current = levelRef.current;
         }
         // Decay combo timer
@@ -825,8 +998,8 @@ export default function MaintenanceGame() {
           comboTimerRef.current -= 1;
           if (comboTimerRef.current <= 0) comboRef.current = 1;
         }
-        // Add obstacles on each new 200 breakpoint: add (level) obstacles
-        const hundredBucket = Math.floor(scoreRef.current / 200);
+        // Add obstacles on each new 300 breakpoint: add (level) obstacles
+        const hundredBucket = Math.floor(scoreRef.current / 300);
         if (hundredBucket > lastHundredRef.current) {
           const addCount = Math.max(1, levelRef.current);
           for (let i = 0; i < addCount; i++) {
@@ -862,29 +1035,33 @@ export default function MaintenanceGame() {
           const vy = (Math.random() * 2 - 1) * (1.2 + Math.random() * 0.8);
           luckyRef.current = { x, y, w, h, vx, vy };
         }
-        // Level 5: show guide and enable new mechanics
+        // Spawner Core disabled in new design
+        // Level 5: pause and require OK to start new diamond-based mechanics
         if (levelRef.current >= 5 && !guideShownRef.current) {
           pausedRef.current = true;
           setGuideOpen(true);
           guideShownRef.current = true;
-          // Spawn level 5 mechanics entities
+          // Initialize diamond mechanics and clear transient Level 5 legacy refs
           spawnLevel5Entities(width, height);
         }
         hudFrameRef.current++;
         if (hudFrameRef.current % 10 === 0) {
           const s = Math.floor(scoreRef.current);
           setScore(s);
+          // Defer hooray until defeat: update best here but do not flash
           if (!defeat.current.active && s > best) {
             setBest(s);
             try { localStorage.setItem("maintenance_best_score", String(s)); } catch {}
-            setNewBestFlash(true);
-            newBestTimerRef.current = 180;
           }
         }
         // decay hooray flash
         if (newBestTimerRef.current > 0) {
           newBestTimerRef.current -= 1;
           if (newBestTimerRef.current <= 0) setNewBestFlash(false);
+        }
+        // decay speed gate boost timer
+        if (gateBoostRef.current > 0) {
+          gateBoostRef.current -= 1;
         }
         // decay invulnerability
         if (invulRef.current > 0) invulRef.current -= 1;
@@ -981,6 +1158,31 @@ export default function MaintenanceGame() {
     }
   };
 
+  // Bypass to Level 5 for testing new mechanics
+  const bypassToLevel5 = () => {
+    const c = canvasRef.current;
+    if (!c) return;
+    // Compute level by score: Level = floor(score/1000)+1 => set score to 4000
+    scoreRef.current = 4000;
+    setScore(4000);
+    prevLevelRef.current = 5;
+    levelRef.current = 5;
+    // Clear transient entities and initialize diamond system
+    obstaclesRef.current = [];
+    foodsRef.current = [];
+    luckyRef.current = null;
+    starsRef.current = [];
+    diamondBoxesRef.current = [];
+    spawnLevel5Entities(c.width, c.height);
+    // Pause and show guide for Level 5
+    pausedRef.current = true;
+    setGuideOpen(true);
+    guideShownRef.current = true;
+    // Ensure game is marked started
+    startedRef.current = true;
+    setStarted(true);
+  };
+
   // Update best and show hooray only when lost
   useEffect(() => {
     if (lost) {
@@ -1006,16 +1208,27 @@ export default function MaintenanceGame() {
           <span className="font-semibold text-amber-600 dark:text-amber-400">Points: {levelPoints}</span>
         </div>
         <div className="justify-self-center">
-          <span className="inline-block px-3 py-1 rounded-lg ring-1 ring-indigo-300 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 font-extrabold text-sm sm:text-xl tracking-wide">
+          <span className="inline-block px-4 py-1.5 rounded-lg ring-2 ring-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-100 font-extrabold text-xl sm:text-2xl tracking-widest shadow-sm">
             Level {levelRef.current}
           </span>
         </div>
         <div className="flex items-center gap-2 justify-self-end">
+          {showBypassButton && levelRef.current < 5 && (
+            <button onClick={bypassToLevel5} className="px-3 py-1.5 rounded-lg bg-pink-500 text-white text-xs sm:text-sm shadow hover:bg-pink-600">Skip to L5</button>
+          )}
           <button onClick={() => setInfoOpen(true)} className="px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs sm:text-sm shadow hover:bg-indigo-600">Guide!</button>
           <button onClick={() => setShopOpen(true)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs sm:text-sm shadow hover:bg-emerald-600">Shop</button>
         </div>
       </div>
       <canvas ref={canvasRef} className="w-full h-full border-2 border-indigo-300 rounded-xl" />
+
+      {newBestFlash && (
+        <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2">
+          <div className="px-4 py-2 rounded-xl bg-amber-100/90 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 ring-2 ring-amber-300 shadow-lg font-bold text-sm sm:text-base">
+            Hooray! New Best: {best}
+          </div>
+        </div>
+      )}
 
       {!started && !lost && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-black/70 backdrop-blur-sm" onClick={() => { startedRef.current = true; setStarted(true); }}>
@@ -1048,25 +1261,31 @@ export default function MaintenanceGame() {
       )}
 
       {guideOpen && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-black/70 backdrop-blur-sm" onClick={() => { pausedRef.current = false; setGuideOpen(false); }}>
-          <div className="mx-4 max-w-md w-full rounded-2xl border border-indigo-300/40 dark:border-indigo-800/40 bg-white/80 dark:bg-black/60 p-5 text-sm shadow-2xl ring-1 ring-indigo-200/40" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-base font-semibold text-gray-800 dark:text-gray-100">Level 5 Mechanics Guide</p>
-              <button onClick={() => { pausedRef.current = false; setGuideOpen(false); }} className="w-8 h-8 grid place-items-center rounded-lg bg-indigo-500 text-white hover:bg-indigo-600">×</button>
+        <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-black/70 backdrop-blur-sm">
+          <div className="mx-4 max-w-md w-full rounded-2xl border border-indigo-300/40 dark:border-indigo-800/40 bg-white/85 dark:bg-black/70 p-6 text-sm shadow-2xl ring-1 ring-indigo-200/40" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-base font-bold text-gray-900 dark:text-white">Level 5: Diamond Terrain & Mechanics</p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-purple-400/40 border border-purple-500" />
-                <span className="text-gray-700 dark:text-gray-200">Slow Zone: movement reduced inside the purple circle.</span>
+                <div className="w-7 h-7 rotate-45 bg-indigo-400/60 border border-indigo-600" />
+                <span className="text-gray-700 dark:text-gray-200">Roaming diamond spawns boxes every ~2s. Boxes vanish after ~3s.</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-4 rounded bg-emerald-500" />
-                <span className="text-gray-700 dark:text-gray-200">Speed Gate: pass through for a brief speed boost.</span>
+                <div className="w-10 h-10 grid place-items-center">
+                  <div className="w-4 h-4 rotate-45 bg-pink-400/70 border border-pink-600" />
+                </div>
+                <span className="text-gray-700 dark:text-gray-200">Avoid diamond boxes — they behave like obstacles and can break shields.</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-pink-400 ring-2 ring-pink-600" />
-                <span className="text-gray-700 dark:text-gray-200">Spawner Core: periodically emits small rounded obstacles.</span>
+                <div className="w-10 h-10 grid place-items-center">
+                  <div className="w-4 h-4 rotate-45 bg-red-400/70 border border-red-600" />
+                </div>
+                <span className="text-gray-700 dark:text-gray-200">Survive 3 more levels to evolve the diamond into a chomping monster.</span>
               </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button onClick={() => { pausedRef.current = false; setGuideOpen(false); }} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">Okay, start</button>
             </div>
           </div>
         </div>
