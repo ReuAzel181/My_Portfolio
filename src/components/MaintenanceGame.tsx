@@ -1,8 +1,6 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react";
-import { createLevel5, updateLevel5 } from "./Level5Mechanics";
-import type { Level5State } from "./Level5Mechanics";
 
 type Obstacle = {
   x: number;
@@ -23,6 +21,8 @@ type Diamond = {
   levelsAlive: number; 
   isMonster: boolean;
   size: number;
+  rageTimer?: number; // countdown to dash burst
+  dashTimer?: number; // frames remaining in dash
 };
 type DiamondBox = { 
   x: number; 
@@ -32,6 +32,7 @@ type DiamondBox = {
   vx: number; 
   vy: number; 
   lifeTimer: number; 
+  mini?: boolean; 
 };
 
 export default function MaintenanceGame() {
@@ -205,16 +206,27 @@ export default function MaintenanceGame() {
   // Spawn Level 5 mechanics entities (slow zones, speed gates, spawner core)
   const spawnLevel5Entities = (width: number, height: number) => {
     // Create a diamond that roams the map
+    const baseSize = 28;
+    const margin = baseSize + 10;
+    const corners = [
+      { x: margin, y: margin },
+      { x: width - margin, y: margin },
+      { x: margin, y: height - margin },
+      { x: width - margin, y: height - margin },
+    ];
+    const pick = corners[Math.floor(Math.random() * corners.length)];
     diamondRef.current = {
-      x: width * 0.5,
-      y: height * 0.5,
-      vx: (Math.random() - 0.5) * 2,
-      vy: (Math.random() - 0.5) * 2,
-      spawnTimer: 120, // 2 seconds at 60fps
+      x: pick.x,
+      y: pick.y,
+      vx: (Math.random() - 0.5) * 3,
+      vy: (Math.random() - 0.5) * 3,
+      spawnTimer: 90, // ~1.5s
       levelsAlive: 0,
       isMonster: false,
-      size: 15,
-      spawnLevel: levelRef.current
+      size: baseSize,
+      spawnLevel: levelRef.current,
+      rageTimer: 180,
+      dashTimer: 0
     };
     diamondBoxesRef.current = [];
   };
@@ -233,7 +245,7 @@ export default function MaintenanceGame() {
       const targetWidth = Math.max(320, Math.floor(rect.width));
       // If parent has little or no height, fall back to viewport fraction
       const parentHeight = rect.height > 0 ? rect.height : Math.floor(window.innerHeight * 0.8);
-      const canvasPaddingBottom = 24; // ensure canvas doesn't touch bottom
+      const canvasPaddingBottom = 68; // add 20px more bottom padding
       const targetHeight = Math.max(240, parentHeight - canvasPaddingBottom);
 
       canvas.width = Math.floor(targetWidth * dpr);
@@ -289,6 +301,30 @@ export default function MaintenanceGame() {
       grad.addColorStop(1, "#e7ecff");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
+      // Level 5 visual: lattice overlay and fail-safe entity spawn
+      if (levelRef.current >= 5) {
+        // Boost lattice visibility
+        ctx.save();
+        ctx.globalAlpha = 0.14;
+        ctx.strokeStyle = "#6366f1";
+        ctx.lineWidth = 1.25;
+        const step = 22;
+        for (let y = -step; y < height + step; y += step) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y + step / 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, y + step / 2);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+        // Ensure Level 5 entities exist even if prior state was reset
+        if (!diamondRef.current) {
+          spawnLevel5Entities(width, height);
+        }
+      }
       // Canvas stroke
       ctx.strokeStyle = "rgba(99,102,241,0.25)";
       ctx.lineWidth = 2;
@@ -352,50 +388,116 @@ export default function MaintenanceGame() {
               diamond.x = Math.max(diamond.size, Math.min(width - diamond.size, diamond.x));
               diamond.y = Math.max(diamond.size, Math.min(height - diamond.size, diamond.y));
               
-              // Spawn boxes every 2 seconds
+              // Spawn triangles: cadence depends on evolution
               diamond.spawnTimer--;
               if (diamond.spawnTimer <= 0) {
-                diamond.spawnTimer = 120; // Reset to 2 seconds
-                diamondBoxesRef.current.push({
-                  x: diamond.x - 10,
-                  y: diamond.y - 10,
-                  w: 20,
-                  h: 20,
-                  vx: (Math.random() - 0.5) * 3,
-                  vy: (Math.random() - 0.5) * 3,
-                  lifeTimer: 180 // 3 seconds
-                });
+                diamond.spawnTimer = diamond.isMonster ? 60 : 90; // monster: ~1s, else ~1.5s
+                // Limit number of boxes to keep focus on the boss
+                const spawnCount = diamond.isMonster && (diamond.dashTimer || 0) > 0 ? 2 : 1;
+                for (let n = 0; n < spawnCount; n++) {
+                  if (diamondBoxesRef.current.length < 5) {
+                    diamondBoxesRef.current.push({
+                      x: diamond.x - 10,
+                      y: diamond.y - 10,
+                      w: 20,
+                      h: 20,
+                      vx: (Math.random() - 0.5) * (diamond.isMonster ? 4.2 : 3.2),
+                      vy: (Math.random() - 0.5) * (diamond.isMonster ? 4.2 : 3.2),
+                      lifeTimer: diamond.isMonster ? 300 : 240 // monster: ~5s, else ~4s
+                    });
+                  }
+                }
               }
               
-              // Monster behavior: follow player when near
+              // Monster behavior: follow + dash bursts
               if (diamond.isMonster) {
+                // Dash logic: brief burst towards player every ~3 seconds
+                diamond.dashTimer = Math.max(0, (diamond.dashTimer || 0) - 1);
+                diamond.rageTimer = Math.max(0, (diamond.rageTimer || 0) - 1);
+                if ((diamond.rageTimer || 0) <= 0 && (diamond.dashTimer || 0) === 0) {
+                  const dx0 = player.current.x - diamond.x;
+                  const dy0 = player.current.y - diamond.y;
+                  const d0 = Math.hypot(dx0, dy0) || 1;
+                  const dashSpeed = 4.6;
+                  diamond.vx = (dx0 / d0) * dashSpeed;
+                  diamond.vy = (dy0 / d0) * dashSpeed;
+                  diamond.dashTimer = 24; // ~0.4s dash
+                  diamond.rageTimer = 180; // reset cooldown
+                  // visual dash particles
+                  for (let i = 0; i < 18; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const spd = 0.8 + Math.random() * 1.6;
+                    particlesRef.current.push({
+                      x: diamond.x,
+                      y: diamond.y,
+                      vx: Math.cos(ang) * spd,
+                      vy: Math.sin(ang) * spd,
+                      life: 26 + Math.floor(Math.random() * 18),
+                      r: 2 + Math.random() * 2,
+                      alpha: 0.95,
+                    });
+                  }
+                }
                 const dx = player.current.x - diamond.x;
                 const dy = player.current.y - diamond.y;
                 const dist = Math.hypot(dx, dy);
                 if (dist < 150 && dist > 0) {
-                  const speed = 1.5;
+                  const speed = (diamond.dashTimer || 0) > 0 ? 3.4 : 2.2;
                   diamond.vx = lerp(diamond.vx, (dx / dist) * speed, 0.1);
                   diamond.vy = lerp(diamond.vy, (dy / dist) * speed, 0.1);
                 }
               }
             }
             
-            // Update diamond boxes
-            diamondBoxesRef.current = diamondBoxesRef.current.filter(box => {
-              box.x += box.vx;
-              box.y += box.vy;
-              
-              // Bounce off walls
-              if (box.x <= 0 || box.x + box.w >= width) box.vx *= -1;
-              if (box.y <= 0 || box.y + box.h >= height) box.vy *= -1;
-              
-              // Clamp to bounds
-              box.x = Math.max(0, Math.min(width - box.w, box.x));
-              box.y = Math.max(0, Math.min(height - box.h, box.y));
-              
-              box.lifeTimer--;
-              return box.lifeTimer > 0; // Remove expired boxes
-            });
+            // Update diamond boxes with split-pop into two mini diamonds on expiry
+            {
+              const adds: DiamondBox[] = [];
+              diamondBoxesRef.current = diamondBoxesRef.current.filter(box => {
+                box.x += box.vx;
+                box.y += box.vy;
+                
+                // Bounce off walls
+                if (box.x <= 0 || box.x + box.w >= width) box.vx *= -1;
+                if (box.y <= 0 || box.y + box.h >= height) box.vy *= -1;
+                
+                // Clamp to bounds
+                box.x = Math.max(0, Math.min(width - box.w, box.x));
+                box.y = Math.max(0, Math.min(height - box.h, box.y));
+                
+                box.lifeTimer--;
+                if (box.lifeTimer <= 0) {
+                  // Pop particles
+                  const cx = box.x + box.w / 2;
+                  const cy = box.y + box.h / 2;
+                  for (let i = 0; i < 12; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const spd = 0.7 + Math.random() * 1.2;
+                    particlesRef.current.push({
+                      x: cx,
+                      y: cy,
+                      vx: Math.cos(ang) * spd,
+                      vy: Math.sin(ang) * spd,
+                      life: 24 + Math.floor(Math.random() * 12),
+                      r: 1.5 + Math.random() * 1.5,
+                      alpha: 0.9,
+                    });
+                  }
+                  // Spawn two small mini diamonds that last ~1s, flying like bullets
+                  if (!box.mini) {
+                    const s = Math.max(10, Math.min(14, Math.min(box.w, box.h) * 0.6));
+                    const ang0 = Math.random() * Math.PI * 2;
+                    const spd = 4.4;
+                    const vx0 = Math.cos(ang0) * spd;
+                    const vy0 = Math.sin(ang0) * spd;
+                    adds.push({ x: cx - s / 2, y: cy - s / 2, w: s, h: s, vx: vx0, vy: vy0, lifeTimer: 60, mini: true });
+                    adds.push({ x: cx - s / 2, y: cy - s / 2, w: s, h: s, vx: -vx0, vy: -vy0, lifeTimer: 60, mini: true });
+                  }
+                  return false;
+                }
+                return true; // keep alive
+              });
+              if (adds.length) diamondBoxesRef.current.push(...adds);
+            }
             
             // Regular obstacles still move with boundary bounce
             for (const o of obs) {
@@ -533,6 +635,61 @@ export default function MaintenanceGame() {
           ctx.rect(o.x, o.y, o.w, o.h);
           ctx.fill();
           ctx.stroke();
+        }
+      }
+
+      // Draw Level 5 diamond and boxes
+      if (levelRef.current >= 5) {
+        // Draw diamond hazards (diamonds); mini diamonds use stronger stroke
+        for (const box of diamondBoxesRef.current) {
+          ctx.save();
+          const cx = box.x + box.w / 2;
+          const cy = box.y + box.h / 2;
+          ctx.translate(cx, cy);
+          ctx.fillStyle = box.mini ? "rgba(236,72,153,0.30)" : "rgba(236,72,153,0.20)"; // pink
+          ctx.strokeStyle = box.mini ? "rgba(236,72,153,0.95)" : "rgba(236,72,153,0.85)";
+          ctx.lineWidth = box.mini ? 1.8 : 1.5;
+          const w = box.w, h = box.h;
+          ctx.beginPath();
+          ctx.moveTo(0, -h / 2);
+          ctx.lineTo(w / 2, 0);
+          ctx.lineTo(0, h / 2);
+          ctx.lineTo(-w / 2, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+        // Draw roaming diamond
+        if (diamondRef.current) {
+          const d = diamondRef.current;
+          ctx.save();
+          ctx.translate(d.x, d.y);
+          ctx.rotate(0); // no rotation; draw rhombus by path
+          const s = d.size;
+          // Boss-like glow and stronger stroke
+          ctx.shadowColor = d.isMonster ? "rgba(239,68,68,0.9)" : "rgba(99,102,241,0.85)";
+          ctx.shadowBlur = d.isMonster ? 22 : 16;
+          ctx.fillStyle = d.isMonster ? "rgba(239,68,68,0.25)" : "rgba(99,102,241,0.25)"; // red vs indigo
+          ctx.strokeStyle = d.isMonster ? "rgba(239,68,68,0.95)" : "rgba(99,102,241,0.95)";
+          ctx.lineWidth = d.isMonster ? 2.5 : 2;
+          ctx.beginPath();
+          ctx.moveTo(0, -s);
+          ctx.lineTo(s, 0);
+          ctx.lineTo(0, s);
+          ctx.lineTo(-s, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          // Centered boss icon (emoji), scaled to diamond size
+          const icon = d.isMonster ? "☠️" : "👾";
+          ctx.font = `${Math.floor(s * 1.2)}px Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = d.isMonster ? "#7f1d1d" : "#1e3a8a"; // dark red vs dark indigo
+          ctx.shadowBlur = 0; // text should be crisp
+          ctx.fillText(icon, 0, 0);
+          ctx.restore();
         }
       }
 
@@ -943,13 +1100,13 @@ export default function MaintenanceGame() {
         // Add slight desaturation overlay
         ctx.fillStyle = "rgba(255,255,255,0.02)";
         ctx.fillRect(0, 0, width, height);
-        // Level 5 visual: subtle indigo lattice pattern
+        // Level 5 visual: lattice pattern (defeat state)
         if (levelRef.current >= 5) {
           ctx.save();
-          ctx.globalAlpha = 0.08;
-          ctx.strokeStyle = "#4c1d95"; // indigo-900
-          ctx.lineWidth = 1;
-          const step = 24;
+          ctx.globalAlpha = 0.14;
+          ctx.strokeStyle = "#6366f1";
+          ctx.lineWidth = 1.25;
+          const step = 22;
           for (let y = -step; y < height + step; y += step) {
             ctx.beginPath();
             ctx.moveTo(0, y);
@@ -989,6 +1146,8 @@ export default function MaintenanceGame() {
             const survived = levelRef.current - spawnLvl;
             if (survived >= 3) {
               (diamondRef.current as any).isMonster = true;
+              // Make evolved diamond larger and more noticeable
+              (diamondRef.current as any).size = Math.max((diamondRef.current as any).size || 24, 36);
             }
           }
           prevLevelRef.current = levelRef.current;
@@ -1001,7 +1160,7 @@ export default function MaintenanceGame() {
         // Add obstacles on each new 300 breakpoint: add (level) obstacles
         const hundredBucket = Math.floor(scoreRef.current / 300);
         if (hundredBucket > lastHundredRef.current) {
-          const addCount = Math.max(1, levelRef.current);
+          const addCount = 1; // spawn only one obstacle every 300 points
           for (let i = 0; i < addCount; i++) {
             const w = 32 + Math.random() * 40;
             const h = 16 + Math.random() * 40;
@@ -1174,9 +1333,9 @@ export default function MaintenanceGame() {
     starsRef.current = [];
     diamondBoxesRef.current = [];
     spawnLevel5Entities(c.width, c.height);
-    // Pause and show guide for Level 5
-    pausedRef.current = true;
-    setGuideOpen(true);
+    // Do not pause; directly play at Level 5 and prevent auto-guide
+    pausedRef.current = false;
+    setGuideOpen(false);
     guideShownRef.current = true;
     // Ensure game is marked started
     startedRef.current = true;
@@ -1207,10 +1366,17 @@ export default function MaintenanceGame() {
           <span className="text-gray-600 dark:text-gray-300">Best: {best}</span>
           <span className="font-semibold text-amber-600 dark:text-amber-400">Points: {levelPoints}</span>
         </div>
-        <div className="justify-self-center">
+        <div className="justify-self-center flex flex-col items-center">
           <span className="inline-block px-4 py-1.5 rounded-lg ring-2 ring-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-100 font-extrabold text-xl sm:text-2xl tracking-widest shadow-sm">
             Level {levelRef.current}
           </span>
+          {/* Level progress bar: progress within current 1000-point window */}
+          <div className="mt-1 w-32 sm:w-40 h-2 rounded-full bg-indigo-200/40 dark:bg-indigo-800/40 overflow-hidden">
+            <div
+              className="h-full bg-indigo-500 dark:bg-indigo-400"
+              style={{ width: `${Math.min(100, Math.max(0, ((score % 1000) / 1000) * 100))}%` }}
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2 justify-self-end">
           {showBypassButton && levelRef.current < 5 && (
@@ -1269,7 +1435,7 @@ export default function MaintenanceGame() {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-7 h-7 rotate-45 bg-indigo-400/60 border border-indigo-600" />
-                <span className="text-gray-700 dark:text-gray-200">Roaming diamond spawns boxes every ~2s. Boxes vanish after ~3s.</span>
+                <span className="text-gray-700 dark:text-gray-200">Roaming diamond spawns boxes every ~1.5s. Boxes vanish after ~4s.</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 grid place-items-center">
