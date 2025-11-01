@@ -21,6 +21,7 @@ type Diamond = {
   levelsAlive: number; 
   isMonster: boolean;
   size: number;
+  spawnLevel: number; // level when spawned (for evolution timing)
   rageTimer?: number; // countdown to dash burst
   dashTimer?: number; // frames remaining in dash
 };
@@ -985,6 +986,60 @@ export default function MaintenanceGame() {
               break;
             }
           }
+          // Boss diamond contact collision (evolved boss is dangerous on touch)
+          if (diamondRef.current) {
+            const d = diamondRef.current;
+            // Approximate diamond as a circle for contact check
+            const bossR = d.size * 0.85;
+            const dx = player.current.x - d.x;
+            const dy = player.current.y - d.y;
+            const radSum = bossR + player.current.r;
+            if (dx * dx + dy * dy <= radSum * radSum) {
+              if (shieldRef.current) {
+                // Consume shield hit and grant brief invulnerability
+                if (shieldHitsRef.current > 1) {
+                  shieldHitsRef.current -= 1;
+                  shieldRef.current = true;
+                } else {
+                  shieldHitsRef.current = 0;
+                  shieldRef.current = false;
+                }
+                // Shield burst particles
+                for (let i = 0; i < 14; i++) {
+                  const ang = Math.random() * Math.PI * 2;
+                  const spd = 1.0 + Math.random() * 1.4;
+                  particlesRef.current.push({
+                    x: player.current.x,
+                    y: player.current.y,
+                    vx: Math.cos(ang) * spd,
+                    vy: Math.sin(ang) * spd,
+                    life: 22 + Math.floor(Math.random() * 14),
+                    r: 1.5 + Math.random() * 1.5,
+                    alpha: 0.9,
+                  });
+                }
+                // Keep target at player and set invulnerability frames
+                target.current = { x: player.current.x, y: player.current.y };
+                invulRef.current = Math.max(invulRef.current, 35);
+              } else if (invulRef.current > 0) {
+                // Light separation during invulnerability, no defeat
+                let len = Math.hypot(dx, dy) || 1;
+                const nx = dx / len;
+                const ny = dy / len;
+                const kb = 14;
+                player.current.x = Math.min(Math.max(player.current.r, player.current.x + nx * kb), width - player.current.r);
+                player.current.y = Math.min(Math.max(player.current.r, player.current.y + ny * kb), height - player.current.r);
+              } else {
+                // Defeat on direct boss contact without shield
+                setLost(true);
+                defeat.current = { active: true, t: 0 };
+                const dir = Math.sign(player.current.x - width / 2) || -1;
+                defeatSwipeRef.current.x = 56 * dir;
+                defeatSwipeRef.current.y = -20;
+                defeatSwipeRef.current.blur = 3.0;
+              }
+            }
+          }
         }
       }
 
@@ -1142,12 +1197,12 @@ export default function MaintenanceGame() {
           }
           // Level 5: evolve roaming diamond into monster after surviving 3 levels
           if (levelRef.current >= 5 && diamondRef.current) {
-            const spawnLvl = (diamondRef.current as any).spawnLevel ?? 5;
+            const spawnLvl = diamondRef.current.spawnLevel ?? 5;
             const survived = levelRef.current - spawnLvl;
             if (survived >= 3) {
-              (diamondRef.current as any).isMonster = true;
+              diamondRef.current.isMonster = true;
               // Make evolved diamond larger and more noticeable
-              (diamondRef.current as any).size = Math.max((diamondRef.current as any).size || 24, 36);
+              diamondRef.current.size = Math.max(diamondRef.current.size || 24, 36);
             }
           }
           prevLevelRef.current = levelRef.current;
@@ -1360,8 +1415,8 @@ export default function MaintenanceGame() {
   return (
     <div className="relative w-full h-full rounded-2xl shadow-sm">
       {/* Top bar (outside canvas) */}
-      <div className="w-full grid grid-cols-3 items-center px-4 py-2 text-xs sm:text-sm">
-        <div className="flex items-center gap-3 justify-self-start">
+      <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 items-center px-3 sm:px-4 py-2 text-xs sm:text-sm">
+        <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
           <span className="font-semibold text-gray-800 dark:text-gray-100">Score: {score}</span>
           <span className="text-gray-600 dark:text-gray-300">Best: {best}</span>
           <span className="font-semibold text-amber-600 dark:text-amber-400">Points: {levelPoints}</span>
@@ -1378,7 +1433,7 @@ export default function MaintenanceGame() {
             />
           </div>
         </div>
-        <div className="flex items-center gap-2 justify-self-end">
+        <div className="flex items-center gap-2 justify-center sm:justify-end justify-self-center sm:justify-self-end flex-wrap">
           {showBypassButton && levelRef.current < 5 && (
             <button onClick={bypassToLevel5} className="px-3 py-1.5 rounded-lg bg-pink-500 text-white text-xs sm:text-sm shadow hover:bg-pink-600">Skip to L5</button>
           )}

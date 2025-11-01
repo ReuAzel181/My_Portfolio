@@ -4,7 +4,7 @@ import MaintenanceGame from "@/components/MaintenanceGame";
 
 export default function MaintenancePage() {
   return (
-    <div className="h-screen w-full overflow-hidden bg-gradient-to-br from-gray-100 via-indigo-50 to-white dark:from-[#0b1020] dark:via-[#0f1630] dark:to-[#0b1020] text-gray-800 dark:text-gray-100 flex flex-col">
+    <div className="h-screen w-full overflow-y-auto bg-gradient-to-br from-gray-100 via-indigo-50 to-white dark:from-[#0b1020] dark:via-[#0f1630] dark:to-[#0b1020] text-gray-800 dark:text-gray-100 flex flex-col">
       <div className="w-full text-center pt-6 px-6">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-1">
           <span className="align-middle mr-1">🚧</span>
@@ -17,7 +17,7 @@ export default function MaintenancePage() {
           In the meantime, feel free to play around with this little game I've added below! 🎮
         </p>
       </div>
-      <div className="flex-1 min-h-0 w-full px-6 pb-6">
+      <div className="flex-1 min-h-0 w-full px-4 sm:px-6 pb-6">
         <MaintenanceGame />
       </div>
     </div>
