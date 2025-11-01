@@ -1,6 +1,18 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react";
+  import {
+    Tri10,
+    TinyTri10,
+    spawnTriangles10,
+    updateTriangles10,
+    renderTriangles10,
+    updateTinyTriangles10,
+    renderTinyTriangles10,
+    triangleTouchesCircle,
+    tinyTriangleTouchesCircle,
+    drawLevel10Theme,
+  } from "@/components/Level10Mechanics";
 
 type Obstacle = {
   x: number;
@@ -113,6 +125,10 @@ export default function MaintenanceGame() {
   const diamondRef = useRef<Diamond | null>(null);
   const diamondBoxesRef = useRef<DiamondBox[]>([]);
   const gateBoostRef = useRef<number>(0);
+  // Level 10 mechanic refs (Triangles)
+  const trianglesRef = useRef<Tri10[]>([]);
+  const tinyTrianglesRef = useRef<TinyTri10[]>([]);
+  const trianglesSpawnTimerRef = useRef<number>(0);
   const [showBypassButton, setShowBypassButton] = useState(false);
 
   const resetGame = (canvas?: HTMLCanvasElement) => {
@@ -293,7 +309,7 @@ export default function MaintenanceGame() {
       const width = canvas.width;
       const height = canvas.height;
 
-      // Background gradient (soft pastel) with gentle drift
+      // Background gradient (soft pastel) with gentle drift (pre-10)
       const ang = 0.25 + 0.15 * Math.sin(t * 0.0005);
       const x2 = Math.cos(ang) * width + width * 0.5;
       const y2 = Math.sin(ang) * height + height * 0.5;
@@ -302,8 +318,10 @@ export default function MaintenanceGame() {
       grad.addColorStop(1, "#e7ecff");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
-      // Level 5 visual: lattice overlay and fail-safe entity spawn
-      if (levelRef.current >= 5) {
+      // Level 10 overlay (distinct light theme)
+      if (levelRef.current >= 10) {
+        drawLevel10Theme(ctx, t, width, height);
+      } else if (levelRef.current >= 5) {
         // Boost lattice visibility
         ctx.save();
         ctx.globalAlpha = 0.14;
@@ -518,8 +536,21 @@ export default function MaintenanceGame() {
               if (o.x <= 0 || o.x + o.w >= width) o.vx *= -1;
               if (o.y <= 0 || o.y + o.h >= height) o.vy *= -1;
             }
+            // (Level 10 triangles moved outside this branch to run at all levels >=10)
           }
         }
+
+      // Level 10: Update triangles mechanic with timed spawns (independent of Level 5 logic)
+      if (levelRef.current >= 10) {
+        if (startedRef.current && !pausedRef.current) {
+          trianglesSpawnTimerRef.current += 1;
+          const shouldSpawn = trianglesRef.current.length === 0 || (trianglesSpawnTimerRef.current % 180 === 0);
+          if (shouldSpawn) trianglesRef.current.push(...spawnTriangles10(width, height, 2));
+        }
+        const spawnedTiny = updateTriangles10(trianglesRef.current, width, height, player.current.r);
+        if (spawnedTiny.length) tinyTrianglesRef.current.push(...spawnedTiny);
+        updateTinyTriangles10(tinyTrianglesRef.current, width, height);
+      }
 
       // Update and draw blue orbs
       const orbs = orbsRef.current;
@@ -694,6 +725,16 @@ export default function MaintenanceGame() {
         }
       }
 
+      // Draw Level 10 triangles (after Level 5 blocks and before player)
+      if (levelRef.current >= 10) {
+        if (trianglesRef.current.length > 0) {
+          renderTriangles10(ctx, trianglesRef.current);
+        }
+        if (tinyTrianglesRef.current.length > 0) {
+          renderTinyTriangles10(ctx, tinyTrianglesRef.current);
+        }
+      }
+
       // Lucky box update/draw
       if (startedRef.current && luckyRef.current) {
         const lb = luckyRef.current;
@@ -791,13 +832,56 @@ export default function MaintenanceGame() {
             starsRef.current.splice(i, 1);
           }
         }
-        // Star power obstacle destruction: orbiting stars collide with obstacles
+        // Star power destruction: orbiting stars collide with triangles and obstacles
         if (starPowerRef.current.active && starPowerRef.current.killsRemaining > 0) {
           const orbitCount = Math.max(1, starPowerRef.current.killsRemaining);
           const orbitR = 22;
           const pr = 6; // radius of each orbiting star collider
           const angBase = starPowerRef.current.angle;
-          // iterate obstacles backwards to allow removal
+
+          // Helper: test orbit hits circle-ish collider at position (cx, cy) with radius cr
+          const anyOrbitHitsCircle = (cx: number, cy: number, cr: number) => {
+            for (let k = 0; k < orbitCount; k++) {
+              const a = angBase + (Math.PI * 2 * k) / orbitCount;
+              const sx = player.current.x + Math.cos(a) * orbitR;
+              const sy = player.current.y + Math.sin(a) * orbitR;
+              const dx = sx - cx;
+              const dy = sy - cy;
+              const rsum = pr + cr;
+              if (dx * dx + dy * dy <= rsum * rsum) return true;
+            }
+            return false;
+          };
+
+          // First, triangles
+          if (levelRef.current >= 10 && starPowerRef.current.killsRemaining > 0) {
+            for (let ti = trianglesRef.current.length - 1; ti >= 0 && starPowerRef.current.killsRemaining > 0; ti--) {
+              const t = trianglesRef.current[ti];
+              const tr = Math.max(6, Math.floor(t.size * Math.sqrt(t.count) * 0.5));
+              if (anyOrbitHitsCircle(t.x, t.y, tr)) {
+                trianglesRef.current.splice(ti, 1);
+                starPowerRef.current.killsRemaining -= 1;
+                if (starPowerRef.current.killsRemaining <= 0) {
+                  starPowerRef.current.active = false;
+                  break;
+                }
+              }
+            }
+            // Tiny triangles
+            for (let ti = tinyTrianglesRef.current.length - 1; ti >= 0 && starPowerRef.current.killsRemaining > 0; ti--) {
+              const tt = tinyTrianglesRef.current[ti];
+              if (anyOrbitHitsCircle(tt.x, tt.y, tt.r)) {
+                tinyTrianglesRef.current.splice(ti, 1);
+                starPowerRef.current.killsRemaining -= 1;
+                if (starPowerRef.current.killsRemaining <= 0) {
+                  starPowerRef.current.active = false;
+                  break;
+                }
+              }
+            }
+          }
+
+          // Then, obstacles
           for (let oi = obstaclesRef.current.length - 1; oi >= 0 && starPowerRef.current.killsRemaining > 0; oi--) {
             const o = obstaclesRef.current[oi];
             let hit = false;
@@ -1040,6 +1124,110 @@ export default function MaintenanceGame() {
               }
             }
           }
+          // Level 10: Triangles contact collision
+          if (levelRef.current >= 10 && trianglesRef.current.length > 0) {
+            for (const tri of trianglesRef.current) {
+              if (triangleTouchesCircle(tri, player.current.x, player.current.y, player.current.r)) {
+                if (shieldRef.current) {
+                  if (shieldHitsRef.current > 1) {
+                    shieldHitsRef.current -= 1;
+                    shieldRef.current = true;
+                  } else {
+                    shieldHitsRef.current = 0;
+                    shieldRef.current = false;
+                  }
+                  for (let i = 0; i < 16; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const spd = 1.1 + Math.random() * 1.4;
+                    particlesRef.current.push({
+                      x: player.current.x,
+                      y: player.current.y,
+                      vx: Math.cos(ang) * spd,
+                      vy: Math.sin(ang) * spd,
+                      life: 24 + Math.floor(Math.random() * 12),
+                      r: 1.6 + Math.random() * 1.6,
+                      alpha: 0.9,
+                    });
+                  }
+                  target.current = { x: player.current.x, y: player.current.y };
+                  invulRef.current = Math.max(invulRef.current, 40);
+                } else if (invulRef.current > 0) {
+                  const dx = player.current.x - tri.x;
+                  const dy = player.current.y - tri.y;
+                  let len = Math.hypot(dx, dy) || 1;
+                  const nx = dx / len;
+                  const ny = dy / len;
+                  const kb = 16;
+                  player.current.x = Math.min(Math.max(player.current.r, player.current.x + nx * kb), width - player.current.r);
+                  player.current.y = Math.min(Math.max(player.current.r, player.current.y + ny * kb), height - player.current.r);
+                } else {
+                  setLost(true);
+                  defeat.current = { active: true, t: 0 };
+                  const dir = Math.sign(player.current.x - width / 2) || -1;
+                  defeatSwipeRef.current.x = 64 * dir;
+                  defeatSwipeRef.current.y = -24;
+                  defeatSwipeRef.current.blur = 3.5;
+                }
+                break; // only handle one collision per frame
+              }
+            }
+          }
+          // Level 10: Tiny red projectile collision
+          if (levelRef.current >= 10 && tinyTrianglesRef.current.length > 0) {
+            for (const tt of tinyTrianglesRef.current) {
+              if (tinyTriangleTouchesCircle(tt, player.current.x, player.current.y, player.current.r)) {
+                if (shieldRef.current) {
+                  if (shieldHitsRef.current > 1) {
+                    shieldHitsRef.current -= 1;
+                    shieldRef.current = true;
+                  } else {
+                    shieldHitsRef.current = 0;
+                    shieldRef.current = false;
+                  }
+                  for (let i = 0; i < 12; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const spd = 1.2 + Math.random() * 1.2;
+                    particlesRef.current.push({
+                      x: player.current.x,
+                      y: player.current.y,
+                      vx: Math.cos(ang) * spd,
+                      vy: Math.sin(ang) * spd,
+                      life: 20 + Math.floor(Math.random() * 14),
+                      r: 2 + Math.random() * 2,
+                      alpha: 0.9,
+                    });
+                  }
+                  // gentle knockback
+                  const dx = player.current.x - tt.x;
+                  const dy = player.current.y - tt.y;
+                  let len = Math.hypot(dx, dy) || 1;
+                  const nx = dx / len;
+                  const ny = dy / len;
+                  const kb = 12;
+                  player.current.x = Math.min(Math.max(player.current.r, player.current.x + nx * kb), width - player.current.r);
+                  player.current.y = Math.min(Math.max(player.current.r, player.current.y + ny * kb), height - player.current.r);
+                  invulRef.current = Math.max(invulRef.current, 30);
+                } else if (invulRef.current > 0) {
+                  const dx = player.current.x - tt.x;
+                  const dy = player.current.y - tt.y;
+                  let len = Math.hypot(dx, dy) || 1;
+                  const nx = dx / len;
+                  const ny = dy / len;
+                  const kb = 14;
+                  player.current.x = Math.min(Math.max(player.current.r, player.current.x + nx * kb), width - player.current.r);
+                  player.current.y = Math.min(Math.max(player.current.r, player.current.y + ny * kb), height - player.current.r);
+                } else {
+                  setLost(true);
+                  defeat.current = { active: true, t: 0 };
+                  const dir = Math.sign(player.current.x - width / 2) || -1;
+                  defeatSwipeRef.current.x = 64 * dir;
+                  defeatSwipeRef.current.y = -24;
+                  defeatSwipeRef.current.blur = 3.5;
+                }
+                break; // one collision is enough
+              }
+            }
+          }
         }
       }
 
@@ -1095,7 +1283,7 @@ export default function MaintenanceGame() {
             collectionRingsRef.current.push({ x: f.x, y: f.y, life: 24 });
             // Increase food points by 50% for more rewarding pickups
             const base = Math.max(10, Math.floor(100 * (f.life / f.maxLife)));
-            const bonus = Math.floor(base * 1.7);
+            const bonus = Math.floor(base * 1.5);
             scoreRef.current += bonus * Math.max(1, comboRef.current);
             comboTimerRef.current = 120; // ~2s window
             comboRef.current = Math.min(comboRef.current + 1, 5);
@@ -1397,6 +1585,31 @@ export default function MaintenanceGame() {
     setStarted(true);
   };
 
+  // Bypass to Level 10 for testing new mechanics
+  const bypassToLevel10 = () => {
+    const c = canvasRef.current;
+    if (!c) return;
+    // Level = floor(score/1000)+1 => set score to 9000 for Level 10
+    scoreRef.current = 9000;
+    setScore(9000);
+    prevLevelRef.current = 10;
+    levelRef.current = 10;
+    // Clear transient entities and initialize triangles
+    obstaclesRef.current = [];
+    foodsRef.current = [];
+    luckyRef.current = null;
+    starsRef.current = [];
+    diamondBoxesRef.current = [];
+    trianglesRef.current = spawnTriangles10(c.width, c.height, 2);
+    trianglesSpawnTimerRef.current = 0;
+    // Do not pause; directly play at Level 10 and prevent auto-guide
+    pausedRef.current = false;
+    setGuideOpen(false);
+    guideShownRef.current = true;
+    startedRef.current = true;
+    setStarted(true);
+  };
+
   // Update best and show hooray only when lost
   useEffect(() => {
     if (lost) {
@@ -1436,6 +1649,9 @@ export default function MaintenanceGame() {
         <div className="flex items-center gap-2 justify-center sm:justify-end justify-self-center sm:justify-self-end flex-wrap">
           {showBypassButton && levelRef.current < 5 && (
             <button onClick={bypassToLevel5} className="px-3 py-1.5 rounded-lg bg-pink-500 text-white text-xs sm:text-sm shadow hover:bg-pink-600">Skip to L5</button>
+          )}
+          {showBypassButton && levelRef.current < 10 && (
+            <button onClick={bypassToLevel10} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs sm:text-sm shadow hover:bg-red-700">Skip to L10</button>
           )}
           <button onClick={() => setInfoOpen(true)} className="px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs sm:text-sm shadow hover:bg-indigo-600">Guide!</button>
           <button onClick={() => setShopOpen(true)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs sm:text-sm shadow hover:bg-emerald-600">Shop</button>
