@@ -258,10 +258,10 @@ export default function MaintenanceGame() {
       if (!parent) return;
       const rect = parent.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      // Fill available parent space
       const targetWidth = Math.max(320, Math.floor(rect.width));
-      // The parent element is sized by flexbox, so we use its height directly.
-      const targetHeight = Math.max(240, Math.floor(rect.height));
+      const viewportHeight = typeof window !== "undefined" ? window.innerHeight : rect.height;
+      const maxHeight = Math.max(240, viewportHeight - 140);
+      const targetHeight = Math.max(240, Math.min(Math.floor(rect.height), Math.floor(maxHeight)));
 
       canvas.width = Math.floor(targetWidth * dpr);
       canvas.height = Math.floor(targetHeight * dpr);
@@ -1625,14 +1625,14 @@ export default function MaintenanceGame() {
   return (
     <div className="relative w-full h-full rounded-2xl shadow-sm flex flex-col">
       {/* Top bar (outside canvas) */}
-      <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 items-center px-3 sm:px-4 py-2 text-xs sm:text-sm">
+      <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 items-center px-3 sm:px-4 py-2 text-xs sm:text-sm pt-1">
         <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
           <span className="font-semibold text-gray-800 dark:text-gray-100">Score: {score}</span>
           <span className="text-gray-600 dark:text-gray-300">Best: {best}</span>
           <span className="font-semibold text-amber-600 dark:text-amber-400">Points: {levelPoints}</span>
         </div>
-        <div className="justify-self-center flex flex-col items-center">
-          <span className="inline-block px-4 py-1.5 rounded-lg ring-2 ring-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-100 font-extrabold text-lg sm:text-xl tracking-widest shadow-sm">
+        <div className="justify-self-center flex flex-col items-center gap-1">
+          <span className="inline-block px-3 py-1 rounded-md ring-2 ring-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-100 font-extrabold text-sm md:text-base tracking-widest shadow-sm">
             Level {levelRef.current}
           </span>
           {/* Level progress bar: progress within current 1000-point window */}
@@ -1644,12 +1644,6 @@ export default function MaintenanceGame() {
           </div>
         </div>
         <div className="flex items-center gap-2 justify-center sm:justify-end justify-self-center sm:justify-self-end flex-wrap">
-          {showBypassButton && levelRef.current < 5 && (
-            <button onClick={bypassToLevel5} className="px-3 py-1.5 rounded-lg bg-pink-500 text-white text-xs sm:text-sm shadow hover:bg-pink-600">Skip to L5</button>
-          )}
-          {showBypassButton && levelRef.current < 10 && (
-            <button onClick={bypassToLevel10} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs sm:text-sm shadow hover:bg-red-700">Skip to L10</button>
-          )}
           <button onClick={() => setInfoOpen(true)} className="px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs sm:text-sm shadow hover:bg-indigo-600">Guide!</button>
           <button onClick={() => setShopOpen(true)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs sm:text-sm shadow hover:bg-emerald-600">Shop</button>
         </div>
