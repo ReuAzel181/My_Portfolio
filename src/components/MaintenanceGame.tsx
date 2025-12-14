@@ -1635,7 +1635,7 @@ export default function MaintenanceGame() {
           <span className="font-semibold text-amber-600 dark:text-amber-400">Points: {levelPoints}</span>
         </div>
         <div className="justify-self-center flex flex-col items-center">
-          <span className="inline-block px-4 py-1.5 rounded-lg ring-2 ring-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-100 font-extrabold text-xl sm:text-2xl tracking-widest shadow-sm">
+          <span className="inline-block px-4 py-1.5 rounded-lg ring-2 ring-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-100 font-extrabold text-lg sm:text-xl tracking-widest shadow-sm">
             Level {levelRef.current}
           </span>
           {/* Level progress bar: progress within current 1000-point window */}
@@ -1657,8 +1657,6 @@ export default function MaintenanceGame() {
           <button onClick={() => setShopOpen(true)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs sm:text-sm shadow hover:bg-emerald-600">Shop</button>
         </div>
       </div>
-      <canvas ref={canvasRef} className="w-full h-full border-2 border-indigo-300 rounded-xl" />
-
       {newBestFlash && (
         <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2">
           <div className="px-4 py-2 rounded-xl bg-amber-100/90 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 ring-2 ring-amber-300 shadow-lg font-bold text-sm sm:text-base">
@@ -1667,14 +1665,18 @@ export default function MaintenanceGame() {
         </div>
       )}
 
-      {!started && !lost && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-black/70 backdrop-blur-sm" onClick={() => { startedRef.current = true; setStarted(true); }}>
-          <div className="text-center">
-            <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Click to Play</p>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Click anywhere to start, then click to move.</p>
+      <div className="relative w-full h-full">
+        <canvas ref={canvasRef} className="w-full h-full border-2 border-indigo-300 rounded-xl" />
+
+        {!started && !lost && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-black/70 backdrop-blur-sm" onClick={() => { startedRef.current = true; setStarted(true); }}>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Click to Play</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Click anywhere to start, then click to move.</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {lost && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 dark:bg-black/50 backdrop-blur-sm">
