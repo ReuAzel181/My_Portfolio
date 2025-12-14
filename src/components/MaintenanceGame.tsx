@@ -260,10 +260,8 @@ export default function MaintenanceGame() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       // Fill available parent space
       const targetWidth = Math.max(320, Math.floor(rect.width));
-      // If parent has little or no height, fall back to viewport fraction
-      const parentHeight = rect.height > 0 ? rect.height : Math.floor(window.innerHeight * 0.8);
-      const canvasPaddingBottom = 68; // add 20px more bottom padding
-      const targetHeight = Math.max(240, parentHeight - canvasPaddingBottom);
+      // The parent element is sized by flexbox, so we use its height directly.
+      const targetHeight = Math.max(240, Math.floor(rect.height));
 
       canvas.width = Math.floor(targetWidth * dpr);
       canvas.height = Math.floor(targetHeight * dpr);
@@ -552,7 +550,6 @@ export default function MaintenanceGame() {
         updateTinyTriangles10(tinyTrianglesRef.current, width, height);
       }
 
-      // Update and draw blue orbs
       const orbs = orbsRef.current;
       if (startedRef.current && !pausedRef.current) {
         for (const orb of orbs) {
@@ -563,11 +560,11 @@ export default function MaintenanceGame() {
         }
       }
       for (const orb of orbs) {
-        ctx.fillStyle = "rgba(99,102,241,0.25)"; // indigo/25
+        ctx.fillStyle = "rgba(147,51,234,0.25)";
         ctx.beginPath();
         ctx.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = "rgba(99,102,241,0.6)";
+        ctx.strokeStyle = "rgba(147,51,234,0.7)";
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
@@ -1240,7 +1237,7 @@ export default function MaintenanceGame() {
       if (startedRef.current && !pausedRef.current && !defeat.current.active) {
         for (const orb of orbs) {
           if (circleCircle(player.current.x, player.current.y, player.current.r, orb.x, orb.y, orb.r)) {
-            powerRef.current = { active: true, timer: 180 }; // ~3s trail effect
+            powerRef.current = { active: true, timer: 90 };
             // trail pickup burst particles
             for (let i = 0; i < 18; i++) {
               const ang = Math.random() * Math.PI * 2;
@@ -1626,7 +1623,7 @@ export default function MaintenanceGame() {
   }, [lost, best]);
 
   return (
-    <div className="relative w-full h-full rounded-2xl shadow-sm">
+    <div className="relative w-full h-full rounded-2xl shadow-sm flex flex-col">
       {/* Top bar (outside canvas) */}
       <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 items-center px-3 sm:px-4 py-2 text-xs sm:text-sm">
         <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
@@ -1665,7 +1662,7 @@ export default function MaintenanceGame() {
         </div>
       )}
 
-      <div className="relative w-full h-full">
+      <div className="relative w-full flex-1 min-h-0">
         <canvas ref={canvasRef} className="w-full h-full border-2 border-indigo-300 rounded-xl" />
 
         {!started && !lost && (
@@ -1731,43 +1728,53 @@ export default function MaintenanceGame() {
       )}
       {infoOpen && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-black/70 backdrop-blur-sm" onClick={() => setInfoOpen(false)}>
-          <div className="mx-4 max-w-2xl w-full rounded-2xl border border-indigo-300/40 dark:border-indigo-800/40 bg-white/85 dark:bg-black/70 p-6 shadow-2xl ring-1 ring-indigo-200/40" onClick={(e) => e.stopPropagation()}>
+          <div className="mx-4 max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-indigo-300/40 dark:border-indigo-800/40 bg-white/85 dark:bg-black/70 p-6 shadow-2xl ring-1 ring-indigo-200/40" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <p className="text-lg font-bold text-gray-900 dark:text-white">Game Guide</p>
               <button onClick={() => setInfoOpen(false)} className="w-8 h-8 grid place-items-center rounded-lg bg-indigo-500 text-white hover:bg-indigo-600">×</button>
             </div>
-            <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <div className="mb-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
               <p className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">Level Points System</p>
-              <p className="text-xs text-amber-700 dark:text-amber-300">Each level grants points equal to Level × 5 (Level 1 = 5 pts, Level 2 = 10 pts, etc.). Use points to buy powerups in the Shop!</p>
+              <p className="text-xs text-amber-700 dark:text-amber-300">Each level grants Level × 5 points. Spend them in the Shop.</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm sm:text-base text-gray-800 dark:text-gray-200">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-7 h-7 rounded-full bg-indigo-500" /> <div><span className="font-semibold">Player</span> — click to move; avoid obstacles.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-10 h-6 bg-blue-400" /> <div><span className="font-semibold">Obstacle</span> — bouncing rectangle.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-10 h-6 bg-blue-400 rounded-md" /> <div><span className="font-semibold">Fast Obstacle</span> — rounded, ~25% faster.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
-                <div className="w-7 h-7 relative">
-                  <svg viewBox="0 0 32 32" className="absolute inset-0">
-                    <defs>
-                      <radialGradient id="appleGrad" cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" stopColor="#fde68a" />
-                        <stop offset="100%" stopColor="#f59e0b" />
-                      </radialGradient>
-                    </defs>
-                    <circle cx="14" cy="18" r="9" fill="url(#appleGrad)" stroke="#f59e0b" strokeWidth="1.5" />
-                    <circle cx="18" cy="18" r="9" fill="url(#appleGrad)" stroke="#f59e0b" strokeWidth="1.5" />
-                    <path d="M16 8 L16 12" stroke="#92400e" strokeWidth="2" strokeLinecap="round" />
-                    <path d="M17 10 C21 8, 23 10, 20 13 C18 14, 17 12, 17 10 Z" fill="#10b981" />
-                  </svg>
-                </div>
-                <div><span className="font-semibold">Yellow Food</span> — apple-like; earlier pickups grant more points.</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-gray-800 dark:text-gray-200">
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
+                <div className="w-6 h-6 rounded-full bg-indigo-500" />
+                <div><span className="font-semibold">Player</span> — glowing indigo circle.</div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-6 h-6 rounded-full bg-indigo-400 ring-2 ring-indigo-600" /> <div><span className="font-semibold">Blue Orb</span> — temporary trail power with particles.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-10 h-6 bg-emerald-500" /> <div><span className="font-semibold">Lucky Box</span> — grants one-time shield.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-6 h-6 rounded-full bg-amber-500 ring-2 ring-yellow-400" /> <div><span className="font-semibold">Golden Star</span> — spawns on level-up (≥2); grants star power.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="flex items-center justify-center w-8 h-8"><div className="w-3 h-3 bg-amber-400 rounded-full animate-spin" style={{animationDuration: '2s'}} /><div className="w-2 h-2 bg-yellow-300 rounded-full absolute animate-spin" style={{animationDuration: '1.5s', animationDirection: 'reverse'}} /></div> <div><span className="font-semibold">Star Power</span> — orbiting stars destroy 5 obstacles.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-7 h-7 rounded-full bg-purple-400/40 border border-purple-500" /> <div><span className="font-semibold">Slow Zone</span> — movement slowed inside.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-16 h-4 rounded bg-emerald-500" /> <div><span className="font-semibold">Speed Gate</span> — brief speed boost on pass-through.</div></div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900"><div className="w-7 h-7 rounded-full bg-pink-400 ring-2 ring-pink-600" /> <div><span className="font-semibold">Spawner Core</span> — emits small rounded obstacles.</div></div>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
+                <div className="w-10 h-5 bg-blue-400" />
+                <div><span className="font-semibold">Obstacle</span> — blue rectangle that bounces.</div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
+                <div className="w-10 h-5 bg-blue-400 rounded-md" />
+                <div><span className="font-semibold">Fast Obstacle</span> — rounded and faster.</div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
+                <div className="w-6 h-6 rounded-full bg-amber-400 ring-2 ring-amber-500" />
+                <div><span className="font-semibold">Yellow Food</span> — glowing yellow circle; earlier pickups score more.</div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
+                <div className="w-6 h-6 rounded-full bg-purple-400 ring-2 ring-purple-600" />
+                <div><span className="font-semibold">Purple Orb</span> — purple circle; short trail boost.</div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
+                <div className="w-10 h-5 bg-emerald-500/30 border border-emerald-500" />
+                <div><span className="font-semibold">Lucky Box</span> — emerald outlined box; grants a shield.</div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
+                <div className="w-6 h-6 grid place-items-center rounded-full bg-amber-100 ring-2 ring-amber-400">
+                  <span className="text-amber-500 text-xs">★</span>
+                </div>
+                <div><span className="font-semibold">Golden Star</span> — small golden star that unlocks Star Power.</div>
+              </div>
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 border border-indigo-100 dark:border-indigo-900">
+                <div className="flex items-center justify-center w-8 h-8">
+                  <div className="w-3 h-3 bg-amber-400 rounded-full animate-spin" style={{ animationDuration: "2s" }} />
+                  <div className="w-2 h-2 bg-yellow-300 rounded-full absolute animate-spin" style={{ animationDuration: "1.5s", animationDirection: "reverse" }} />
+                </div>
+                <div><span className="font-semibold">Star Power</span> — orbiting stars that destroy obstacles.</div>
+              </div>
             </div>
           </div>
         </div>
