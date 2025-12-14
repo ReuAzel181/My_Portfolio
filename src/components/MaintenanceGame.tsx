@@ -129,7 +129,6 @@ export default function MaintenanceGame() {
   const trianglesRef = useRef<Tri10[]>([]);
   const tinyTrianglesRef = useRef<TinyTri10[]>([]);
   const trianglesSpawnTimerRef = useRef<number>(0);
-  const [showBypassButton, setShowBypassButton] = useState(false);
 
   const resetGame = (canvas?: HTMLCanvasElement) => {
     setLost(false);
@@ -141,16 +140,16 @@ export default function MaintenanceGame() {
     wallHit.current = 0;
     defeat.current = { active: false, t: 0 };
     defeatSwipeRef.current = { x: 0, y: 0, blur: 0 };
-    // Spawn a few obstacles with random positions/velocities (moderate at level 1)
+    // Spawn a few obstacles with random positions/velocities (gentler at level 1)
     const obs: Obstacle[] = [];
-    const count = 6;
+    const count = 4;
     for (let i = 0; i < count; i++) {
-      const w = 40 + Math.random() * 40;
-      const h = 20 + Math.random() * 40;
+      const w = 40 + Math.random() * 30;
+      const h = 20 + Math.random() * 30;
       const x = Math.random() * (width - w);
       const y = Math.random() * (height - h);
-      let vx = (Math.random() * 2 - 1) * (0.9 + Math.random() * 0.6);
-      let vy = (Math.random() * 2 - 1) * (0.9 + Math.random() * 0.6);
+      let vx = (Math.random() * 2 - 1) * (0.7 + Math.random() * 0.4);
+      let vy = (Math.random() * 2 - 1) * (0.7 + Math.random() * 0.4);
       // Some obstacles have rounded corners and are 25% faster
       const round = Math.random() < 0.3;
       if (round) {
@@ -207,7 +206,9 @@ export default function MaintenanceGame() {
     diamondRef.current = null;
     diamondBoxesRef.current = [];
     gateBoostRef.current = 0;
-    setShowBypassButton(true);
+    trianglesRef.current = [];
+    tinyTrianglesRef.current = [];
+    trianglesSpawnTimerRef.current = 0;
   };
 
   const spawnFood = (width: number, height: number): Food => {
@@ -261,11 +262,17 @@ export default function MaintenanceGame() {
       const targetWidth = Math.max(320, Math.floor(rect.width));
       const targetHeight = Math.max(240, Math.floor(rect.height));
 
+      const wasStarted = startedRef.current;
+      const wasDefeated = defeat.current.active;
+
       canvas.width = Math.floor(targetWidth * dpr);
       canvas.height = Math.floor(targetHeight * dpr);
       canvas.style.width = targetWidth + "px";
       canvas.style.height = targetHeight + "px";
-      resetGame(canvas);
+
+      if (!wasStarted && !wasDefeated) {
+        resetGame(canvas);
+      }
     };
 
     resize();
@@ -1364,13 +1371,15 @@ export default function MaintenanceGame() {
         // Update computed level: every 1000 score is a level
         levelRef.current = Math.floor(scoreRef.current / 1000) + 1;
         // On level-up, spawn a star collectible (level ≥ 2) and award level points
-        if (levelRef.current !== prevLevelRef.current) {
+          if (levelRef.current !== prevLevelRef.current) {
+          const newLevel = levelRef.current;
+          const oldLevel = prevLevelRef.current;
           // Award level points: 5 points per level (incrementing by 5 each level)
-          const pointsAwarded = levelRef.current * 5;
+          const pointsAwarded = newLevel * 5;
           levelPointsRef.current += pointsAwarded;
           setLevelPoints(levelPointsRef.current);
           
-          if (levelRef.current >= 2) {
+          if (newLevel >= 2) {
             const r = 7;
             const x = r + Math.random() * (width - 2 * r);
             const y = r + Math.random() * (height - 2 * r);
@@ -1379,41 +1388,47 @@ export default function MaintenanceGame() {
             starsRef.current.push({ x, y, r, vx, vy, life: 180 }); // 3s lifetime
           }
           // Level 5: evolve roaming diamond into monster after surviving 3 levels
-          if (levelRef.current >= 5 && diamondRef.current) {
+          if (newLevel >= 5 && diamondRef.current) {
             const spawnLvl = diamondRef.current.spawnLevel ?? 5;
-            const survived = levelRef.current - spawnLvl;
+            const survived = newLevel - spawnLvl;
             if (survived >= 3) {
               diamondRef.current.isMonster = true;
               // Make evolved diamond larger and more noticeable
               diamondRef.current.size = Math.max(diamondRef.current.size || 24, 36);
             }
           }
-          prevLevelRef.current = levelRef.current;
+          // On first entering Level 5, clear rectangular obstacles so the arena is fresh
+          if (newLevel >= 5 && oldLevel < 5) {
+            obstaclesRef.current = [];
+          }
+          prevLevelRef.current = newLevel;
         }
         // Decay combo timer
         if (comboTimerRef.current > 0) {
           comboTimerRef.current -= 1;
           if (comboTimerRef.current <= 0) comboRef.current = 1;
         }
-        // Add obstacles on each new 300 breakpoint: add (level) obstacles
-        const hundredBucket = Math.floor(scoreRef.current / 300);
-        if (hundredBucket > lastHundredRef.current) {
-          const addCount = 1; // spawn only one obstacle every 300 points
+        // Add obstacles gradually: slower ramp for levels 1–4, faster after
+        const bucketSize = levelRef.current <= 4 ? 500 : 300;
+        const bucket = Math.floor(scoreRef.current / bucketSize);
+        if (bucket > lastHundredRef.current) {
+          const addCount = levelRef.current <= 4 ? 1 : 2;
           for (let i = 0; i < addCount; i++) {
-            const w = 32 + Math.random() * 40;
-            const h = 16 + Math.random() * 40;
+            const w = 32 + Math.random() * 36;
+            const h = 16 + Math.random() * 36;
             const x = Math.random() * (width - w);
             const y = Math.random() * (height - h);
-            let vx = (Math.random() * 2 - 1) * (1.1 + Math.random());
-            let vy = (Math.random() * 2 - 1) * (1.1 + Math.random());
+            let baseSpeed = levelRef.current <= 4 ? 0.9 : 1.1;
+            let vx = (Math.random() * 2 - 1) * (baseSpeed + Math.random() * 0.7);
+            let vy = (Math.random() * 2 - 1) * (baseSpeed + Math.random() * 0.7);
             const round = Math.random() < 0.35;
             if (round) {
-              vx *= 1.25;
-              vy *= 1.25;
+              vx *= 1.2;
+              vy *= 1.2;
             }
             obstaclesRef.current.push({ x, y, w, h, vx, vy, round });
           }
-          lastHundredRef.current = hundredBucket;
+          lastHundredRef.current = bucket;
         }
         // Respawn foods over time, scaling with level to offset obstacle growth
         const maxFoods = Math.min(3 + Math.floor(levelRef.current / 2), 10);
@@ -1482,11 +1497,6 @@ export default function MaintenanceGame() {
         return;
       }
       target.current = { x, y };
-      if (lost) {
-        setLost(false);
-        defeat.current = { active: false, t: 0 };
-        defeatSwipeRef.current = { x: 0, y: 0, blur: 0 };
-      }
       if (!rafRef.current) rafRef.current = requestAnimationFrame(tick);
     };
     canvas.addEventListener("click", onClick);
@@ -1496,7 +1506,7 @@ export default function MaintenanceGame() {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       ro.disconnect();
     };
-  }, [lost]);
+  }, []);
 
   // Initialize best score
   useEffect(() => {
