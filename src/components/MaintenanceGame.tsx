@@ -259,9 +259,7 @@ export default function MaintenanceGame() {
       const rect = parent.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const targetWidth = Math.max(320, Math.floor(rect.width));
-      const viewportHeight = typeof window !== "undefined" ? window.innerHeight : rect.height;
-      const maxHeight = Math.max(240, viewportHeight - 140);
-      const targetHeight = Math.max(240, Math.min(Math.floor(rect.height), Math.floor(maxHeight)));
+      const targetHeight = Math.max(240, Math.floor(rect.height));
 
       canvas.width = Math.floor(targetWidth * dpr);
       canvas.height = Math.floor(targetHeight * dpr);
